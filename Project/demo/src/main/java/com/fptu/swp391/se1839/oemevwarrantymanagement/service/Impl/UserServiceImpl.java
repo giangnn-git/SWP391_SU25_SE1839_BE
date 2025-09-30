@@ -50,8 +50,8 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public User handdleFindByEmailOrPhone(String iuput) {
-        return this.userRepository.findByEmailOrPhoneNumber(iuput, iuput)
+    public User handdleFindByEmailOrPhone(String input) {
+        return this.userRepository.findByEmailOrPhoneNumber(input, input)
                 .orElseThrow(() -> new NoSuchElementException("Email or Phone isn't correct"));
     }
 

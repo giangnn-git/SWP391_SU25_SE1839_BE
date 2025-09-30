@@ -28,7 +28,7 @@ public class PartClaim {
     private Part part;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "warrancyClaimId", nullable = false)
+    @JoinColumn(name = "warrantyClaimId", nullable = false)
     private WarrantyClaim warrantyClaim;
 
     @Min(value = 1, message = "Quantity must be at least 1")
