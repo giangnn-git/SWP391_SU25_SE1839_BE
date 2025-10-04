@@ -18,6 +18,6 @@ public class UserCreateRequest {
     @NotBlank
     private String password;
     private String phoneNumber;
-    private String role; // "user", "admin"
+    private String role; 
     private Long serviceCenterId;
 }

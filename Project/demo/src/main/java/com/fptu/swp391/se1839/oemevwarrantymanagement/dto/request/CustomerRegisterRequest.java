@@ -8,5 +8,5 @@ public class CustomerRegisterRequest {
     private String phoneNumber;
     private String email;
     private String address;
-    private String vin; // để tìm Vehicle
+    private String vin; 
 }
