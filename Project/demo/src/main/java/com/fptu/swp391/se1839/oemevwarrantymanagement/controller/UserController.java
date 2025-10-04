@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -18,6 +19,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.domain.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.IntrospectRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LoginRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserCreateRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserDeleteRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserUpdateRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.IntrospectResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.LoginResponse;
@@ -82,6 +84,13 @@ public class UserController {
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers(){
         List<UserResponse> users = employeeService.getAllUsers();
         var result = new ApiResponse<>(HttpStatus.OK, "Get all users successfully", users, null);
+        return ResponseEntity.status(HttpStatus.OK).body(result);
+    }
+
+    @DeleteMapping("/users/delete")
+    public ResponseEntity<ApiResponse<UserResponse>> deleteUsers(@RequestBody UserDeleteRequest request){
+        UserResponse user = employeeService.deleteUser(request);
+        var result = new ApiResponse<>(HttpStatus.OK, "User deleted successfully", user, null);
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
     

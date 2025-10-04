@@ -9,6 +9,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.domain.User;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.IntrospectRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LoginRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserCreateRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserDeleteRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserUpdateRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.IntrospectResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.LoginResponse;
@@ -24,5 +25,5 @@ public interface UserService {
     UserResponse createUser(UserCreateRequest request);   
     UserResponse updateUser(UserUpdateRequest request);
     List<UserResponse> getAllUsers();
-    UserResponse deleteUser(Long id);
+    UserResponse deleteUser(UserDeleteRequest request);
 }

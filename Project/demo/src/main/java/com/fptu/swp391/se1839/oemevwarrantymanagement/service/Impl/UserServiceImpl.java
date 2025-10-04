@@ -18,6 +18,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.domain.User;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.IntrospectRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LoginRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserCreateRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserDeleteRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserUpdateRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.IntrospectResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.LoginResponse;
@@ -123,8 +124,6 @@ public class UserServiceImpl implements UserService {
         );
     }
 
-
-
     private String generaToken(String user) {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
@@ -144,8 +143,8 @@ public class UserServiceImpl implements UserService {
         }
     }
     @Override
-    public UserResponse deleteUser(Long id) {
-        User user = userRepository.findById(id)
+    public UserResponse deleteUser(UserDeleteRequest request) {
+        User user = userRepository.findById(request.getId())
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
         user.setStatus(User.Status.INACTIVE);
         User saved = userRepository.save(user);
