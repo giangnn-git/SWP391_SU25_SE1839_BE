@@ -4,6 +4,8 @@ import java.text.ParseException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,8 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.domain.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.IntrospectRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LoginRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserCreateRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.IntrospectResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.LoginResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.UserResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.UserService;
 import com.nimbusds.jose.JOSEException;
 
@@ -25,6 +29,7 @@ import lombok.experimental.FieldDefaults;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "https://orthopterous-unwieldable-kristal.ngrok-free.dev")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = false)
 public class UserController {
 
@@ -48,5 +53,14 @@ public class UserController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/users")
+    @PreAuthorize("hasAuthority('admin')")
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(
+            @Valid @RequestBody UserCreateRequest request) {
+        
+        UserResponse createdUser = employeeService.createUser(request);
+        var result = new ApiResponse<>(HttpStatus.CREATED, "User created successfully", createdUser, null);
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
+    }
 }
 

@@ -1,7 +1,6 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
 
-import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -9,38 +8,34 @@ import java.util.Date;
 import java.util.NoSuchElementException;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.fptu.swp391.se1839.oemevwarrantymanagement.domain.ServiceCenter;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.domain.User;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.IntrospectRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LoginRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserCreateRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.IntrospectResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.LoginResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.UserResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCenterRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehicleRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.service.UserService;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.KeyLengthException;
 import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import jakarta.validation.Valid;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.domain.User;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.IntrospectRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LoginRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.IntrospectResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.LoginResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.service.UserService;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +43,9 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.service.UserService;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final ServiceCenterRepository serviceCenterRepository;
+    private final VehicleRepository vehicleRepository;
+
     private final PasswordEncoder passwordEncoder;
 
     public User handdleFindByEmailOrPhone(String input) {
@@ -86,6 +84,46 @@ public class UserServiceImpl implements UserService {
                 .status(verrfied && expityDate.after(new Date()))
                 .build();
     }
+
+    // Create new user.
+
+    @Override
+    public UserResponse createUser(UserCreateRequest request) {
+        User user = new User();
+        user.setEmail(request.getEmail());
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email is existed");
+        }
+        user.setPhoneNumber(request.getPhoneNumber());
+        if (userRepository.findByPhoneNumber(user.getPhoneNumber()).isPresent()) {
+            throw new IllegalArgumentException("Phone number is existed");
+        }        
+        user.setName(request.getName());       
+        user.setRole(User.Role.valueOf(request.getRole().toUpperCase()));
+        user.setStatus(User.Status.ACTIVE);
+        ServiceCenter sc = serviceCenterRepository.findById(request.getServiceCenterId())
+            .orElseThrow(() -> new RuntimeException("ServiceCenter not found"));
+    user.setServiceCenter(sc);
+
+
+        // encoder
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        User saved = userRepository.save(user);
+
+        return new UserResponse(
+                saved.getId(),
+                saved.getEmail(),
+                saved.getName(),
+                saved.getPhoneNumber(),
+                saved.getRole(),
+                saved.getStatus(),
+                saved.getServiceCenter().getId()
+
+        );
+    }
+
+
 
     private String generaToken(String user) {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);

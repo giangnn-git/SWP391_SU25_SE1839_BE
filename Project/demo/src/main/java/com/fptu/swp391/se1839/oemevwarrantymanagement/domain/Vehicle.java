@@ -38,8 +38,8 @@ public class Vehicle {
     @Column(nullable = false)
     private LocalDate purchaseDate = LocalDate.now();
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "customerId", nullable = false)
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "customerId", nullable = true)
     private Customer customer;
 
     @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)

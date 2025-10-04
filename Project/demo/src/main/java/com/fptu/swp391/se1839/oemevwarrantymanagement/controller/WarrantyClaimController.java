@@ -6,6 +6,7 @@ import java.util.NoSuchElementException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +25,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.service.WarrantyClaimServi
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "https://orthopterous-unwieldable-kristal.ngrok-free.dev")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class WarrantyClaimController {
 
