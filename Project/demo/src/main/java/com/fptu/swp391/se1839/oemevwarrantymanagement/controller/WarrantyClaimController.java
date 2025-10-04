@@ -6,21 +6,21 @@ import java.util.NoSuchElementException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.springframework.security.oauth2.jwt.Jwt;
-
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.domain.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.domain.User;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryClaimsResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.UserService;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.WarrantyClaimService;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 
 @RestController
 @RequestMapping("/api")
@@ -38,7 +38,7 @@ public class WarrantyClaimController {
         String email = jwt.getSubject();
 
         // Lấy user từ database
-        User user = this.userService.handdleFindByEmailOrPhone(email);
+        User user = this.userService.handlleFindByEmailOrPhone(email);
 
         if (user == null) {
             throw new NoSuchElementException("User doesn't exist");

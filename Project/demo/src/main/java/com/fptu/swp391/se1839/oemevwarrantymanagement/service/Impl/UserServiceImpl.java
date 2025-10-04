@@ -4,7 +4,9 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -16,12 +18,12 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.domain.User;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.IntrospectRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LoginRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserCreateRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserUpdateRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.IntrospectResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.LoginResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.UserResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCenterRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehicleRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.UserService;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -44,11 +46,10 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final ServiceCenterRepository serviceCenterRepository;
-    private final VehicleRepository vehicleRepository;
 
     private final PasswordEncoder passwordEncoder;
-
-    public User handdleFindByEmailOrPhone(String input) {
+    @Override
+    public User handlleFindByEmailOrPhone(String input) {
         return this.userRepository.findByEmailOrPhoneNumber(input, input)
                 .orElseThrow(() -> new NoSuchElementException("Email or Phone isn't correct"));
     }
@@ -105,7 +106,6 @@ public class UserServiceImpl implements UserService {
             .orElseThrow(() -> new RuntimeException("ServiceCenter not found"));
     user.setServiceCenter(sc);
 
-
         // encoder
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
@@ -143,6 +143,81 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException(e);
         }
     }
+    @Override
+    public UserResponse deleteUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+        user.setStatus(User.Status.INACTIVE);
+        User saved = userRepository.save(user);
+        return new UserResponse(
+                saved.getId(),
+                saved.getEmail(),
+                saved.getName(),
+                saved.getPhoneNumber(),
+                saved.getRole(),
+                saved.getStatus(),
+                saved.getServiceCenter().getId()
+        );
+    }
 
+
+    @Override
+    public UserResponse updateUser(UserUpdateRequest request) {
+        User user = userRepository.findById(request.getId())
+        .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        if (userRepository.findByEmail(request.getEmail()).isPresent() && !user.getEmail().equals(request.getEmail())) {
+            throw new IllegalArgumentException("Email is already in use by another user");
+        }
+        user.setEmail(request.getEmail());
+        user.setName(request.getName());       
+        
+        if (request.getRole() != null && !request.getRole().isEmpty()) {
+            user.setRole(User.Role.valueOf(request.getRole().toUpperCase()));
+        }
+        if (request.getStatus() != null) {
+            user.setStatus(User.Status.valueOf(request.getStatus().name().toUpperCase()));
+        }
+        ServiceCenter sc = serviceCenterRepository.findById(request.getServiceCenterId())
+            .orElseThrow(() -> new RuntimeException("ServiceCenter not found"));
+        user.setServiceCenter(sc);
+
+        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        // Update phone number if provided
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().isEmpty()) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+
+        User saved = userRepository.save(user);
+
+        return new UserResponse(
+                saved.getId(),
+                saved.getEmail(),
+                saved.getName(),
+                saved.getPhoneNumber(),
+                saved.getRole(),
+                saved.getStatus(),
+                saved.getServiceCenter().getId()
+        );
+    }    
+    @Override
+    public List<UserResponse> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        List<UserResponse> userRes = new ArrayList<>();
+        for (User user : users) {
+            userRes.add(new UserResponse(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getName(),
+                        user.getPhoneNumber(),
+                        user.getRole(),
+                        user.getStatus(),
+                        user.getServiceCenter().getId())
+                        );
+        }
+        return userRes;
+    }
 }
-
