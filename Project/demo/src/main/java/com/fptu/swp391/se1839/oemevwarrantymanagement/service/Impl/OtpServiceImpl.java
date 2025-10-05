@@ -1,0 +1,73 @@
+package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.LocalDateTime;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.User;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.UserOtp;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserOtpRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class OtpServiceImpl {
+
+    @Autowired
+    private UserOtpRepository otpRepository;
+
+    @Autowired
+    private JavaMailSender mailSender;
+
+    // Gửi OTP
+    public void sendOtp(User user) {
+        String otp = String.valueOf((int) (Math.random() * 900000) + 100000); // 6 chữ số
+
+        // Lưu OTP vào DB
+        UserOtp userOtp = new UserOtp();
+        userOtp.setEmail(user.getEmail());
+        userOtp.setPhoneNumber(user.getPhoneNumber());
+        userOtp.setOtp(otp);
+        userOtp.setExpiry(LocalDateTime.now().plusMinutes(5));
+        otpRepository.save(userOtp);
+
+        // Gửi Email nếu có email
+        if (user.getEmail() != null && !user.getEmail().isEmpty()) {
+            sendOtpEmail(user.getEmail(), otp);
+        }
+
+        // DEV log
+        log.info("OTP for {} / {} is {}", user.getEmail(), user.getPhoneNumber(), otp);
+    }
+
+    private void sendOtpEmail(String email, String otp) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject("Your OTP Code");
+        message.setText("Your OTP is: " + otp + "\nIt will expire in 5 minutes.");
+        mailSender.send(message);
+    }
+
+    public boolean verifyOtp(String emailOrPhone, String otp) {
+        UserOtp userOtp = otpRepository.findByOtp(otp).stream()
+                .filter(u -> emailOrPhone.equals(u.getEmail()) || emailOrPhone.equals(u.getPhoneNumber()))
+                .findFirst().orElse(null);
+
+        if (userOtp != null && userOtp.getExpiry().isAfter(LocalDateTime.now())) {
+            otpRepository.delete(userOtp); // xóa sau khi dùng
+            return true;
+        }
+        return false;
+    }
+}

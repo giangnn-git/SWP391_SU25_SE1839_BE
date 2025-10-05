@@ -1,0 +1,114 @@
+package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.FieldDefaults;
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@Entity
+@Table(name = "User")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotBlank(message = "Name cannot be blank")
+    @Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
+    private String name;
+
+    @Email(message = "Email is not valid", regexp = "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$")
+    @NotEmpty(message = "Email cannot be empty")
+    private String email;
+
+    @NotBlank(message = "Phone number cannot be blank")
+    @Pattern(regexp = "\\d{10}", message = "Phone number must contain exactly 10 digits")
+    private String phoneNumber;
+
+    @NotBlank(message = "Password cannot be blank")
+    @Size(min = 6, message = "Password must have at least 6 characters")
+    private String password;
+
+    @Column(length = 50)
+    private String provider; // "LOCAL" hoặc "GOOGLE"
+
+    @Column(length = 500)
+    private String avatar;
+
+    private boolean active;
+
+    public enum Role {
+        ADMIN, TECHNICIAN, MANAGER, STAFF, CUSTOMER
+    }
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Role role;
+
+    public enum Status {
+        ACTIVE, INACTIVE, SUSPENDED
+    }
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Status status;
+
+    @ManyToOne
+    @JoinColumn(name = "serviceCenterId", nullable = false)
+    private ServiceCenter serviceCenter;
+
+    @OneToMany(mappedBy = "technical")
+    @Builder.Default
+    private Set<RepairOrder> repairOrders = new HashSet<>();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof User))
+            return false;
+        User user = (User) o;
+        return id != null && id.equals(user.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" + "id=" + id + ", name='" + name + '\'' + ", email='" + email + '\'' + ", phoneNumber='"
+                + phoneNumber + '\'' + ", role=" + role + ", status=" + status + ", serviceCenterId="
+                + (serviceCenter != null ? serviceCenter.getId() : null) + ", repairOrderCount="
+                + (repairOrders != null ? repairOrders.size() : 0) + '}';
+    }
+}
