@@ -29,9 +29,10 @@ import lombok.experimental.FieldDefaults;
 public class SecurityConfig {
 
     private final String[] PUBLIC_ENDPOINTS = {
-            "/auth/login", "/auth/verify-otp", "/auth/introspect", "/api/dashboard/summary", "/auth/logout",
+            "/auth/login", "/auth/verify-otp", "/auth/token", "/auth/introspect", "/api/dashboard/summary",
+            "/auth/logout",
             "/auth/refesh",
-            "/api/categories", "/api/parts", "/api/claims", "/auth/users", "/api/customers"
+            "/api/categories", "/api/parts", "/api/claims", "/auth/users", "/api/customers", "/api/repairOrders"
     };
 
     private CustomerJwtDecoder customerJwtDecoder;
@@ -47,7 +48,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors().and()
+                .cors(cors -> {
+                }) // hoặc cors(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()

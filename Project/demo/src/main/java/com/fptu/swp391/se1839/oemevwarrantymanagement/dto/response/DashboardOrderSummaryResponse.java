@@ -14,8 +14,8 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DashboardOrderSummaryResponse {
     private long countOrderInOneWeek;
-    private long differenceOneWeek;
-    private long completeOneMonth;
-    private long differenceOneMonth;
+    private double differenceOneWeek;
+    private double completeOneMonth;
+    private double differenceOneMonth;
     private boolean status;
 }

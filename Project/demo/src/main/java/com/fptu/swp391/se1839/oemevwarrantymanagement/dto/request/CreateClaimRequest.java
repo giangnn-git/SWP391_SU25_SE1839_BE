@@ -18,5 +18,6 @@ public class CreateClaimRequest {
     private String description;
     private int mileage;
     private String vin;
+    private String status;
     private Set<PartClaimRequest> partClaims;
 }

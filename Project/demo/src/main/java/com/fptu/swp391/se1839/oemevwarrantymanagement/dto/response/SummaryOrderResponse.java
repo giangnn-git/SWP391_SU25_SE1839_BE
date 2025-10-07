@@ -12,8 +12,10 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LoginResponse {
-    // private String message;
-    private String token;
+public class SummaryOrderResponse {
+    private SummaryItemResponse active;
+    private SummaryItemResponse waitting;
+    private SummaryItemResponse complete;
+    private SummaryItemResponse avgComplete;
     private boolean status;
 }

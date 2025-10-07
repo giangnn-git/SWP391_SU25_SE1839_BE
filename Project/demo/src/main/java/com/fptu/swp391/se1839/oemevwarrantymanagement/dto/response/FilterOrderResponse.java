@@ -1,6 +1,4 @@
-package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
-
-import java.time.LocalDate;
+package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -14,7 +12,11 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class FilterClaimRequest {
-    private String keyword;
-    private String status;
+public class FilterOrderResponse {
+    private int prodcutYear;
+    private String modelName;
+    private String vin;
+    private String techinal;
+    private double percentInProcess;
+    private boolean status;
 }

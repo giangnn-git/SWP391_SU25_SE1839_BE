@@ -1,4 +1,4 @@
-package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
+package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -12,8 +12,9 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LoginResponse {
-    // private String message;
-    private String token;
-    private boolean status;
+public class EmailDetailsRequest {
+    private String recipient;
+    private String subject;
+    private String messageBody;
+    private String attachment;
 }

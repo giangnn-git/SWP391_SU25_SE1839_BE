@@ -2,6 +2,7 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,16 +15,20 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserCreateRequest {
+public class UserUpdateRequest {
     @Email
     @NotBlank
     private String email;
 
     @NotBlank
     private String name;
-
-    @NotBlank
+    @Pattern(regexp = "\\d{10}", message = "Phone number must contain exactly 10 digits")
     private String phoneNumber;
     private String role;
     private Long serviceCenterId;
+    private Status status;
+
+    public enum Status {
+        ACTIVE, INACTIVE, SUSPENDED
+    }
 }

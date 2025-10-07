@@ -1,5 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
+import java.util.List;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,8 +14,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LoginResponse {
-    // private String message;
-    private String token;
-    private boolean status;
+public class OrderDashboardResponse {
+    private SummaryOrderResponse sor;
+    private List<FilterOrderResponse> fors;
 }

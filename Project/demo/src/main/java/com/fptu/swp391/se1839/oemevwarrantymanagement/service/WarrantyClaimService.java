@@ -6,9 +6,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreateClaimRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.FilterRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ClaimDashboardResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CreateClaimResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardClaimSummaryResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryClaimResponse;
 
 @Service
 public interface WarrantyClaimService {
@@ -19,5 +20,5 @@ public interface WarrantyClaimService {
     CreateClaimResponse handleCreateClaim(CreateClaimRequest request, long serviceCenterId, MultipartFile[] attachments)
             throws IOException;
 
-    SummaryClaimResponse handleSummaryClaim(long serviceCenterId);
+    ClaimDashboardResponse handleClaimDashboard(long serviceCenterId, FilterRequest request);
 }

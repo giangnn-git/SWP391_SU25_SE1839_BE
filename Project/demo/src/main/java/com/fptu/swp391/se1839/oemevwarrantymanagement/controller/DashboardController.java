@@ -2,7 +2,6 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.controller;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,9 +15,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardResp
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardClaimSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardOrderSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ApiResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.User;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairOrderService;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.service.UserService;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.WarrantyClaimService;
 
 import lombok.AccessLevel;
@@ -32,16 +29,11 @@ import lombok.experimental.FieldDefaults;
 public class DashboardController {
     private final RepairOrderService repairOrderService;
     private final WarrantyClaimService warrantyClaimService;
-    private final UserService userService;
 
     @GetMapping("/summary")
     public ResponseEntity<ApiResponse<DashboardResponse>> getDashboardSummary(@AuthenticationPrincipal Jwt jwt) {
-        String account = jwt.getSubject();
-        User user = userService.handdleFindByEmailOrPhone(account);
-        if (user == null)
-            throw new NoSuchElementException("User doesn't exist");
 
-        Long serviceCenterId = user.getServiceCenter() != null ? user.getServiceCenter().getId() : null;
+        Long serviceCenterId = Long.parseLong(jwt.getClaim("serviceCenterId").toString());
 
         DashboardOrderSummaryResponse orderSummary = repairOrderService.findSunSummaryOrder(serviceCenterId);
         DashboardClaimSummaryResponse claimSummary = warrantyClaimService.handleSummaryClaims(serviceCenterId);

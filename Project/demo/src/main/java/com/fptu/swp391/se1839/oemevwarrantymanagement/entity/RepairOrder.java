@@ -1,6 +1,6 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -44,15 +44,16 @@ public class RepairOrder {
     private WarrantyClaim warrantyClaim;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "userId", nullable = false)
+    @JoinColumn(name = "userId")
     private User technical;
 
-    LocalDate startDate;
-    private LocalDate endDate;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private OrderStatus status;// = OrderStatus.PENDING;
+    @Builder.Default
+    private OrderStatus status = OrderStatus.WAITING;
 
     @OneToMany(mappedBy = "repairOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -63,7 +64,7 @@ public class RepairOrder {
     private Set<SCExpense> scExpenses = new HashSet<>();
 
     public enum OrderStatus {
-        PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+        WAITING, PENDING, IN_PROGRESS, COMPLETED, CANCELLED
     }
 
     @Override

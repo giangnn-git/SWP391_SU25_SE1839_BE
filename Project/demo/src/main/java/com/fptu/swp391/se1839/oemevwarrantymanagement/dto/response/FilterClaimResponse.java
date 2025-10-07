@@ -15,12 +15,12 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class FilterClaimResponse {
-    private int productYear;
+    private int prodcutYear;
     private String modelName;
     private String vin;
     private String userName;
     private String description;
     private LocalDate claimDate;
-    private int price;
+    private double price;
     private boolean status;
 }

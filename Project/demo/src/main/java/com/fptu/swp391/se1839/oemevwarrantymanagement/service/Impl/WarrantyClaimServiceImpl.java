@@ -16,30 +16,35 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreateClaimRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.FilterRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.PartClaimRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ClaimDashboardResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CreateClaimResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardClaimSummaryResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.FilterClaimResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryClaimResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryItemResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ClaimAttachment;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Model;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Part;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartClaim;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartPriceHistory;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ServiceCenter;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.User;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyClaim;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartPriceHistoryRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCenterRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehicleRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.WarrancyClaimRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.*;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.WarrantyClaimService;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class WarrantyClaimServiceImpl implements WarrantyClaimService {
-        private final WarrancyClaimRepository warrancyClaimRepository;
+
+        private final UserRepository userRepository;
+        private final ModelRepository modelRepository;
+        private final WarrantyClaimRepository warrancyClaimRepository;
         private final PartRepository partRepository;
         private final VehicleRepository vehicleRepository;
         private final ServiceCenterRepository serviceCenterRepository;
@@ -56,13 +61,11 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                 .build();
         }
 
-        private Vehicle getVehicleByVin(String vin) {
-                Vehicle vehicle = this.vehicleRepository.findByVin(vin);
-                if (vehicle == null) {
-                        throw new NoSuchElementException("Vehicle not found with vin " + vin);
-                }
-                return vehicle;
-        }
+    private Vehicle getVehicleByVin(String vin) {
+        Vehicle vehicle = this.vehicleRepository.findByVin(vin)
+                .orElseThrow(() -> new NoSuchElementException("Vehicle not found with vin " + vin));
+        return vehicle;
+    }
 
         private ServiceCenter getServiceCenterById(long id) {
                 return this.serviceCenterRepository.findById(id)
@@ -112,8 +115,17 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                 .mileage(request.getMileage())
                                 .vehicle(getVehicleByVin(request.getVin()))
                                 .serviceCenter(getServiceCenterById(serviceCenterId))
-                                .claimAttachments(new ArrayList<>()) // 🚀 đảm bảo list luôn tồn tại
+                                .claimAttachments(new ArrayList<>())
+                                .repairOrders(new HashSet<>())
                                 .build();
+
+                if (request.getStatus() != null) {
+                        WarrantyClaim.ClaimPriority priorityEnum = WarrantyClaim.ClaimPriority
+                                        .valueOf(request.getStatus().toUpperCase());
+                        warrantyClaim.setPriority(priorityEnum);
+                } else {
+                        warrantyClaim.setPriority(WarrantyClaim.ClaimPriority.NORMAL); // default
+                }
 
                 warrantyClaim.setPartClaims(buildPartClaims(request.getPartClaims(), warrantyClaim));
 
@@ -138,8 +150,13 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                         }
                 }
 
-                this.warrancyClaimRepository.save(warrantyClaim);
+                RepairOrder ro = RepairOrder.builder()
+                                .warrantyClaim(warrantyClaim)
+                                .build();
 
+                warrantyClaim.getRepairOrders().add(ro);
+
+                warrancyClaimRepository.save(warrantyClaim);
                 return CreateClaimResponse.builder()
                                 .sccuess("success")
                                 .message("Registered claim successfully")
@@ -154,8 +171,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 return warrancyClaimRepository.countByServiceCenterIdAndStatus(serviceCenterId, status);
         }
 
-        private double calculateEstimatedCost() {
-                List<WarrantyClaim> warrantyClaims = warrancyClaimRepository.findAll();
+        private double calculateEstimatedCost(List<WarrantyClaim> warrantyClaims) {
                 double price = 0;
                 for (WarrantyClaim wc : warrantyClaims) {
                         for (PartClaim pc : wc.getPartClaims()) {
@@ -172,12 +188,11 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 return price;
         }
 
-        @Override
-        public SummaryClaimResponse handleSummaryClaim(long serviceCenterId) {
+        private SummaryClaimResponse handleSummaryClaim(long serviceCenterId, List<WarrantyClaim> warrantyClaims) {
                 long countAll = getAllClaims(serviceCenterId);
                 long countInProcess = getClaimsByStatus(serviceCenterId, WarrantyClaim.ClaimStatus.PENDING);
                 long countSuccess = getClaimsByStatus(serviceCenterId, WarrantyClaim.ClaimStatus.APPROVED);
-                double totalPrice = calculateEstimatedCost();
+                double totalPrice = calculateEstimatedCost(warrantyClaims);
 
                 return SummaryClaimResponse.builder()
                                 .total(new SummaryItemResponse(countAll, "All claims"))
@@ -188,4 +203,78 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                 .build();
         }
 
+        private List<FilterClaimResponse> handleFilterClaim(List<WarrantyClaim> wcList) {
+                List<FilterClaimResponse> fcrList = new ArrayList<>();
+                FilterClaimResponse fcr = new FilterClaimResponse();
+                for (int i = 0; i < wcList.size(); i++) {
+                        User user = this.userRepository
+                                        .findById(getVehicleByVin(wcList.get(i).getVehicle().getVin()).getCustomer()
+                                                        .getId())
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+                        String name = user.getName();
+
+                        Model model = this.modelRepository
+                                        .findById(getVehicleByVin(wcList.get(i).getVehicle().getVin()).getModel()
+                                                        .getId())
+                                        .orElseThrow(() -> new RuntimeException("Model not found"));
+                        String modelName = model.getName();
+
+                        fcr = FilterClaimResponse.builder()
+                                        .claimDate(wcList.get(i).getClaimDate())
+                                        .description(wcList.get(i).getDescription())
+                                        .price(calculateEstimatedCost(wcList))
+                                        .status(true)
+                                        .userName(name)
+                                        .prodcutYear(getVehicleByVin(wcList.get(i).getVehicle().getVin())
+                                                        .getProductYear())
+                                        .vin(getVehicleByVin(wcList.get(i).getVehicle().getVin()).getVin())
+                                        .modelName(modelName)
+                                        .build();
+                        fcrList.add(fcr);
+                }
+                return fcrList;
+        }
+
+        @Override
+        public ClaimDashboardResponse handleClaimDashboard(long serviceCenterId, FilterRequest request) {
+                List<WarrantyClaim> wcList = new ArrayList<>();
+                List<FilterClaimResponse> fcrList = new ArrayList<>();
+                SummaryClaimResponse scr = new SummaryClaimResponse();
+                ServiceCenter sc = getServiceCenterById(serviceCenterId);
+                WarrantyClaim.ClaimStatus statusEnum = WarrantyClaim.ClaimStatus
+                                .valueOf(request.getStatus().toUpperCase());
+
+                if (request.getKeyword() == null && request.getStatus() == null) {
+                        wcList = this.warrancyClaimRepository.findByServiceCenterId(sc.getId());
+                        fcrList = handleFilterClaim(wcList);
+                        scr = handleSummaryClaim(sc.getId(), wcList);
+                } else if (request.getKeyword() == null && request.getStatus() != null) {
+                        wcList = this.warrancyClaimRepository.findByServiceCenterIdAndStatus(sc.getId(), statusEnum);
+                        fcrList = handleFilterClaim(wcList);
+                        scr = handleSummaryClaim(sc.getId(), wcList);
+                } else if (request.getKeyword() != null && request.getStatus() == null) {
+                        wcList = this.warrancyClaimRepository.findByServiceCenterIdAndVehicleVin(sc.getId(),
+                                        request.getKeyword());
+                        if (wcList == null) {
+                                wcList = this.warrancyClaimRepository.findByCustomerName(sc.getId(),
+                                                request.getKeyword());
+                        }
+                        fcrList = handleFilterClaim(wcList);
+                        scr = handleSummaryClaim(sc.getId(), wcList);
+                } else {
+                        wcList = this.warrancyClaimRepository.findByServiceCenterIdAndVehicleVinAndStatus(sc.getId(),
+                                        request.getKeyword(), statusEnum);
+                        if (wcList == null) {
+                                wcList = this.warrancyClaimRepository.findByServiceCenterIdAndCustomerNameAndStatus(
+                                                sc.getId(),
+                                                request.getKeyword(), statusEnum);
+                        }
+                        fcrList = handleFilterClaim(wcList);
+                        scr = handleSummaryClaim(sc.getId(), wcList);
+                }
+                return ClaimDashboardResponse.builder()
+                                .fcr(fcrList)
+                                .scr(scr)
+                                .build();
+        }
 }

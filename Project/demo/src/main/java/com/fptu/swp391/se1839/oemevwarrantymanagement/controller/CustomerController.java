@@ -8,10 +8,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CustomerRegisterRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CustomerRegisterResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ApiResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Customer;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.CustomerService;
 
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -25,10 +26,11 @@ public class CustomerController {
     private final CustomerService customerService;
 
     @PostMapping("/customers")
-    public ResponseEntity<ApiResponse<?>> registerCustomer(@RequestBody CustomerRegisterRequest req) {
-        Customer customer = customerService.registerCustomer(req);
-        var result = ApiResponse.builder()
-                .status(HttpStatus.OK.toString())
+    public ResponseEntity<ApiResponse<CustomerRegisterResponse>> registerCustomer(
+            @Valid @RequestBody CustomerRegisterRequest req) {
+        CustomerRegisterResponse customer = customerService.registerCustomer(req);
+        var result = ApiResponse.<CustomerRegisterResponse>builder()
+                .status(HttpStatus.CREATED.toString())
                 .message("Create customer successfully")
                 .data(customer)
                 .build();

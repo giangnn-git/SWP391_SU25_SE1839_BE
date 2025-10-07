@@ -53,6 +53,9 @@ public class User {
     @Pattern(regexp = "\\d{10}", message = "Phone number must contain exactly 10 digits")
     private String phoneNumber;
 
+    @Column(nullable = false)
+    private boolean requiresPasswordChange;
+
     @NotBlank(message = "Password cannot be blank")
     @Size(min = 6, message = "Password must have at least 6 characters")
     private String password;

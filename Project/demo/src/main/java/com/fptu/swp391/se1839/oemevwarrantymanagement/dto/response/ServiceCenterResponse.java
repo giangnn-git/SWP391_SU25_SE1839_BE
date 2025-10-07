@@ -12,8 +12,10 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LoginResponse {
-    // private String message;
-    private String token;
-    private boolean status;
+public class ServiceCenterResponse {
+    private Long id;
+    private String name;
+    private String address;
+    private String phoneNumber;
+
 }
