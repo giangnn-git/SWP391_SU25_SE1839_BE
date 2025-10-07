@@ -32,7 +32,12 @@ public class SecurityConfig {
             "/auth/login", "/auth/verify-otp", "/auth/token", "/auth/introspect", "/api/dashboard/summary",
             "/auth/logout",
             "/auth/refesh",
-            "/api/categories", "/api/parts", "/api/claims", "/auth/users", "/api/customers", "/api/repairOrders"
+            "/auth//forgot-password", "/auth/{userID}/change-password", "/auth/users/active/{userID}",
+            "/auth//users/search", "/auth//users/inactive/{userID}",
+            "/auth/user", "/auth//users/{userID}",
+            "/api/categories", "/api/parts", "/api/claims", "/auth/users", "/api/temp-file/{filename}",
+            "/api/repairOrders",
+            "/api/customers", "/api/servicecenters"
     };
 
     private CustomerJwtDecoder customerJwtDecoder;
