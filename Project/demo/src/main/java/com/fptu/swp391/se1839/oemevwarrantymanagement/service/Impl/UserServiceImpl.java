@@ -13,20 +13,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSObject;
-import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.Payload;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jose.crypto.MACVerifier;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 import com.fptu.swp391.se1839.oemevwarrantymanagement.Utilities.PasswordGeneration;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangePasswordRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.EmailDetailsRequest;
@@ -51,6 +37,19 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCenterRe
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.EmailService;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.UserService;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -93,6 +92,9 @@ public class UserServiceImpl implements UserService {
         return LoginResponse.builder()
                 .token(token)
                 .status(true)
+                .id(user.getId())
+                .name(user.getName())
+                .requiresPasswordChange(user.isRequiresPasswordChange())
                 .build();
     }
 
@@ -158,6 +160,8 @@ public class UserServiceImpl implements UserService {
                 .issuer("devteria.com")
                 .issueTime(new Date())
                 .expirationTime(Date.from(Instant.now().plus(8, ChronoUnit.HOURS)))
+                .claim("id", user.getId())
+                .claim("role", user.getRole().toString())
                 .claim("serviceCenterId", user.getServiceCenter().getId())
                 .jwtID(UUID.randomUUID().toString())
                 .build();
@@ -227,7 +231,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse deleteUser(Long id) {
+    public UserResponse deleteUser(Long id, Long ownId) {
+        if (id.equals(ownId)) {
+            throw new IllegalArgumentException("You cannot deactivate your own account.");
+        }
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
         user.setStatus(User.Status.INACTIVE);
@@ -396,16 +403,19 @@ public class UserServiceImpl implements UserService {
         emailService.sendHtmlMail(details);
     }
 
-    public UserResponse changePassword(Long id, ChangePasswordRequest request) {
-        User user = userRepository.findById(id)
+    @Override
+    public UserResponse changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Old password is incorrect");
         }
-        user.setRequiresPasswordChange(false);
+
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setRequiresPasswordChange(false);
         userRepository.save(user);
+
         return new UserResponse(
                 user.getId(),
                 user.getEmail(),
@@ -413,7 +423,8 @@ public class UserServiceImpl implements UserService {
                 user.getPhoneNumber(),
                 user.getRole(),
                 user.getStatus(),
-                user.getServiceCenter().getId());
+                user.getServiceCenter().getId()
+        );
     }
 
     @Override
@@ -428,8 +439,9 @@ public class UserServiceImpl implements UserService {
         }
         String newPassword = passwordGeneration.generateSimplePassword();
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setRequiresPasswordChange(true);
         userRepository.save(user);
-        user.setRequiresPasswordChange(false);
+        
         EmailDetailsRequest details = new EmailDetailsRequest();
         details.setRecipient(user.getEmail());
         details.setSubject("Password Reset - OEM EV Warranty");

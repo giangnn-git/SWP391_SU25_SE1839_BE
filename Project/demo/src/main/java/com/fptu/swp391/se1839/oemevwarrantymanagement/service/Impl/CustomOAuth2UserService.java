@@ -40,7 +40,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     newUser.setProvider("GOOGLE"); // ← Đánh dấu là Google user
                     newUser.setPassword(null); // ← Không cần password
                     newUser.setActive(true);
-                    newUser.setRole(Role.CUSTOMER);
+                    newUser.setRole(Role.SC_STAFF);
                     return userRepository.save(newUser);
                 });
 

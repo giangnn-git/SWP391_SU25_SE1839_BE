@@ -12,11 +12,10 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LoginResponse {
-    // private String message;
-    private String token;
-    private boolean status;
+public class PolicyResponse {
     private Long id;
     private String name;
-    private Boolean requiresPasswordChange;
+    private int durationPeriod;
+    private int mileageLimit;
+    private String description;
 }

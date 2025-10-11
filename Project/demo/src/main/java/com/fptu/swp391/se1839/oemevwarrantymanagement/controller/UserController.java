@@ -22,7 +22,6 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ForgotPassword
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.IntrospectRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LoginRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LogoutRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.OtpRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.RefeshTokenRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserCreateRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserSearchRequest;
@@ -43,201 +42,184 @@ import lombok.experimental.FieldDefaults;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = false)
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class UserController {
 
-        private final UserService employeeService;
+    private final UserService employeeService;
 
-        @PostMapping("/token")
-        public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
-                LoginResponse user = this.employeeService.authenticate(request);
-                var result = ApiResponse.<LoginResponse>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("Input user and password correct")
-                                .data(user)
-                                .build();
-                return ResponseEntity.ok(result);
+    @PostMapping("/token")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
+        LoginResponse user = this.employeeService.authenticate(request);
+        var result = ApiResponse.<LoginResponse>builder()
+                .status(HttpStatus.OK.toString())
+                .message("Input user and password correct")
+                .data(user)
+                .build();
+        return ResponseEntity.ok(result);
+    }
 
-        }
+    @PostMapping("/introspect")
+    public ResponseEntity<ApiResponse<IntrospectResponse>> checkToken(@RequestBody IntrospectRequest request)
+            throws JOSEException, ParseException {
+        IntrospectResponse valid = this.employeeService.inprospect(request);
+        var result = ApiResponse.<IntrospectResponse>builder()
+                .status(HttpStatus.OK.toString())
+                .message("Token introspected")
+                .data(valid)
+                .build();
+        return ResponseEntity.ok(result);
+    }
 
-        // @PostMapping("/login")
-        // public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody
-        // LoginRequest request) {
-        // LoginResponse user = this.employeeService.authenticate(request);
-        // var result = ApiResponse.<LoginResponse>builder()
-        // .status(HttpStatus.OK.toString())
-        // .message("Input user and password correct")
-        // .data(user)
-        // .build();
-        // return ResponseEntity.ok(result);
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(@RequestBody LogoutRequest request)
+            throws JOSEException, ParseException {
+        this.employeeService.handleLogout(request);
+        var result = ApiResponse.<Void>builder()
+                .status(HttpStatus.OK.toString())
+                .message("Logout successfully")
+                .data(null)
+                .build();
+        return ResponseEntity.ok(result);
+    }
 
-        // }
+    @PostMapping("/refesh")
+    public ResponseEntity<ApiResponse<OTPResponse>> refesh(@RequestBody RefeshTokenRequest request)
+            throws JOSEException, ParseException {
+        OTPResponse user = this.employeeService.handleRefeshToken(request);
+        var result = ApiResponse.<OTPResponse>builder()
+                .status(HttpStatus.OK.toString())
+                .message("Refesh token successfully")
+                .data(user)
+                .build();
+        return ResponseEntity.ok(result);
+    }
 
-        // @PostMapping("/verify-otp")
-        // public ResponseEntity<ApiResponse<OTPResponse>> verifyOtp(@RequestBody
-        // OtpRequest request) {
-        // OTPResponse verify = this.employeeService.handleVerifyOTP(request);
-        // var result = ApiResponse.<OTPResponse>builder()
-        // .status(HttpStatus.OK.toString())
-        // .message("Invalid OTP")
-        // .data(verify)
-        // .build();
-        // return ResponseEntity.ok(result);
-        // }
+    @PostMapping("/user")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody UserCreateRequest request) {
 
-        @PostMapping("/introspect")
-        public ResponseEntity<ApiResponse<IntrospectResponse>> checkToken(@RequestBody IntrospectRequest request)
-                        throws JOSEException, ParseException {
-                IntrospectResponse valid = this.employeeService.inprospect(request);
-                var result = ApiResponse.<IntrospectResponse>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("Token introspected")
-                                .data(valid)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
+        UserResponse createdUser = employeeService.createUser(request);
+        var result = ApiResponse.<UserResponse>builder()
+                .status(HttpStatus.CREATED.toString())
+                .message("User created successfully")
+                .data(createdUser)
+                .build();
+        return ResponseEntity.ok(result);
+    }
 
-        @PostMapping("/logout")
-        public ResponseEntity<ApiResponse<Void>> logout(@RequestBody LogoutRequest request)
-                        throws JOSEException, ParseException {
-                this.employeeService.handleLogout(request);
-                var result = ApiResponse.<Void>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("Logout successfully")
-                                .data(null)
-                                .build();
-                return ResponseEntity.ok(result);
+    @PutMapping("/users/{userID}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUser(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long userID,
+            @Valid @RequestBody UserUpdateRequest request) {
 
-        }
+        UserResponse updateUser = employeeService.updateUser(request, userID);
+        var result = ApiResponse.<UserResponse>builder()
+                .status(HttpStatus.OK.toString())
+                .message("User updated successfully")
+                .data(updateUser)
+                .build();
+        return ResponseEntity.ok(result);
+    }
 
-        @PostMapping("/refesh")
-        public ResponseEntity<ApiResponse<OTPResponse>> refesh(@RequestBody RefeshTokenRequest request)
-                        throws JOSEException, ParseException {
-                OTPResponse user = this.employeeService.handleRefeshToken(request);
-                var result = ApiResponse.<OTPResponse>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("Refesh token successfully")
-                                .data(user)
-                                .build();
-                return ResponseEntity.ok(result);
+    @GetMapping("/users")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers(
+            @AuthenticationPrincipal Jwt jwt) {
+        List<UserResponse> users = employeeService.getAllUsers();
+        var result = ApiResponse.<List<UserResponse>>builder()
+                .status(HttpStatus.OK.toString())
+                .message("Get all users successfully")
+                .data(users)
+                .build();
+        return ResponseEntity.ok(result);
+    }
 
-        }
+    @PatchMapping("/users/inactive/{userID}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> deleteUsers(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long userID) {
+        Long currentUserId = jwt.getClaim("id");
+        UserResponse response = employeeService.deleteUser(userID, currentUserId);
+        var result = ApiResponse.<UserResponse>builder()
+                .status(HttpStatus.OK.toString())
+                .message("User deleted successfully")
+                .data(response)
+                .build();
+        return ResponseEntity.ok(result);
+    }
 
-        @PostMapping("/user")
-        @PreAuthorize("hasAuthority('admin')")
-        public ResponseEntity<ApiResponse<UserResponse>> createUser(
-                        @Valid @RequestBody UserCreateRequest request) {
+    @GetMapping("/users/{userID}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> getUserByID(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long userID) {
+        UserResponse user = employeeService.getUserById(userID);
+        var result = ApiResponse.<UserResponse>builder()
+                .status(HttpStatus.OK.toString())
+                .message("Get user " + userID + " successfully")
+                .data(user)
+                .build();
+        return ResponseEntity.ok(result);
+    }
 
-                UserResponse createdUser = employeeService.createUser(request);
-                var result = ApiResponse.<UserResponse>builder()
-                                .status(HttpStatus.CREATED.toString())
-                                .message("User created successfully")
-                                .data(createdUser)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
+    @GetMapping("/users/search")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<List<UserResponse>>> searchUsers(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody UserSearchRequest request) {
+        List<UserResponse> userList = employeeService.searchUsers(request);
+        var result = ApiResponse.<List<UserResponse>>builder()
+                .status(HttpStatus.OK.toString())
+                .message("Users found")
+                .data(userList)
+                .build();
+        return ResponseEntity.ok(result);
+    }
 
-        @PutMapping("/users/{userID}")
-        @PreAuthorize("hasAuthority('admin')")
-        public ResponseEntity<ApiResponse<UserResponse>> updateUser(
-                        @PathVariable Long userID,
-                        @Valid @RequestBody UserUpdateRequest request) {
+    @PatchMapping("/users/active/{userID}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> restoreUser(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long userID) {
+        UserResponse user = employeeService.restoreUser(userID);
+        var result = ApiResponse.<UserResponse>builder()
+                .status(HttpStatus.OK.toString())
+                .message("restore " + userID + " successfully")
+                .data(user)
+                .build();
+        return ResponseEntity.ok(result);
+    }
 
-                UserResponse updateUser = employeeService.updateUser(request, userID);
-                var result = ApiResponse.<UserResponse>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("User updated successfully")
-                                .data(updateUser)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
+    @PostMapping("/change-password")
+    @PreAuthorize("hasAnyAuthority('ADMIN','TECHNICIAN','SC_STAFF','EVM_STAFF')")
+    public ResponseEntity<ApiResponse<UserResponse>> changePassword(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody ChangePasswordRequest request) {
 
-        @GetMapping("/users")
-        @PreAuthorize("hasAuthority('admin')")
-        public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
-                List<UserResponse> users = employeeService.getAllUsers();
-                var result = ApiResponse.<List<UserResponse>>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("Get all users successfully")
-                                .data(users)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
+        Long userID = Long.parseLong(jwt.getClaim("id").toString());
+        UserResponse updated = employeeService.changePassword(userID, request);
+        var result = ApiResponse.<UserResponse>builder()
+                .status(HttpStatus.OK.toString())
+                .message("Password changed successfully")
+                .data(updated)
+                .build();
+        return ResponseEntity.ok(result);
+    }
 
-        @PatchMapping("/users/inactive/{userID}")
-        @PreAuthorize("hasAuthority('admin')")
-        public ResponseEntity<ApiResponse<UserResponse>> deleteUsers(
-                        @PathVariable Long userID) {
-                UserResponse user = employeeService.deleteUser(userID);
-                var result = ApiResponse.<UserResponse>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("User deleted successfully")
-                                .data(user)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        String message = employeeService.forgotPassword(request);
+        var result = ApiResponse.<String>builder()
+                .status(HttpStatus.OK.toString())
+                .message("successful")
+                .data(message)
+                .build();
+        return ResponseEntity.ok(result);
+    }
 
-        @GetMapping("/users/{userID}")
-        @PreAuthorize("hasAuthority('admin')")
-        public ResponseEntity<ApiResponse<UserResponse>> getUserByID(@PathVariable Long userID) {
-                UserResponse user = employeeService.getUserById(userID);
-                var result = ApiResponse.<UserResponse>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("Get user " + userID + " successfully")
-                                .data(user)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
-
-        @GetMapping("/users/search")
-        @PreAuthorize("hasAuthority('admin')")
-        public ResponseEntity<ApiResponse<List<UserResponse>>> searchUsers(
-                        @Valid @RequestBody UserSearchRequest request) {
-                List<UserResponse> userList = employeeService.searchUsers(request);
-                var result = ApiResponse.<List<UserResponse>>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("Users found")
-                                .data(userList)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
-
-        @PatchMapping("/users/active/{userID}")
-        @PreAuthorize("hasAuthority('admin')")
-        public ResponseEntity<ApiResponse<UserResponse>> restoreUser(@PathVariable Long userID) {
-                UserResponse user = employeeService.restoreUser(userID);
-                var result = ApiResponse.<UserResponse>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("restore " + userID + " successfully")
-                                .data(user)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
-
-        @PostMapping("/{userID}/change-password")
-        @PreAuthorize("hasAnyAuthority('admin','technician','manager','staff')")
-        public ResponseEntity<ApiResponse<UserResponse>> changePassword(
-                        @AuthenticationPrincipal Jwt jwt,
-                        @PathVariable Long userID,
-                        @Valid @RequestBody ChangePasswordRequest request) {
-                String email = jwt.getSubject();
-                UserResponse updated = employeeService.changePassword(userID, request);
-                var result = ApiResponse.<UserResponse>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("Password changed successfully")
-                                .data(updated)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
-
-        @PostMapping("/forgot-password")
-        public ResponseEntity<ApiResponse<String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-                String message = employeeService.forgotPassword(request);
-                var result = ApiResponse.<String>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("successfull")
-                                .data(message)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
 }

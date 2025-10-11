@@ -1,9 +1,9 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,7 +11,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -35,9 +34,10 @@ public class PartPolicy {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToMany(mappedBy = "partPolicy")
-    @Builder.Default
-    private Set<WarrantyPolicy> warrantyPolicies = new HashSet<>();
+    @ManyToOne
+    @JoinColumn(name = "warrantyPolicyId")
+    @JsonBackReference
+    private WarrantyPolicy warrantyPolicy;
 
     @ManyToOne
     @JoinColumn(name = "partId")
@@ -45,6 +45,8 @@ public class PartPolicy {
 
     @Builder.Default
     private LocalDate startDate = LocalDate.now();
+
+    private LocalDate endDate;
 
     @Override
     public boolean equals(Object o) {
@@ -63,7 +65,11 @@ public class PartPolicy {
 
     @Override
     public String toString() {
-        return "PartPolicy{id=" + id + ", startDate=" + startDate + ", warrantyPolicyCount="
-                + (warrantyPolicies != null ? warrantyPolicies.size() : 0) + "}";
+        return "PartPolicy{id=" + id +
+                ", startDate=" + startDate +
+                ", endDate=" + endDate +
+                ", warrantyPolicyId=" + 
+                (warrantyPolicy != null ? warrantyPolicy.getId() : null) +
+                "}";
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.PartListRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartCategoryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartListResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ApiResponse;
@@ -36,11 +37,22 @@ public class PartController {
         return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/parts")
+    @GetMapping("/categories/parts")
     public ResponseEntity<ApiResponse<PartListResponse>> partFlCategory(
             @RequestBody PartListRequest request) {
         PartListResponse partListResponse = this.partService.handlePartList(request);
         var result = ApiResponse.<PartListResponse>builder()
+                .status(HttpStatus.OK.toString())
+                .message("Get part list successfully")
+                .data(partListResponse)
+                .build();
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/parts")
+    public ResponseEntity<ApiResponse<GetAllPartResponse>> getAllPart() {
+        GetAllPartResponse partListResponse = this.partService.handleGetPartList();
+        var result = ApiResponse.<GetAllPartResponse>builder()
                 .status(HttpStatus.OK.toString())
                 .message("Get part list successfully")
                 .data(partListResponse)

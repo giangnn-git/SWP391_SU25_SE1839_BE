@@ -1,5 +1,6 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -7,6 +8,7 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.PartListRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartCategoryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartListResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartResponse;
@@ -47,11 +49,29 @@ public class PartServiceImpl implements PartService {
                     .id(p.getId())
                     .description(p.getDescription())
                     .name(p.getName())
+                    .partCategory(p.getPartCategory())
                     .build();
             responseList.add(pr);
         }
         return PartListResponse.builder()
                 .partList(responseList)
                 .build();
+    }
+
+        public GetAllPartResponse handleGetPartList() {
+            List<Part> partList = this.partRepository.findAll();
+            List<PartResponse> responseList = new ArrayList<>();
+            for (Part p : partList) {
+                PartResponse pr = PartResponse.builder()
+                        .id(p.getId())
+                        .description(p.getDescription())
+                        .name(p.getName())
+                        .partCategory(p.getPartCategory())
+                        .build();
+                responseList.add(pr);
+            }
+            return GetAllPartResponse.builder()
+                    .partList(responseList)
+                    .build();
     }
 }

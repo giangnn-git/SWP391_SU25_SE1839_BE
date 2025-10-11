@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class PasswordGeneration {
+
     public String generateSimplePassword() {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
         String numbers = "0123456789";

@@ -34,6 +34,7 @@ public class CustomerController {
                 .message("Create customer successfully")
                 .data(customer)
                 .build();
-        return ResponseEntity.ok(result);
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 }
+    

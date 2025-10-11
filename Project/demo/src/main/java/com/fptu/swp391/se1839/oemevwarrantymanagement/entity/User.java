@@ -69,7 +69,7 @@ public class User {
     private boolean active;
 
     public enum Role {
-        ADMIN, TECHNICIAN, MANAGER, STAFF, CUSTOMER
+        ADMIN, TECHNICIAN, SC_STAFF, EVM_STAFF;
     }
 
     @Enumerated(EnumType.STRING)

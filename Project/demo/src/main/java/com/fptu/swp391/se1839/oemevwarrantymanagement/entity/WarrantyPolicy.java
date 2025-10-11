@@ -1,13 +1,16 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -45,9 +48,11 @@ public class WarrantyPolicy {
     @Max(value = 1000000, message = "Mileage limit cannot exceed 1,000,000 km")
     private int mileageLimit;
 
-    @ManyToOne
-    @JoinColumn(name = "partPolicyId") // Khóa ngoại trỏ sang PartPolicy
-    private PartPolicy partPolicy;
+    private String description;
+    @JsonManagedReference
+    @OneToMany(mappedBy = "warrantyPolicy")
+    @Builder.Default
+    private Set<PartPolicy> partPolicies = new HashSet<>();
 
     @Override
     public boolean equals(Object o) {
@@ -64,10 +69,4 @@ public class WarrantyPolicy {
         return Objects.hashCode(id);
     }
 
-    @Override
-    public String toString() {
-        return "WarrantyPolicy{id=" + id + ", name='" + name + '\'' + ", durationPeriod=" + durationPeriod
-                + ", mileageLimit=" + mileageLimit + ", partPolicyId="
-                + (partPolicy != null ? partPolicy.getId() : "null") + "}";
-    }
 }

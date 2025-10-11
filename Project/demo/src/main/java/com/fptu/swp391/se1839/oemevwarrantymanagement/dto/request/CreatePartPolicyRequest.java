@@ -1,20 +1,20 @@
-package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
+package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-@Data
+@Getter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class PartResponse {
-    private long id;
-    private String name;
-    private String partCategory;
-    private String description;
+public class CreatePartPolicyRequest {
+    Long partId;
+    Long warrantyPolicyId;
+    String startDate;
+    String endDate;
 }
