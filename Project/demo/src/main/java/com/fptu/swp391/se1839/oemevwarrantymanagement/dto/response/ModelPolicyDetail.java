@@ -12,13 +12,14 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LoginResponse {
-    // private String message;
-    private String token;
-    private boolean status;
-    private Long id;
-    private String name;
-    private String email;
-    private String phoneNumber;
-    private Boolean requiresPasswordChange;
+public class ModelPolicyDetail {
+    Long partId;
+    String partName;
+    Long policyId;
+    String policyName;
+    String description;
+    int durationPeriod;
+    int mileageLimit;
+    String startDate;
+    String endDate;
 }

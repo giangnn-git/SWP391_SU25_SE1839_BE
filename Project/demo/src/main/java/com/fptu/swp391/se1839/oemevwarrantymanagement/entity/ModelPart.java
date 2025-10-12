@@ -42,15 +42,6 @@ public class ModelPart {
     @JoinColumn(name = "partId", nullable = false)
     private Part part;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    @Builder.Default
-    private ModelPartStatus isMandatory = ModelPartStatus.NOTIFIED;
-
-    public enum ModelPartStatus {
-        NOTIFIED, COMPLETED
-    }
-
     // equals and hashCode
     @Override
     public boolean equals(Object o) {
@@ -71,6 +62,6 @@ public class ModelPart {
     @Override
     public String toString() {
         return "ModelPart{" + "id=" + id + ", modelId=" + (model != null ? model.getId() : null) + ", partId="
-                + (part != null ? part.getId() : null) + ", isMandatory=" + isMandatory + '}';
+                + (part != null ? part.getId() : null) +  "}";
     }
-}
+} 

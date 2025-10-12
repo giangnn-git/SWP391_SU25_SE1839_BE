@@ -84,6 +84,11 @@ public class UserServiceImpl implements UserService {
         if (!authenticated) {
             throw new IllegalArgumentException("Password isn't correct");
         }
+
+        if (user.getStatus().equals(User.Status.INACTIVE)) {
+            throw new IllegalArgumentException("User is inactive");
+        }
+
         // otpService.sendOtp(user);
         // return LoginResponse.builder()
         // .message("OTP sent to your email/phone. Please verify.")
@@ -94,6 +99,8 @@ public class UserServiceImpl implements UserService {
                 .status(true)
                 .id(user.getId())
                 .name(user.getName())
+                .email(user.getEmail())
+                .phoneNumber(user.getPhoneNumber())
                 .requiresPasswordChange(user.isRequiresPasswordChange())
                 .build();
     }
@@ -231,7 +238,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse deleteUser(Long id, Long ownId) {
+    public UserResponse deactiveUser(Long id, Long ownId) {
         if (id.equals(ownId)) {
             throw new IllegalArgumentException("You cannot deactivate your own account.");
         }
@@ -247,6 +254,25 @@ public class UserServiceImpl implements UserService {
                 saved.getRole(),
                 saved.getStatus(),
                 saved.getServiceCenter().getId());
+    }
+
+    @Override
+    public UserResponse deleteUser(Long id, Long ownId) {
+        if (id.equals(ownId)) {
+            throw new IllegalArgumentException("You cannot delete your own account.");
+        }
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+        
+        userRepository.delete(user);
+        return new UserResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getPhoneNumber(),
+                user.getRole(),
+                user.getStatus(),
+                user.getServiceCenter().getId());
     }
 
     @Override

@@ -36,6 +36,16 @@ public class Model {
     @Column(nullable = false, length = 50, unique = true)
     private String name;
 
+    @Column(name = "release_year")
+    private Integer releaseYear;
+
+    @Column(length = 255)
+    private String description;
+
+    @Column(name = "is_in_production", nullable = false)
+    @Builder.Default
+    private Boolean isInProduction = true;
+
     @OneToMany(mappedBy = "model", cascade = CascadeType.ALL)
     @Builder.Default
     private Set<Vehicle> vehicles = new HashSet<>();
@@ -61,7 +71,13 @@ public class Model {
 
     @Override
     public String toString() {
-        return "Model{id=" + id + ", name='" + name + "', vehicleCount=" + vehicles.size() + "', modelPart="
-                + modelParts.size() + "}";
+        return "Model{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", releaseYear=" + releaseYear +
+                ", isInProduction=" + isInProduction +
+                ", vehicles=" + vehicles.size() +
+                ", modelParts=" + modelParts.size() +
+                '}';
     }
 }

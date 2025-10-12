@@ -46,6 +46,8 @@ public interface UserService {
 
     UserResponse getUserById(Long id);
 
+    UserResponse deactiveUser(Long id, Long ownId);
+
     UserResponse deleteUser(Long id, Long ownId);
 
     List<UserResponse> searchUsers(UserSearchRequest request);
