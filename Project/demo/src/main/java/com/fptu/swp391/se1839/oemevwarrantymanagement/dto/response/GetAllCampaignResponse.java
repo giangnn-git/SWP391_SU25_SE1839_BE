@@ -1,5 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
+import java.util.List;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,10 +14,6 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class PartResponse {
-    private long id;
-    private String code;
-    private String name;
-    private String partCategory;
-    private String description;
+public class GetAllCampaignResponse {
+    private List<ServiceCampaignResponse> campaigns;
 }

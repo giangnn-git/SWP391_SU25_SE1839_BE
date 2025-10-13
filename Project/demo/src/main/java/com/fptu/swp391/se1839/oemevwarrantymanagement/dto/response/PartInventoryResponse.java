@@ -14,4 +14,5 @@ public class PartInventoryResponse {
     private String serviceCenterName;
     private String serviceCenterAddress;
     private int quantity;
+    private String unit;
 }

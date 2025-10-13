@@ -15,7 +15,8 @@ import lombok.experimental.FieldDefaults;
 public class PartPolicyResponse {
         Long id;
         String partName;
-        Long policyId;
+        String partCode;
+        String policyCode;
         String startDate;
         String endDate;
 }

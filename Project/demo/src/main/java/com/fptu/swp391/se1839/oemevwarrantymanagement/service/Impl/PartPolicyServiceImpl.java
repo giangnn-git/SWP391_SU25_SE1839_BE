@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePartPolicyRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartPolicyResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyCodeResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Part;
@@ -41,7 +42,8 @@ public class PartPolicyServiceImpl implements PartPolicyService {
                                 .map(p -> PartPolicyResponse.builder()
                                                 .id(p.getId())
                                                 .partName(p.getPart() != null ? p.getPart().getName() : null)
-                                                .policyId(p.getWarrantyPolicy() != null ? p.getWarrantyPolicy().getId()
+                                                .partCode(p.getPart() != null ? p.getPart().getCode() : null)
+                                                .policyCode(p.getWarrantyPolicy() != null ? p.getWarrantyPolicy().getCode()
                                                                 : null)
                                                 .startDate(p.getStartDate() != null ? p.getStartDate().format(formatter)
                                                                 : null)
@@ -76,41 +78,65 @@ public class PartPolicyServiceImpl implements PartPolicyService {
         @Override
         public PartPolicyResponse handleCreatePartPolicy(CreatePartPolicyRequest request) {
                 try {
-                        if (request.getPartId() == null || request.getWarrantyPolicyId() == null)
-                                throw new IllegalArgumentException("Part ID and Warranty Policy ID are required");
+                        if (request.getPartCode() == null || request.getPolicyCode() == null)
+                                throw new IllegalArgumentException("Part code and Policy code are required");
                         if (request.getStartDate() == null)
                                 throw new IllegalArgumentException("Start date is required");
 
-                        Part part = partRepository.findById(request.getPartId())
-                                        .orElseThrow(() -> new IllegalArgumentException("Part not found"));
-                        WarrantyPolicy policy = policyRepository.findById(request.getWarrantyPolicyId())
-                                        .orElseThrow(() -> new IllegalArgumentException("WarrantyPolicy not found"));
+                        // ===== Lấy Part và Policy theo code =====
+                        Part part = partRepository.findByCode(request.getPartCode())
+                                        .orElseThrow(() -> new IllegalArgumentException(
+                                                        "Part not found with code: " + request.getPartCode()));
+
+                        WarrantyPolicy policy = policyRepository.findByCode(request.getPolicyCode())
+                                        .orElseThrow(() -> new IllegalArgumentException(
+                                                        "WarrantyPolicy not found with code: "
+                                                                        + request.getPolicyCode()));
 
                         LocalDate startDate = LocalDate.parse(request.getStartDate(), formatter);
                         LocalDate endDate = request.getEndDate() != null
                                         ? LocalDate.parse(request.getEndDate(), formatter)
                                         : null;
 
-                        if (endDate != null && endDate.isBefore(startDate))
-                                throw new IllegalArgumentException("End date cannot be before start date");
-
-                        if (startDate.isBefore(LocalDate.now()))
-                                throw new IllegalArgumentException("Start date cannot be in the past");
-
-                        if (request.getEndDate() != null) {
-                                LocalDate requestEndDate = LocalDate.parse(request.getEndDate(), formatter);
-                                if (requestEndDate.isBefore(LocalDate.now())) {
-                                        throw new IllegalArgumentException(
-                                                        "Warranty Policy end date cannot be in the past");
-                                }
+                        // ===== Validate logic =====
+                        if (endDate != null && (endDate.isBefore(startDate) || endDate.isEqual(startDate))) {
+                                throw new IllegalArgumentException("End date must be after start date");
                         }
 
+                        // Cho phép ngày trong quá khứ nên không check < LocalDate.now()
+
                         boolean exists = partPolicyRepository.existsByPartIdAndWarrantyPolicyIdAndDateRangeOverlap(
-                                        request.getPartId(), request.getWarrantyPolicyId(), startDate, endDate);
+                                        part.getId(), policy.getId(), startDate, endDate);
                         if (exists)
                                 throw new IllegalArgumentException(
                                                 "A policy for this part already exists during this period");
 
+                        // ===== Nếu là promotion, kiểm tra và chia policy normal =====
+                        if (policy.getType() == WarrantyPolicy.PolicyType.PROMOTION) {
+                                List<PartPolicy> normalPolicies = partPolicyRepository
+                                                .findOverlappingNormalPolicies(part.getId(), startDate, endDate);
+
+                                for (PartPolicy normal : normalPolicies) {
+                                        LocalDate nStart = normal.getStartDate();
+                                        LocalDate nEnd = normal.getEndDate();
+
+                                        if (nStart.isBefore(startDate) && (nEnd == null || nEnd.isAfter(endDate))) {
+                                                // Chia làm 2
+                                                normal.setEndDate(startDate.minusDays(1));
+                                                partPolicyRepository.save(normal);
+
+                                                PartPolicy secondHalf = PartPolicy.builder()
+                                                                .part(part)
+                                                                .warrantyPolicy(normal.getWarrantyPolicy())
+                                                                .startDate(endDate.plusDays(1))
+                                                                .endDate(nEnd)
+                                                                .build();
+                                                partPolicyRepository.save(secondHalf);
+                                        }
+                                }
+                        }
+
+                        // ===== Lưu chính sách mới =====
                         PartPolicy newPolicy = PartPolicy.builder()
                                         .part(part)
                                         .warrantyPolicy(policy)
@@ -123,7 +149,8 @@ public class PartPolicyServiceImpl implements PartPolicyService {
                         return PartPolicyResponse.builder()
                                         .id(saved.getId())
                                         .partName(saved.getPart().getName())
-                                        .policyId(saved.getWarrantyPolicy().getId())
+                                        .partCode(saved.getPart().getCode())
+                                        .policyCode(saved.getWarrantyPolicy().getCode())
                                         .startDate(formatter.format(saved.getStartDate()))
                                         .endDate(saved.getEndDate() != null ? formatter.format(saved.getEndDate())
                                                         : null)
@@ -133,4 +160,25 @@ public class PartPolicyServiceImpl implements PartPolicyService {
                         throw new RuntimeException("Invalid date format, expected yyyy-MM-dd");
                 }
         }
+
+        @Override
+        public PartPolicyCodeResponse handleGetPartPolicyCode() {
+                List<Part> parts = partRepository.findAll();
+                List<WarrantyPolicy> policies = policyRepository.findAll();
+
+                List<String> partCodes = parts.stream()
+                                .map(Part::getCode)
+                                .collect(Collectors.toList());
+
+                List<String> policyCodes = policies.stream()
+                                .map(WarrantyPolicy::getCode)
+                                .collect(Collectors.toList());
+
+                return PartPolicyCodeResponse.builder()
+                                .partCode(partCodes)
+                                .policyCode(policyCodes)
+                                .build();
+        }
+
+
 }

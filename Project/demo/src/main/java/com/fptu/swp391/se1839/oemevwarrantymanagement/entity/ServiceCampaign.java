@@ -14,6 +14,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -46,6 +48,15 @@ public class ServiceCampaign {
     private LocalDate startDate = LocalDate.now();
 
     private LocalDate endDate;
+    @Column(name = "produce_date_from", nullable = false)
+    private LocalDate produceDateFrom;
+    @Column(name = "produce_date_to", nullable = false)
+    private LocalDate produceDateTo;
+
+    @NotBlank(message = "Code cannot be blank")
+    @Size(min = 3, max = 10, message = "Code must be between 3 and 10 characters")
+    @Column(nullable = false, unique = true, length = 10)
+    private String code;
 
     @OneToMany(mappedBy = "serviceCampaign", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -77,8 +88,8 @@ public class ServiceCampaign {
 
     @Override
     public String toString() {
-        return "ServiceCampaign [id=" + id + ", name=" + name + ", description=" + description + ", startDate="
-                + startDate + ", endDate=" + endDate + ", campaignVehicle=" + campaignVehicles + ", warrantyClaim="
-                + warrantyClaims.size() + "]";
+        return "ServiceCampaign [id=" + id + ", name=" + name + ", description=" + description +
+                ", startDate=" + startDate + ", endDate=" + endDate +
+                ", produceDateFrom=" + produceDateFrom + ", produceDateTo=" + produceDateTo + "]";
     }
 }

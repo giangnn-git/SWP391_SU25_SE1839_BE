@@ -40,6 +40,8 @@ public class PolicyServiceImpl implements PolicyService {
                                                 .description(policy.getDescription())
                                                 .durationPeriod(policy.getDurationPeriod())
                                                 .mileageLimit(policy.getMileageLimit())
+                                                .code(policy.getCode())
+                                                .type(policy.getType().toString())
                                                 .build())
                                 .toList();
 
@@ -58,11 +60,21 @@ public class PolicyServiceImpl implements PolicyService {
                                         .build();
                 }
 
+                if (policyRepository.existsByCode(request.getCode())) {
+                        return CreatePolicyResponse.builder()
+                                        .success(false)
+                                        .message("Warranty policy code already exists")
+                                        .policy(null)
+                                        .build();
+                }
+
                 WarrantyPolicy policy = WarrantyPolicy.builder()
                                 .name(request.getName())
                                 .description(request.getDescription())
                                 .durationPeriod(request.getDurationPeriod())
                                 .mileageLimit(request.getMileageLimit())
+                                .code(request.getCode())
+                                .type(WarrantyPolicy.PolicyType.valueOf(request.getType().toUpperCase()))
                                 .build();
 
                 WarrantyPolicy saved = policyRepository.save(policy);
@@ -110,11 +122,12 @@ public class PolicyServiceImpl implements PolicyService {
                                 .policy(updated)
                                 .build();
         }
+
         @Override
         public DeletePolicyResponse handleDeletePolicy(Long policyId) {
                 WarrantyPolicy existingPolicy = policyRepository.findById(policyId)
-                        .orElseThrow(() -> new NoSuchElementException(
-                                "Policy with ID " + policyId + " not found"));
+                                .orElseThrow(() -> new NoSuchElementException(
+                                                "Policy with ID " + policyId + " not found"));
 
                 LocalDate today = LocalDate.now();
 
@@ -122,15 +135,16 @@ public class PolicyServiceImpl implements PolicyService {
                 List<PartPolicy> unexpiredParts = partPolicyRepository.findUnexpiredPartPolicies(policyId, today);
 
                 if (!unexpiredParts.isEmpty()) {
-                        throw new IllegalArgumentException("Cannot delete policy: there are still part policies that have not expired.");
+                        throw new IllegalArgumentException(
+                                        "Cannot delete policy: there are still part policies that have not expired.");
                 }
 
                 policyRepository.delete(existingPolicy);
                 log.info("Deleted WarrantyPolicy with id: {}", policyId);
 
                 return DeletePolicyResponse.builder()
-                        .success(true)
-                        .message("Policy deleted successfully.")
-                        .build();
+                                .success(true)
+                                .message("Policy deleted successfully.")
+                                .build();
         }
 }

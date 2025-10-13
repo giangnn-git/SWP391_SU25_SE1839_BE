@@ -65,6 +65,7 @@ public class PartServiceImpl implements PartService {
                 PartResponse pr = PartResponse.builder()
                         .id(p.getId())
                         .description(p.getDescription())
+                        .code(p.getCode())
                         .name(p.getName())
                         .partCategory(p.getPartCategory())
                         .build();

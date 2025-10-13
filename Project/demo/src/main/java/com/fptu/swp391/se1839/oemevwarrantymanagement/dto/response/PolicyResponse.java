@@ -18,4 +18,6 @@ public class PolicyResponse {
     private int durationPeriod;
     private int mileageLimit;
     private String description;
+    private String code;
+    private String type;
 }

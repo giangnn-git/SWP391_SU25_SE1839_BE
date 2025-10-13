@@ -7,6 +7,8 @@ import java.util.Set;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -74,6 +76,20 @@ public class Part {
     @OneToMany(mappedBy = "part", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<ModelPart> modelParts = new HashSet<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    Unit unit;
+
+    public enum Unit {
+        PACK, // For battery packs
+        UNIT // For other parts like motors, inverters, chargers, etc.
+    }
+
+    @NotBlank(message = "Code cannot be blank")
+    @Size(min = 3, max = 10, message = "Code must be between 3 and 10 characters")
+    @Column(nullable = false, unique = true, length = 10)
+    private String code;
 
     @Override
     public boolean equals(Object o) {

@@ -13,8 +13,8 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreatePartPolicyRequest {
-    Long partId;
-    Long warrantyPolicyId;
+    String partCode;
+    String policyCode;
     String startDate;
     String endDate;
 }

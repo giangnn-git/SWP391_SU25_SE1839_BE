@@ -19,4 +19,8 @@ public class CreatePolicyRequest {
     private int mileageLimit;
 
     private String description;
+
+    private String code;
+
+    private String type;
 }

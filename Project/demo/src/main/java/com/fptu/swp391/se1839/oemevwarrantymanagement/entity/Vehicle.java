@@ -18,6 +18,7 @@ import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -46,8 +47,11 @@ public class Vehicle {
     @Column(nullable = false)
     private int productYear;
 
+    @Column(name = "product_date", nullable = false)
+    private LocalDate productionDate;
+
     @Column(nullable = false)
-    @Builder.Default
+    @Default
     private LocalDate purchaseDate = LocalDate.now();
 
     @ManyToOne(optional = false)

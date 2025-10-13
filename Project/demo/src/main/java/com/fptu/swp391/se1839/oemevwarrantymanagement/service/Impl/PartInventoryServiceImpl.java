@@ -44,6 +44,7 @@ public class PartInventoryServiceImpl implements PartInventoryService {
                 .serviceCenterName(pi.getServiceCenter().getName())
                 .serviceCenterAddress(pi.getServiceCenter().getAddress())
                 .quantity(pi.getQuantity())
+                .unit(pi.getPart().getUnit().toString())
                 .build();
     }
 }

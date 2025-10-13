@@ -28,4 +28,11 @@ public interface PartPolicyRepository extends JpaRepository<PartPolicy, Long> {
                         Long partId, Long policyId, LocalDate startDate, LocalDate endDate);
 
         List<PartPolicy> findByPartId(Long partId);
+
+        @Query("SELECT p FROM PartPolicy p WHERE p.part.id = :partId AND p.warrantyPolicy.type = 'NORMAL' "
+                        + "AND ((:startDate BETWEEN p.startDate AND p.endDate) OR "
+                        + "(:endDate BETWEEN p.startDate AND p.endDate) OR "
+                        + "(p.startDate BETWEEN :startDate AND :endDate))")
+        List<PartPolicy> findOverlappingNormalPolicies(Long partId, LocalDate startDate, LocalDate endDate);
+
 }
