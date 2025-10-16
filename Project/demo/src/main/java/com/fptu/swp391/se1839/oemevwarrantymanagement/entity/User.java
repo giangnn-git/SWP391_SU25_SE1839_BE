@@ -1,5 +1,6 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -39,34 +40,54 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @NotBlank(message = "Name cannot be blank")
     @Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
-    private String name;
+    String name;
 
     @Email(message = "Email is not valid", regexp = "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$")
     @NotEmpty(message = "Email cannot be empty")
-    private String email;
+    String email;
 
     @NotBlank(message = "Phone number cannot be blank")
     @Pattern(regexp = "\\d{10}", message = "Phone number must contain exactly 10 digits")
-    private String phoneNumber;
+    String phoneNumber;
 
     @Column(nullable = false)
-    private boolean requiresPasswordChange;
+    @Builder.Default
+    boolean requiresPasswordChange = false;
+
+    @Column
+    @Builder.Default
+    LocalDate date = LocalDate.now();
+
+    @Column
+    @Builder.Default
+    LocalDate lastLoginDate = null; // trong User
 
     @NotBlank(message = "Password cannot be blank")
     @Size(min = 6, message = "Password must have at least 6 characters")
-    private String password;
+    String password;
 
     @Column(length = 50)
-    private String provider; // "LOCAL" hoặc "GOOGLE"
+    @Builder.Default
+    String provider = "LOCAL"; // "LOCAL" hoặc "GOOGLE"
+
+    public enum WorkStatus {
+        AVAILABLE, // Rảnh, có thể nhận xe mới
+        BUSY, // Đang sửa xe
+        ON_LEAVE, // Nghỉ phép
+        OFF_DUTY // Hết ca, không làm việc
+    }
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    @Builder.Default
+    WorkStatus workStatus = WorkStatus.OFF_DUTY;
 
     @Column(length = 500)
-    private String avatar;
-
-    private boolean active;
+    String avatar = null;
 
     public enum Role {
         ADMIN, TECHNICIAN, SC_STAFF, EVM_STAFF;
@@ -74,7 +95,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private Role role;
+    Role role;
 
     public enum Status {
         ACTIVE, INACTIVE, SUSPENDED
@@ -82,15 +103,19 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private Status status;
+    Status status;
 
     @ManyToOne
     @JoinColumn(name = "serviceCenterId", nullable = false)
-    private ServiceCenter serviceCenter;
+    ServiceCenter serviceCenter;
 
     @OneToMany(mappedBy = "technical")
     @Builder.Default
-    private Set<RepairOrder> repairOrders = new HashSet<>();
+    Set<RepairOrder> repairOrders = new HashSet<>();
+
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    Set<InvalidToken> invalidTokens = new HashSet<>();
 
     @Override
     public boolean equals(Object o) {

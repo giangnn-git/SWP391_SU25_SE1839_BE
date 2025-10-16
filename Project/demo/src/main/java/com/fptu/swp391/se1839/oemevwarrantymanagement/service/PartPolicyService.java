@@ -8,7 +8,10 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyRes
 
 public interface PartPolicyService {
     GetAllPartPolicyResponse handleGetAllPartPolicies();
+
     PartPolicyResponse handleCreatePartPolicy(CreatePartPolicyRequest request);
+
     PartPolicyDetailResponse handleGetPartPolicyById(Long partPolicyId);
+
     PartPolicyCodeResponse handleGetPartPolicyCode();
 }

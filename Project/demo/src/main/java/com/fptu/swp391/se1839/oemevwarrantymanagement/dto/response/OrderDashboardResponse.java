@@ -15,6 +15,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderDashboardResponse {
-    private SummaryOrderResponse sor;
-    private List<FilterOrderResponse> fors;
+    SummaryOrderResponse sor;
+    List<FilterOrderResponse> fors;
 }

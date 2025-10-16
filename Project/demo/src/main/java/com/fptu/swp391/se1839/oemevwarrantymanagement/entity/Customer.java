@@ -34,25 +34,25 @@ public class Customer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    long id;
 
     @Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
-    private String name;
+    String name;
 
     @Pattern(regexp = "^\\d{10}$", message = "Phone must contain ten numberics")
-    private String phoneNumber;
+    String phoneNumber;
 
     @Email(message = "Email is not valid", regexp = "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$")
     @NotEmpty(message = "Email cannot be empty")
-    private String email;
+    String email;
 
     @NotBlank(message = "Address cannot be blank")
     @Size(min = 5, max = 100, message = "Address must be between 5 and 100 characters")
-    private String address;
+    String address;
 
     @OneToMany(mappedBy = "customer")
     @Builder.Default
-    private Set<Vehicle> vehicles = new HashSet<>();
+    Set<Vehicle> vehicles = new HashSet<>();
 
     @Override
     public boolean equals(Object o) {

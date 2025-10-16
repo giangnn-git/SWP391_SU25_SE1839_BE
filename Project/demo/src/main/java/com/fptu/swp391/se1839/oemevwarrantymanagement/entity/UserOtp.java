@@ -26,10 +26,10 @@ import lombok.experimental.FieldDefaults;
 public class UserOtp {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
-    private String email;
-    private String phoneNumber;
-    private String otp;
-    private LocalDateTime expiry;
+    String email;
+    String phoneNumber;
+    String otp;
+    LocalDateTime expiry;
 }

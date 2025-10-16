@@ -40,71 +40,81 @@ public class WarrantyClaim {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "vin", nullable = false)
-    private Vehicle vehicle;
+    Vehicle vehicle;
 
     @ManyToOne(optional = true)
     @JoinColumn(name = "serviceCenterId", nullable = true)
-    private ServiceCenter serviceCenter;
+    ServiceCenter serviceCenter;
 
     @NotNull
     @Column(nullable = false)
     @Builder.Default
-    private LocalDate claimDate = LocalDate.now();
+    LocalDate claimDate = LocalDate.now();
 
     @NotNull
     @Column(nullable = false)
-    private int mileage;
+    int mileage;
 
     @Column(columnDefinition = "TEXT", nullable = false)
-    @NotNull
-    private String description;
+    @Builder.Default
+    String description = null;
 
     @Column(nullable = true)
-    private LocalDate decisionDate;
+    LocalDate decisionDate;
 
     public enum ClaimStatus {
-        PENDING, APPROVED, REJECTED
+        DRAFT, PENDING, APPROVED, REJECTED
     }
+
+    @Column(nullable = false)
+    Long userId;
 
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private ClaimStatus status = ClaimStatus.PENDING;
+    ClaimStatus status = ClaimStatus.DRAFT;
 
     public enum ClaimPriority {
         NORMAL, HIGH, URGENT
     }
 
+    @Column(length = 20)
+    @Builder.Default
+    String rejectBy = null;
+
+    @Column(columnDefinition = "TEXT")
+    String rejectReason;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private ClaimPriority priority = ClaimPriority.NORMAL;
+    ClaimPriority priority = ClaimPriority.NORMAL;
 
     // One claim can have many attachments
     @OneToMany(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<ClaimAttachment> claimAttachments = new ArrayList<>();
+    List<ClaimAttachment> claimAttachments = new ArrayList<>();
 
     @OneToMany(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<RepairOrder> repairOrders = new HashSet<>();
+    Set<RepairOrder> repairOrders = new HashSet<>();
 
     @OneToMany(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<VehiclePart> vehicleParts = new HashSet<>();
+    Set<VehiclePart> vehicleParts = new HashSet<>();
 
     @OneToMany(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<PartClaim> partClaims = new HashSet<>();
+    Set<PartClaim> partClaims = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "serviceCampaignId")
-    private ServiceCampaign serviceCampaign;
+    ServiceCampaign serviceCampaign;
 
     @Override
     public boolean equals(Object o) {

@@ -11,6 +11,6 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Part;
 @Repository
 public interface PartRepository extends JpaRepository<Part, Long> {
     List<Part> findByPartCategory(String name);
-    Optional<Part> findByCode(String code);
 
+    Optional<Part> findByCode(String code);
 }

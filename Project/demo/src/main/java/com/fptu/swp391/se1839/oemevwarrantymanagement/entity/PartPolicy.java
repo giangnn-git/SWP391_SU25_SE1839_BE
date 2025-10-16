@@ -1,7 +1,9 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
@@ -32,21 +34,21 @@ public class PartPolicy {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @ManyToOne
     @JoinColumn(name = "warrantyPolicyId")
     @JsonBackReference
-    private WarrantyPolicy warrantyPolicy;
+    WarrantyPolicy warrantyPolicy;
 
     @ManyToOne
     @JoinColumn(name = "partId")
-    private Part part;
+    Part part;
 
     @Builder.Default
-    private LocalDate startDate = LocalDate.now();
+    LocalDate startDate = LocalDate.now();
 
-    private LocalDate endDate;
+    LocalDate endDate;
 
     @Override
     public boolean equals(Object o) {
@@ -65,11 +67,7 @@ public class PartPolicy {
 
     @Override
     public String toString() {
-        return "PartPolicy{id=" + id +
-                ", startDate=" + startDate +
-                ", endDate=" + endDate +
-                ", warrantyPolicyId=" + 
-                (warrantyPolicy != null ? warrantyPolicy.getId() : null) +
-                "}";
+        return "PartPolicy{id=" + id + ", startDate=" + startDate + ", warrantyPolicy="
+                + warrantyPolicy + "}";
     }
 }

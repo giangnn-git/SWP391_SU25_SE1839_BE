@@ -13,5 +13,5 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DownloadImageRequest {
-    private String nameFile;
+    String nameFile;
 }

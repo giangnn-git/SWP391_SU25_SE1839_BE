@@ -1,5 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
 
+import java.time.LocalDateTime;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,5 +15,8 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ChooseTechnicalRequest {
-    private String technicalName;
+     String technicalName;
+     int estimated;
+     LocalDateTime startDate;
+     LocalDateTime endDate;
 }

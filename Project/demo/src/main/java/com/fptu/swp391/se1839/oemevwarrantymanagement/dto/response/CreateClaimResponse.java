@@ -13,6 +13,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreateClaimResponse {
-    private String sccuess;
-    private String message;
+    String sccuess;
+    String message;
 }

@@ -13,6 +13,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SummaryItemResponse {
-    private long percentage;
-    private String message;
+    long percentage;
+    String message;
 }

@@ -47,9 +47,6 @@ public class Vehicle {
     @Column(nullable = false)
     private int productYear;
 
-    @Column(name = "product_date", nullable = false)
-    private LocalDate productionDate;
-
     @Column(nullable = false)
     @Default
     private LocalDate purchaseDate = LocalDate.now();
@@ -69,6 +66,9 @@ public class Vehicle {
     @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<WarrantyClaim> warrantyClaims = new HashSet<>();
+
+    @Column(name = "production_date")
+    private LocalDate productionDate;
 
     @Override
     public boolean equals(Object o) {

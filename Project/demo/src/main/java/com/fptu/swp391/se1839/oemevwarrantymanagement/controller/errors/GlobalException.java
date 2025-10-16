@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ApiResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 
 public class GlobalException {
     @ExceptionHandler(NoSuchElementException.class)

@@ -3,8 +3,6 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.service.ClaimAttachmentService;
-
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -26,8 +24,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = false)
 public class ClaimAttachmentController {
-
-        private final ClaimAttachmentService claimAttachmentService;
 
         @GetMapping("/temp-file/{filename}")
         public ResponseEntity<Resource> getTempFile(@PathVariable String filename) throws IOException {

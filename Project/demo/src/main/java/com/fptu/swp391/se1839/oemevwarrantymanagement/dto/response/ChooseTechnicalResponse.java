@@ -13,6 +13,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ChooseTechnicalResponse {
-    private String message;
-    private boolean status;
+    String message;
+    boolean status;
 }

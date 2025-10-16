@@ -35,35 +35,35 @@ public class ServiceCenter {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @NotBlank(message = "Name cannot be blank")
     @Size(min = 1, max = 100, message = "Name must be between 1 and 20 characters")
-    private String name;
+    String name;
 
     @NotBlank(message = "Address cannot be blank")
     @Size(min = 5, max = 100, message = "Address must be between 5 and 100 characters")
-    private String address;
+    String address;
 
     @Pattern(regexp = "^\\d{10}$", message = "Phone must be ten numberics")
-    private String phoneNumber;
+    String phoneNumber;
 
     @OneToMany(mappedBy = "serviceCenter", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<WarrantyClaim> warrantyClaims = new HashSet<>();
+    Set<WarrantyClaim> warrantyClaims = new HashSet<>();
 
     @OneToMany(mappedBy = "serviceCenter", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     @Builder.Default
-    private Set<User> users = new HashSet<>();
+    Set<User> users = new HashSet<>();
 
     @OneToMany(mappedBy = "serviceCenter", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<SCExpense> scExpenses = new HashSet<>();
+    Set<SCExpense> scExpenses = new HashSet<>();
 
     @OneToMany(mappedBy = "serviceCenter", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<PartInventory> partInventories = new HashSet<>();
+    Set<PartInventory> partInventories = new HashSet<>();
 
     @Override
     public String toString() {

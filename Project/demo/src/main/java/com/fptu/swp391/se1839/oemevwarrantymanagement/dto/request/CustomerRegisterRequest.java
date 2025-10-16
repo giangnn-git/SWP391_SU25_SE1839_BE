@@ -13,9 +13,9 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CustomerRegisterRequest {
-    private String name;
-    private String phoneNumber;
-    private String email;
-    private String address;
-    private String vin; // để tìm Vehicle
+    String name;
+    String phoneNumber;
+    String email;
+    String address;
+    String vin; // để tìm Vehicle
 }

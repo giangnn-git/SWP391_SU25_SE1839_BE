@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CustomerRegisterRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CustomerRegisterResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.CustomerService;
 
 import jakarta.validation.Valid;
@@ -23,7 +23,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = false)
 public class CustomerController {
 
-    private final CustomerService customerService;
+    final CustomerService customerService;
 
     @PostMapping("/customers")
     public ResponseEntity<ApiResponse<CustomerRegisterResponse>> registerCustomer(
@@ -34,7 +34,6 @@ public class CustomerController {
                 .message("Create customer successfully")
                 .data(customer)
                 .build();
-        return ResponseEntity.status(HttpStatus.CREATED).body(result);
+        return ResponseEntity.ok(result);
     }
 }
-    

@@ -14,7 +14,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class CreatePolicyResponse {
-    private boolean success;
-    private String message;
-    private WarrantyPolicy policy;
+    boolean success;
+    String message;
+    WarrantyPolicy policy;
 }

@@ -6,5 +6,6 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartInventory
 
 public interface PartInventoryService {
     List<PartInventoryResponse> getAllPartInventories();
+
     List<PartInventoryResponse> getPartInventoriesByServiceCenter(Long serviceCenterId);
 }

@@ -13,9 +13,9 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ServiceCenterResponse {
-    private Long id;
-    private String name;
-    private String address;
-    private String phoneNumber;
+    Long id;
+    String name;
+    String address;
+    String phoneNumber;
 
 }

@@ -33,20 +33,20 @@ public class CampaignVehicle {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @ManyToOne
     @JoinColumn(name = "campaignId", nullable = false)
-    private ServiceCampaign serviceCampaign;
+    ServiceCampaign serviceCampaign;
 
     @ManyToOne
     @JoinColumn(name = "vin", nullable = false)
-    private Vehicle vehicle;
+    Vehicle vehicle;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private CampaignVehicleStatus status = CampaignVehicleStatus.NOTIFIED;
+    CampaignVehicleStatus status = CampaignVehicleStatus.NOTIFIED;
 
     public enum CampaignVehicleStatus {
         NOTIFIED, COMPLETED

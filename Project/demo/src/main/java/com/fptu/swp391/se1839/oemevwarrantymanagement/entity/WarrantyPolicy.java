@@ -6,7 +6,16 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -65,7 +74,7 @@ public class WarrantyPolicy {
     private Set<PartPolicy> partPolicies = new HashSet<>();
 
     public enum PolicyType {
-        NORMAL,   // normmal policies
+        NORMAL, // normmal policies
         PROMOTION // part-time/festival/bonus policies
     }
 

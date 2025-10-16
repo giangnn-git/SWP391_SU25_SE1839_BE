@@ -13,8 +13,8 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class EmailDetailsRequest {
-    private String recipient;
-    private String subject;
-    private String messageBody;
-    private String attachment;
+    String recipient;
+    String subject;
+    String messageBody;
+    String attachment;
 }

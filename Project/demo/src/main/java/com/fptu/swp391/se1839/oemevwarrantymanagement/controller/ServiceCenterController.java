@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCenterResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.ServiceCenterService;
 
 import lombok.AccessLevel;
@@ -22,7 +22,7 @@ import lombok.experimental.FieldDefaults;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = false)
 public class ServiceCenterController {
-    private final ServiceCenterService serviceCenterService;
+    final ServiceCenterService serviceCenterService;
 
     @GetMapping("/servicecenters")
     @PreAuthorize("hasAuthority('admin')")

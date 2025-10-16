@@ -13,6 +13,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DashboardClaimSummaryResponse {
-    private Long count;
-    private Long emegency;
+    Long count;
+    Long emegency;
 }

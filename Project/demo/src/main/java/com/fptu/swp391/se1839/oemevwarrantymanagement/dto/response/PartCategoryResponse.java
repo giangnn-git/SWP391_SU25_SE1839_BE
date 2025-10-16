@@ -15,6 +15,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PartCategoryResponse {
-    private Set<String> category;
-    private boolean status;
+    Set<String> category;
+    boolean status;
 }

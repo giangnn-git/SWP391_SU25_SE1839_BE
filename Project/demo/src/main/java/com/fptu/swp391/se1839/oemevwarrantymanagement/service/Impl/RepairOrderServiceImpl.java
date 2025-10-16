@@ -11,61 +11,70 @@ import java.util.NoSuchElementException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChooseTechnicalRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.FilterRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChooseTechnicalResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardOrderSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.FilterOrderResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDashboardResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryItemResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryOrderResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Model;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairDetail;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder.OrderStatus;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairStep;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ServiceCenter;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.User;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyClaim;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ModelRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairDetailRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderReposity;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairStepRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCenterRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehicleRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.WarrantyClaimRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairOrderService;
 
 import jakarta.persistence.PersistenceException;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class RepairOrderServiceImpl implements RepairOrderService {
 
-    private final RepairOrderReposity repairOrderReposity;
-    private final VehicleRepository vehicleRepository;
-    private final ServiceCenterRepository serviceCenterRepository;
-    private final WarrantyClaimRepository warrantyClaimRepository;
-    private final ModelRepository modelRepository;
-    private final RepairDetailRepository repairDetailRepository;
+    final RepairOrderRepository repairOrderRepository;
+    final VehicleRepository vehicleRepository;
+    final ServiceCenterRepository serviceCenterRepository;
+    final WarrantyClaimRepository warrantyClaimRepository;
+    final ModelRepository modelRepository;
+    final RepairStepRepository repairStepRepository;
+    final UserRepository userRepository;
 
-    private Vehicle getVehicleByVin(String vin) {
+    Vehicle getVehicleByVin(String vin) {
         Vehicle vehicle = this.vehicleRepository.findByVin(vin)
                 .orElseThrow(() -> new NoSuchElementException("Vehicle not found with vin " + vin));
         return vehicle;
     }
 
-    private WarrantyClaim getWarrantyClaimId(long id) {
+    WarrantyClaim getWarrantyClaimId(long id) {
         return this.warrantyClaimRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(
                         "Warranty claim not found with id " + id));
     }
 
-    private ServiceCenter getServiceCenterById(long id) {
+    ServiceCenter getServiceCenterById(long id) {
         return this.serviceCenterRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(
                         "Service center not found with id " + id));
     }
 
-    private SummaryItemResponse calculateSummary(long current, long previous) {
+    SummaryItemResponse calculateSummary(long current, long previous) {
         long percentage;
         String message;
 
@@ -83,32 +92,32 @@ public class RepairOrderServiceImpl implements RepairOrderService {
         return new SummaryItemResponse(percentage, message);
     }
 
-    private SummaryItemResponse calculateWeekSummary(long serviceCenterId) {
+    SummaryItemResponse calculateWeekSummary(long serviceCenterId) {
         LocalDate currentStart = LocalDate.now().with(DayOfWeek.MONDAY);
         LocalDate currentEnd = LocalDate.now().with(DayOfWeek.SUNDAY);
 
-        long currentWeek = repairOrderReposity.countRepairFlWeek(serviceCenterId, currentStart, currentEnd);
+        long currentWeek = repairOrderRepository.countRepairFlWeek(serviceCenterId, currentStart, currentEnd);
 
         LocalDate prevStart = currentStart.minusWeeks(1);
         LocalDate prevEnd = currentEnd.minusWeeks(1);
 
-        long previousWeek = repairOrderReposity.countRepairFlWeek(serviceCenterId, prevStart, prevEnd);
+        long previousWeek = repairOrderRepository.countRepairFlWeek(serviceCenterId, prevStart, prevEnd);
 
         return calculateSummary(currentWeek, previousWeek);
     }
 
-    private SummaryItemResponse calculateMonthSummary(long serviceCenterId) {
+    SummaryItemResponse calculateMonthSummary(long serviceCenterId) {
         LocalDate startMonth = LocalDate.now().withDayOfMonth(1);
         LocalDate endMonth = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
 
-        long currentMonth = repairOrderReposity.countRepairFlStatusAndMonth(
+        long currentMonth = repairOrderRepository.countRepairFlStatusAndMonth(
                 serviceCenterId, RepairOrder.OrderStatus.COMPLETED, startMonth, endMonth);
 
         LocalDate prevStart = LocalDate.now().minusMonths(1).withDayOfMonth(1);
         LocalDate prevEnd = LocalDate.now().minusMonths(1)
                 .withDayOfMonth(LocalDate.now().minusMonths(1).lengthOfMonth());
 
-        long previousMonth = repairOrderReposity.countRepairFlStatusAndMonth(
+        long previousMonth = repairOrderRepository.countRepairFlStatusAndMonth(
                 serviceCenterId, RepairOrder.OrderStatus.COMPLETED, prevStart, prevEnd);
 
         return calculateSummary(currentMonth, previousMonth);
@@ -122,7 +131,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
         SummaryItemResponse monthResult = new SummaryItemResponse(0, "No Data");
 
         try {
-            countOrderOneWeek = this.repairOrderReposity.countRepairFlStatus(
+            countOrderOneWeek = this.repairOrderRepository.countRepairFlStatus(
                     serviceCenterId, RepairOrder.OrderStatus.IN_PROGRESS);
 
             weekResult = calculateWeekSummary(serviceCenterId);
@@ -142,11 +151,11 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 .build();
     }
 
-    private long getOrderByStatus(long serviceCenterId, RepairOrder.OrderStatus status) {
-        return repairOrderReposity.countByServiceCenterIdAndStatus(serviceCenterId, status);
+    long getOrderByStatus(long serviceCenterId, RepairOrder.OrderStatus status) {
+        return repairOrderRepository.countByServiceCenterIdAndStatus(serviceCenterId, status);
     }
 
-    private double countAvgComplete(List<RepairOrder> roList) {
+    double countAvgComplete(List<RepairOrder> roList) {
         List<RepairOrder> repairOrders = new ArrayList<>();
         for (int i = 0; i < roList.size(); i++) {
             if (roList.get(i).getStatus() == RepairOrder.OrderStatus.COMPLETED) {
@@ -169,21 +178,21 @@ public class RepairOrderServiceImpl implements RepairOrderService {
     }
 
     public double calculateProgress(Long repairOrderId) {
-        List<RepairDetail> details = repairDetailRepository.findByRepairOrderId(repairOrderId);
+        List<RepairStep> steps = repairStepRepository.findByRepairOrderId(repairOrderId);
 
-        if (details.isEmpty())
+        if (steps.isEmpty())
             return 0;
 
-        long total = details.size();
-        long completed = details.stream()
-                .filter(d -> d.getStatus() == RepairDetail.DetailStatus.REPLACED
-                        || d.getStatus() == RepairDetail.DetailStatus.REJECTED)
+        long total = steps.size();
+        long completed = steps.stream()
+                .filter(d -> d.getStatus() == RepairStep.StepStatus.COMPLETED
+                        || d.getStatus() == RepairStep.StepStatus.CANCELLED)
                 .count();
 
         return (completed * 100.0) / total;
     }
 
-    private SummaryOrderResponse handleSummary(long serviceCenterId, List<RepairOrder> roList) {
+    SummaryOrderResponse handleSummary(long serviceCenterId, List<RepairOrder> roList) {
         long countInProcess = getOrderByStatus(serviceCenterId, RepairOrder.OrderStatus.IN_PROGRESS);
         long countInWaiting = getOrderByStatus(serviceCenterId, RepairOrder.OrderStatus.WAITING);
         long countInComplete = getOrderByStatus(serviceCenterId, RepairOrder.OrderStatus.COMPLETED);
@@ -198,7 +207,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 .build();
     }
 
-    private List<FilterOrderResponse> handleFilterOrder(List<RepairOrder> roList) {
+    List<FilterOrderResponse> handleFilterOrder(List<RepairOrder> roList) {
         List<FilterOrderResponse> forList = new ArrayList<>();
 
         for (RepairOrder ro : roList) {
@@ -212,7 +221,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 ro.setStatus(RepairOrder.OrderStatus.COMPLETED);
                 ro.setEndDate(LocalDateTime.now());
             }
-            repairOrderReposity.save(ro);
+            repairOrderRepository.save(ro);
 
             String technicalName = ro.getTechnical() != null ? ro.getTechnical().getName() : "Unknown";
 
@@ -222,6 +231,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                     .orElseThrow(() -> new RuntimeException("Model not found"));
 
             FilterOrderResponse response = FilterOrderResponse.builder()
+                    .repairOrderId(ro.getId())
                     .percentInProcess(progress)
                     .techinal(technicalName)
                     .prodcutYear(vehicle.getProductYear())
@@ -236,47 +246,113 @@ public class RepairOrderServiceImpl implements RepairOrderService {
     }
 
     @Override
-    public OrderDashboardResponse handleOrderDashboard(long serviceCenterId,
-            FilterRequest request) {
+    public OrderDashboardResponse handleOrderDashboard(long serviceCenterId, FilterRequest request, Long userId) {
         List<RepairOrder> roList = new ArrayList<>();
         List<FilterOrderResponse> responseList = new ArrayList<>();
         SummaryOrderResponse sor = new SummaryOrderResponse();
         ServiceCenter sc = getServiceCenterById(serviceCenterId);
-        RepairOrder.OrderStatus statusEnum = RepairOrder.OrderStatus
-                .valueOf(request.getStatus().toUpperCase());
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+        RepairOrder.OrderStatus statusEnum = null;
+        if (request.getStatus() != null && !request.getStatus().isEmpty()) {
+            statusEnum = RepairOrder.OrderStatus.valueOf(request.getStatus().toUpperCase());
+        }
 
         if (request.getKeyword() == null && request.getStatus() == null) {
-            roList = this.repairOrderReposity.findByServiceCenterId(sc.getId());
-            responseList = handleFilterOrder(roList);
-            sor = handleSummary(sc.getId(), roList);
+            if (user.getRole() == User.Role.TECHNICIAN) {
+                roList = repairOrderRepository.findByServiceCenterIdAndUserId(sc.getId(), userId);
+            } else {
+                roList = repairOrderRepository.findByServiceCenterId(sc.getId());
+            }
         } else if (request.getKeyword() == null && request.getStatus() != null) {
-            roList = this.repairOrderReposity.findByServiceCenterIdAndStatus(sc.getId(),
-                    statusEnum);
-            responseList = handleFilterOrder(roList);
-            sor = handleSummary(sc.getId(), roList);
+            if (user.getRole() == User.Role.TECHNICIAN) {
+                roList = repairOrderRepository.findByServiceCenterIdAndStatusAndUserId(sc.getId(), statusEnum, userId);
+            } else {
+                roList = repairOrderRepository.findByServiceCenterIdAndStatus(sc.getId(), statusEnum);
+            }
         } else if (request.getKeyword() != null && request.getStatus() == null) {
-            roList = this.repairOrderReposity.findByServiceCenterIdAndVehicleVin(sc.getId(),
-                    request.getKeyword());
-            if (roList == null) {
-                roList = this.repairOrderReposity.findByCustomerName(sc.getId(),
-                        request.getKeyword());
+            if (user.getRole() == User.Role.TECHNICIAN) {
+                roList = repairOrderRepository.findByServiceCenterIdAndVehicleVinAndUserId(sc.getId(),
+                        request.getKeyword(), userId);
+            } else {
+                roList = repairOrderRepository.findByServiceCenterIdAndVehicleVin(sc.getId(), request.getKeyword());
             }
-            responseList = handleFilterOrder(roList);
-            sor = handleSummary(sc.getId(), roList);
+            if (roList == null || roList.isEmpty()) {
+                if (user.getRole() == User.Role.TECHNICIAN) {
+                    roList = repairOrderRepository.findByCustomerNameAndUserId(sc.getId(),
+                            request.getKeyword(), userId);
+                } else {
+                    roList = repairOrderRepository.findByCustomerName(sc.getId(), request.getKeyword());
+                }
+            }
         } else {
-            roList = this.repairOrderReposity.findByServiceCenterIdAndVehicleVinAndStatus(sc.getId(),
-                    request.getKeyword(), statusEnum);
-            if (roList == null) {
-                roList = this.repairOrderReposity.findByServiceCenterIdAndCustomerNameAndStatus(
-                        sc.getId(),
-                        request.getKeyword(), statusEnum);
+            if (user.getRole() == User.Role.TECHNICIAN) {
+                roList = repairOrderRepository.findByServiceCenterIdAndVehicleVinAndStatusAndUserId(sc.getId(),
+                        request.getKeyword(), statusEnum, userId);
+            } else {
+                roList = repairOrderRepository.findByServiceCenterIdAndVehicleVinAndStatus(sc.getId(),
+                        request.getKeyword(),
+                        statusEnum);
             }
-            responseList = handleFilterOrder(roList);
-            sor = handleSummary(sc.getId(), roList);
+            if (roList == null || roList.isEmpty()) {
+                if (user.getRole() == User.Role.TECHNICIAN) {
+                    roList = repairOrderRepository.findByServiceCenterIdAndCustomerNameAndStatusAndUserId(sc.getId(),
+                            request.getKeyword(), statusEnum, userId);
+                } else {
+                    roList = repairOrderRepository.findByServiceCenterIdAndCustomerNameAndStatus(sc.getId(),
+                            request.getKeyword(), statusEnum);
+                }
+            }
         }
+
+        responseList = handleFilterOrder(roList);
+        sor = handleSummary(sc.getId(), roList);
+
         return OrderDashboardResponse.builder()
                 .fors(responseList)
                 .sor(sor)
                 .build();
     }
+
+    public ChooseTechnicalResponse handleChooseTechinical(long repairOrderId, ChooseTechnicalRequest request) {
+        System.out.println(">>> Debug: finding repair order id=" + repairOrderId);
+        var repairOrder = repairOrderRepository.findById(repairOrderId)
+                .orElseThrow(() -> new NoSuchElementException("This repair order is not exist " + repairOrderId));
+
+        System.out.println(">>> Found repair order id=" + repairOrder.getId());
+
+        User technical = userRepository.findByName(request.getTechnicalName());
+        if (technical == null) {
+            throw new NoSuchElementException("Technician not found: " + request.getTechnicalName());
+        }
+
+        repairOrder.setTechnical(technical);
+        repairOrder.setEstimated(request.getEstimated());
+        repairOrder.setStartDate(request.getStartDate());
+        repairOrder.setEndDate(request.getEndDate());
+        repairOrder.setStatus(OrderStatus.PENDING);
+        repairOrderRepository.save(repairOrder);
+
+        return ChooseTechnicalResponse.builder()
+                .message("Choose successfully")
+                .status(true)
+                .build();
+    }
+
+    public FilterOrderResponse handleGetDetailOrder(long orderId) {
+        RepairOrder ro = this.repairOrderRepository.findById(orderId)
+                .orElseThrow(() -> new NoSuchElementException("Not find repair order"));
+
+        String technicalName = (ro.getTechnical() != null) ? ro.getTechnical().getName() : null;
+
+        return FilterOrderResponse.builder()
+                .repairOrderId(orderId)
+                .prodcutYear(ro.getWarrantyClaim().getVehicle().getProductYear())
+                .modelName(ro.getWarrantyClaim().getVehicle().getModel().getName())
+                .vin(ro.getWarrantyClaim().getVehicle().getVin())
+                .techinal(technicalName)
+                .percentInProcess(calculateProgress(orderId))
+                .build();
+    }
+
 }

@@ -33,23 +33,23 @@ public class SCExpense {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "serviceCenterId", nullable = false)
-    private ServiceCenter serviceCenter;
+    ServiceCenter serviceCenter;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "repairOrderId", nullable = false)
-    private RepairOrder repairOrder;
+    RepairOrder repairOrder;
 
-    private Double amount;
+    Double amount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ExpenseStatus status;// = ExpenseStatus.UNPAID;
+    ExpenseStatus status;// = ExpenseStatus.UNPAID;
 
-    private LocalDate paidDate;
+    LocalDate paidDate;
 
     public enum ExpenseStatus {
         UNPAID, PAID, REJECTED

@@ -13,10 +13,11 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class FilterOrderResponse {
-    private int prodcutYear;
-    private String modelName;
-    private String vin;
-    private String techinal;
-    private double percentInProcess;
-    private boolean status;
+    long repairOrderId;
+    int prodcutYear;
+    String modelName;
+    String vin;
+    String techinal;
+    double percentInProcess;
+    boolean status;
 }

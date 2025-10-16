@@ -12,16 +12,19 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehicleReposito
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.CustomerService;
 
 import jakarta.transaction.Transactional;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class CustomerServiceImpl implements CustomerService {
 
-    private final CustomerRepository customerRepository;
-    private final VehicleRepository vehicleRepository;
+    final CustomerRepository customerRepository;
+    final VehicleRepository vehicleRepository;
 
     @Override
     @Transactional

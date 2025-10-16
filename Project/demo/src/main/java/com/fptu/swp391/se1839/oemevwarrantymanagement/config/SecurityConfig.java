@@ -25,19 +25,24 @@ import lombok.experimental.FieldDefaults;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = false)
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SecurityConfig {
 
     private final String[] PUBLIC_ENDPOINTS = {
-            "/auth/login", "/auth/verify-otp", "/auth/token", "/auth/introspect", "/api/dashboard/summary",
+            "/api/temp-file/{filename}",
+            "/api/customers",
+            "/api/dashboard/summary",
+            "/api/models", "/api/model/detail/{id}",
+            "/auth/login", "/auth/verify-otp", /* "/auth/token" */ "/auth/introspect",
             "/auth/logout",
             "/auth/refesh",
             "/auth//forgot-password", "/auth/{userID}/change-password", "/auth/users/active/{userID}",
             "/auth//users/search", "/auth//users/inactive/{userID}",
-            "/auth/user", "/auth//users/{userID}",
-            "/api/categories", "/api/parts", "/api/claims", "/auth/users", "/api/temp-file/{filename}",
+            "/auth/user", "/auth//users/{userID}", "/auth/techinicals",
+            "/api/categories", "/api/parts", "/api/claims", "/auth/users",
             "/api/repairOrders",
-            "/api/customers", "/api/servicecenters"
+            "/api/servicecenters",
+            "/api/repairOrders", "/api/repairOrders/{id}", "/api/claims/{id}", "/api/categories/parts"
     };
 
     private CustomerJwtDecoder customerJwtDecoder;

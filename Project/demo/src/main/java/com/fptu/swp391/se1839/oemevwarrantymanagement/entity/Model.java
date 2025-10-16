@@ -71,13 +71,7 @@ public class Model {
 
     @Override
     public String toString() {
-        return "Model{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", releaseYear=" + releaseYear +
-                ", isInProduction=" + isInProduction +
-                ", vehicles=" + vehicles.size() +
-                ", modelParts=" + modelParts.size() +
-                '}';
+        return "Model{id=" + id + ", name='" + name + "', vehicleCount=" + vehicles.size() + "', modelPart="
+                + modelParts.size() + "}";
     }
 }

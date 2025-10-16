@@ -11,19 +11,22 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.User;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.UserOtp;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserOtpRepository;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class OtpServiceImpl {
 
     @Autowired
-    private UserOtpRepository otpRepository;
+    UserOtpRepository otpRepository;
 
     @Autowired
-    private JavaMailSender mailSender;
+    JavaMailSender mailSender;
 
     // Gửi OTP
     public void sendOtp(User user) {
@@ -46,7 +49,7 @@ public class OtpServiceImpl {
         log.info("OTP for {} / {} is {}", user.getEmail(), user.getPhoneNumber(), otp);
     }
 
-    private void sendOtpEmail(String email, String otp) {
+    void sendOtpEmail(String email, String otp) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
         message.setSubject("Your OTP Code");

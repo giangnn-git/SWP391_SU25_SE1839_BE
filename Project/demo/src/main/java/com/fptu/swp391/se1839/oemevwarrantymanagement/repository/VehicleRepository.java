@@ -13,5 +13,6 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
 public interface VehicleRepository extends JpaRepository<Vehicle, String> {
 
     Optional<Vehicle> findByVin(String vin);
+
     List<Vehicle> findByProductionDateBetween(LocalDate fromDate, LocalDate toDate);
 }

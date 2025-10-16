@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DetailModelResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ModelResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ModelPolicyDetail;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ModelPolicyDetailResponse;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Model;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ModelRepository;
@@ -22,7 +22,6 @@ public class ModelServiceImpl implements ModelService {
 
     private final ModelRepository modelRepository;
     private final PartPolicyRepository partPolicyRepository;
-
 
     @Override
     public List<ModelResponse> getAllModels() {
@@ -43,9 +42,9 @@ public class ModelServiceImpl implements ModelService {
         Model model = modelRepository.findById(modelId)
                 .orElseThrow(() -> new NoSuchElementException("Model with id " + modelId + " not found"));
 
-        List<ModelPolicyDetail> partPolicyDetails = model.getModelParts().stream()
+        List<ModelPolicyDetailResponse> partPolicyDetails = model.getModelParts().stream()
                 .flatMap(mp -> partPolicyRepository.findByPartId(mp.getPart().getId()).stream()
-                        .map(pp -> ModelPolicyDetail.builder()
+                        .map(pp -> ModelPolicyDetailResponse.builder()
                                 .partId(mp.getPart().getId())
                                 .partName(mp.getPart().getName())
                                 .policyId(pp.getWarrantyPolicy().getId())

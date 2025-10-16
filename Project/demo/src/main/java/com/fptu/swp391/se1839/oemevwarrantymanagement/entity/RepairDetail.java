@@ -32,23 +32,27 @@ public class RepairDetail {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "repairOrderId", nullable = false)
-    private RepairOrder repairOrder;
+    RepairOrder repairOrder;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "partID", nullable = false)
-    private Part part;
+    Part part;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private DetailStatus status = DetailStatus.PENDING;
+    DetailStatus status = DetailStatus.PENDING;
+
+    @ManyToOne
+    @JoinColumn(name = "vehiclePartId")
+    VehiclePart vehiclePart;
 
     @Column(columnDefinition = "TEXT")
-    private String description;
+    String description;
 
     public enum DetailStatus {
         PENDING, USED, REPLACED, REJECTED

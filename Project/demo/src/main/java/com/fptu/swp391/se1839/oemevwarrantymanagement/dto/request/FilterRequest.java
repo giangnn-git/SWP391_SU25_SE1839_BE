@@ -13,6 +13,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class FilterRequest {
-    private String keyword;
-    private String status;
+    String keyword;
+    String status;
 }

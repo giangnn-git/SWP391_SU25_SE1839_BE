@@ -16,12 +16,12 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ServiceCampaignResponse {
     private Long id;
-    private String name;
-    private String description;
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private LocalDate produceDateFrom;
-    private LocalDate produceDateTo;
-    private String code;
-    private int totalVehicles;
+    String name;
+    String description;
+    LocalDate startDate;
+    LocalDate endDate;
+    LocalDate produceDateFrom;
+    LocalDate produceDateTo;
+    String code;
+    int totalVehicles;
 }

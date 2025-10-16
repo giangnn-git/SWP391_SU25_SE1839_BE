@@ -19,15 +19,18 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartPolicyRepos
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PolicyRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PolicyService;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class PolicyServiceImpl implements PolicyService {
-        private final PolicyRepository policyRepository;
-        private final PartPolicyRepository partPolicyRepository;
+        final PolicyRepository policyRepository;
+        final PartPolicyRepository partPolicyRepository;
 
         @Override
         public GetAllPolicyResponse handleGetAllPolicy() {
@@ -40,8 +43,6 @@ public class PolicyServiceImpl implements PolicyService {
                                                 .description(policy.getDescription())
                                                 .durationPeriod(policy.getDurationPeriod())
                                                 .mileageLimit(policy.getMileageLimit())
-                                                .code(policy.getCode())
-                                                .type(policy.getType().toString())
                                                 .build())
                                 .toList();
 
@@ -60,21 +61,11 @@ public class PolicyServiceImpl implements PolicyService {
                                         .build();
                 }
 
-                if (policyRepository.existsByCode(request.getCode())) {
-                        return CreatePolicyResponse.builder()
-                                        .success(false)
-                                        .message("Warranty policy code already exists")
-                                        .policy(null)
-                                        .build();
-                }
-
                 WarrantyPolicy policy = WarrantyPolicy.builder()
                                 .name(request.getName())
                                 .description(request.getDescription())
                                 .durationPeriod(request.getDurationPeriod())
                                 .mileageLimit(request.getMileageLimit())
-                                .code(request.getCode())
-                                .type(WarrantyPolicy.PolicyType.valueOf(request.getType().toUpperCase()))
                                 .build();
 
                 WarrantyPolicy saved = policyRepository.save(policy);
@@ -147,4 +138,5 @@ public class PolicyServiceImpl implements PolicyService {
                                 .message("Policy deleted successfully.")
                                 .build();
         }
+
 }

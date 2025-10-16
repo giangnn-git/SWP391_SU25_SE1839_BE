@@ -12,7 +12,6 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartPolicy;
 
 @Repository
 public interface PartPolicyRepository extends JpaRepository<PartPolicy, Long> {
-
         @Query("SELECT p FROM PartPolicy p WHERE p.warrantyPolicy.id = :policyId AND p.endDate > :today")
         List<PartPolicy> findUnexpiredPartPolicies(@Param("policyId") Long policyId, @Param("today") LocalDate today);
 

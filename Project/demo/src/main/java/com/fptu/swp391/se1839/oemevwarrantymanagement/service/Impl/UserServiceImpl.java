@@ -1,17 +1,42 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
 import java.text.ParseException;
+import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.Utilities.PasswordGeneration;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangePasswordRequest;
@@ -25,46 +50,41 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.RefeshTokenReq
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserCreateRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserSearchRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserUpdateRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetTechnicalsResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.IntrospectResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.LoginResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OTPResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.TechnicalsResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.UserResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.InvalidToken;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ServiceCenter;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.User;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyClaim;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.InvalidTokenRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCenterRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.WarrantyClaimRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.EmailService;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.UserService;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSObject;
-import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.Payload;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jose.crypto.MACVerifier;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserServiceImpl implements UserService {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final InvalidTokenRepository invalidTokenRepository;
-    private final ServiceCenterRepository serviceCenterRepository;
-    private final OtpServiceImpl otpService;
-    private final PasswordGeneration passwordGeneration;
-    private final EmailService emailService;
+    final UserRepository userRepository;
+    final PasswordEncoder passwordEncoder;
+    final InvalidTokenRepository invalidTokenRepository;
+    final ServiceCenterRepository serviceCenterRepository;
+    final OtpServiceImpl otpService;
+    final PasswordGeneration passwordGeneration;
+    final EmailService emailService;
+    final RepairOrderRepository repairOrderRepository;
     @Value("${app.frontend.login-url}")
-    private String loginUrl;
+    String loginUrl;
 
     @Override
     public User handleFindByEmailOrPhone(String input) {
@@ -73,9 +93,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Value("${SIGN_KEY}")
-    private String SIGN_KEY;
+    String SIGN_KEY;
 
-    // Xác thực người dùng và trả JWT
     public LoginResponse authenticate(LoginRequest request) {
         User user = userRepository.findByEmailOrPhoneNumber(request.getUser(), request.getUser())
                 .orElseThrow(() -> new NoSuchElementException("Email or Phone isn't correct"));
@@ -85,9 +104,10 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Password isn't correct");
         }
 
-        if (user.getStatus().equals(User.Status.INACTIVE)) {
-            throw new IllegalArgumentException("User is inactive");
-        }
+        user.setWorkStatus(User.WorkStatus.AVAILABLE);
+        user.setDate(LocalDate.now());
+
+        userRepository.save(user);
 
         // otpService.sendOtp(user);
         // return LoginResponse.builder()
@@ -97,11 +117,6 @@ public class UserServiceImpl implements UserService {
         return LoginResponse.builder()
                 .token(token)
                 .status(true)
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .phoneNumber(user.getPhoneNumber())
-                .requiresPasswordChange(user.isRequiresPasswordChange())
                 .build();
     }
 
@@ -117,6 +132,7 @@ public class UserServiceImpl implements UserService {
                     .token(token)
                     .message("Verify OTP successfully")
                     .status(true)
+                    .name(user.getName())
                     .build();
         }
         return null;
@@ -143,17 +159,21 @@ public class UserServiceImpl implements UserService {
         String jwt = verifyToken.getJWTClaimsSet().getJWTID();
         Date expiDate = verifyToken.getJWTClaimsSet().getExpirationTime();
 
-        InvalidToken invalidToken = InvalidToken.builder()
-                .id(jwt)
-                .expityDate(expiDate)
-                .build();
-        invalidTokenRepository.save(invalidToken);
-
-        User user = userRepository.findByEmailOrPhoneNumber(verifyToken.getJWTClaimsSet().getSubject(),
+        User user = userRepository.findByEmailOrPhoneNumber(
+                verifyToken.getJWTClaimsSet().getSubject(),
                 verifyToken.getJWTClaimsSet().getSubject())
                 .orElseThrow(() -> new NoSuchElementException("User is invalid"));
 
+        InvalidToken invalidToken = InvalidToken.builder()
+                .id(jwt)
+                .expiryDate(expiDate)
+                .user(user)
+                .build();
+
+        invalidTokenRepository.save(invalidToken);
+
         String token = generaToken(user);
+
         return OTPResponse.builder()
                 .token(token)
                 .status(true)
@@ -167,9 +187,9 @@ public class UserServiceImpl implements UserService {
                 .issuer("devteria.com")
                 .issueTime(new Date())
                 .expirationTime(Date.from(Instant.now().plus(8, ChronoUnit.HOURS)))
-                .claim("id", user.getId())
-                .claim("role", user.getRole().toString())
                 .claim("serviceCenterId", user.getServiceCenter().getId())
+                .claim("name", user.getName())
+                .claim("userId", user.getId())
                 .jwtID(UUID.randomUUID().toString())
                 .build();
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
@@ -184,13 +204,19 @@ public class UserServiceImpl implements UserService {
     }
 
     public void handleLogout(LogoutRequest request) throws JOSEException, ParseException {
-        var vetifyToken = verifyToken(request.getToken());
-        String jwt = vetifyToken.getJWTClaimsSet().getJWTID();
-        Date expiDate = vetifyToken.getJWTClaimsSet().getExpirationTime();
+        var verifyToken = verifyToken(request.getToken());
+        String jwt = verifyToken.getJWTClaimsSet().getJWTID();
+        Date expiryDate = verifyToken.getJWTClaimsSet().getExpirationTime();
+        String subject = verifyToken.getJWTClaimsSet().getSubject();
+
+        User user = userRepository.findByEmailOrPhoneNumber(subject, subject)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
 
         InvalidToken invalidToken = InvalidToken.builder()
                 .id(jwt)
-                .expityDate(expiDate)
+                .expiryDate(expiryDate)
+                .logoutAt(LocalDateTime.now())
+                .user(user)
                 .build();
         invalidTokenRepository.save(invalidToken);
     }
@@ -238,7 +264,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse deactiveUser(Long id, Long ownId) {
+    public UserResponse deleteUser(Long id, Long ownId) {
         if (id.equals(ownId)) {
             throw new IllegalArgumentException("You cannot deactivate your own account.");
         }
@@ -254,25 +280,6 @@ public class UserServiceImpl implements UserService {
                 saved.getRole(),
                 saved.getStatus(),
                 saved.getServiceCenter().getId());
-    }
-
-    @Override
-    public UserResponse deleteUser(Long id, Long ownId) {
-        if (id.equals(ownId)) {
-            throw new IllegalArgumentException("You cannot delete your own account.");
-        }
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("User not found"));
-        
-        userRepository.delete(user);
-        return new UserResponse(
-                user.getId(),
-                user.getEmail(),
-                user.getName(),
-                user.getPhoneNumber(),
-                user.getRole(),
-                user.getStatus(),
-                user.getServiceCenter().getId());
     }
 
     @Override
@@ -388,7 +395,7 @@ public class UserServiceImpl implements UserService {
         return userRes;
     }
 
-    private void sendAccountCreationEmail(
+    void sendAccountCreationEmail(
             String name,
             String recipientEmail,
             String password,
@@ -449,8 +456,7 @@ public class UserServiceImpl implements UserService {
                 user.getPhoneNumber(),
                 user.getRole(),
                 user.getStatus(),
-                user.getServiceCenter().getId()
-        );
+                user.getServiceCenter().getId());
     }
 
     @Override
@@ -467,7 +473,7 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setRequiresPasswordChange(true);
         userRepository.save(user);
-        
+
         EmailDetailsRequest details = new EmailDetailsRequest();
         details.setRecipient(user.getEmail());
         details.setSubject("Password Reset - OEM EV Warranty");
@@ -482,7 +488,7 @@ public class UserServiceImpl implements UserService {
         return "Password reset email sent successfully.";
     }
 
-    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+    SignedJWT verifyToken(String token) throws JOSEException, ParseException {
         JWSVerifier jwsVerifier = new MACVerifier(SIGN_KEY.getBytes());
         SignedJWT signedJWT = SignedJWT.parse(token);
         Date expityDate = signedJWT.getJWTClaimsSet().getExpirationTime();
@@ -496,4 +502,39 @@ public class UserServiceImpl implements UserService {
         return signedJWT;
     }
 
+    @Override
+    public GetTechnicalsResponse handleTechnicalStatus(long serviceCenterId) {
+
+        // Lấy danh sách tất cả kỹ thuật viên ở trung tâm
+        List<User> technicians = userRepository
+                .findByWorkStatusInAndServiceCenterIdAndRole(
+                        Arrays.asList(User.WorkStatus.AVAILABLE, User.WorkStatus.BUSY),
+                        serviceCenterId,
+                        User.Role.TECHNICIAN);
+
+        List<TechnicalsResponse> result = new ArrayList<>();
+
+        for (User tech : technicians) {
+            // Bỏ qua nếu kỹ thuật viên nghỉ hôm nay
+            boolean hasLeave = userRepository.existsByTechnicianIdAndDate(tech.getId(), LocalDate.now());
+            if (hasLeave)
+                continue;
+
+            // Đếm số công việc đang chờ hoặc đang làm
+            long countJobs = repairOrderRepository.countByTechnicalAndStatusIn(
+                    tech.getId(),
+                    Arrays.asList(RepairOrder.OrderStatus.PENDING, RepairOrder.OrderStatus.IN_PROGRESS));
+
+            result.add(TechnicalsResponse.builder()
+                    .id(tech.getId())
+                    .name(tech.getName())
+                    .countJob(countJobs)
+                    .message("Đang hoạt động")
+                    .build());
+        }
+
+        return GetTechnicalsResponse.builder()
+                .technicians(result)
+                .build();
+    }
 }

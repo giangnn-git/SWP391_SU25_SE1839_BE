@@ -15,5 +15,5 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DashboardResponse {
-    private Map<String, Object> dashboarMap;
+    Map<String, Object> dashboarMap;
 }

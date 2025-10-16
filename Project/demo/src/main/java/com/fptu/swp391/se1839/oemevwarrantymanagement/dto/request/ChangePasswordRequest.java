@@ -1,6 +1,5 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,8 +13,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ChangePasswordRequest {
-    @NotBlank
-    private String oldPassword;
-    @NotBlank
-    private String newPassword;
+    String oldPassword;
+    String newPassword;
 }

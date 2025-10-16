@@ -33,7 +33,6 @@ import lombok.experimental.FieldDefaults;
 @Entity
 @Table(name = "Part")
 public class Part {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -114,5 +113,4 @@ public class Part {
                 + partClaims.size() + ", repairDetailCount=" + repairDetails.size() + ", vehiclePart="
                 + vehicleParts.size() + ", modelPart=" + +modelParts.size() + "}";
     }
-
 }

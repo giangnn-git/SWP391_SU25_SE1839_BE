@@ -13,11 +13,9 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PolicyResponse {
-    private Long id;
-    private String name;
-    private int durationPeriod;
-    private int mileageLimit;
-    private String description;
-    private String code;
-    private String type;
+    Long id;
+    String name;
+    int durationPeriod;
+    int mileageLimit;
+    String description;
 }

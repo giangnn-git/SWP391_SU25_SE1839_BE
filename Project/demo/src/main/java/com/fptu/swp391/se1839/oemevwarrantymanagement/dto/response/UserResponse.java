@@ -15,11 +15,11 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserResponse {
-    private Long id;
-    private String email;
-    private String name;
-    private String phoneNumber;
-    private User.Role role;
-    private User.Status status;
-    private Long serviceCenterId;
+    Long id;
+    String email;
+    String name;
+    String phoneNumber;
+    User.Role role;
+    User.Status status;
+    Long serviceCenterId;
 }

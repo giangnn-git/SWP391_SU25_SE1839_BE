@@ -62,6 +62,6 @@ public class ModelPart {
     @Override
     public String toString() {
         return "ModelPart{" + "id=" + id + ", modelId=" + (model != null ? model.getId() : null) + ", partId="
-                + (part != null ? part.getId() : null) +  "}";
+                + (part != null ? part.getId() : null) + '}';
     }
-} 
+}

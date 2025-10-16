@@ -12,14 +12,16 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.User;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCenterRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.ServiceCenterService;
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+
 @Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class ServiceCenterServiceImpl implements ServiceCenterService {
 
-    private final ServiceCenterRepository serviceCenterRepository;
-
-    public ServiceCenterServiceImpl(ServiceCenterRepository serviceCenterRepository) {
-        this.serviceCenterRepository = serviceCenterRepository;
-    }
+    final ServiceCenterRepository serviceCenterRepository;
 
     @Override
     public ServiceCenter handleAddCenter() {

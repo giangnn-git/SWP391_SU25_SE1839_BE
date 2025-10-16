@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DetailModelResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ModelResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.ModelService;
 
 import lombok.AccessLevel;
@@ -41,7 +41,7 @@ public class ModelController {
 
     @GetMapping("/model/detail/{id}")
     @PreAuthorize("hasAnyAuthority('ADMIN','EVM_STAFF')")
-    public ResponseEntity<ApiResponse<DetailModelResponse>> getModelDetail(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<DetailModelResponse>> getModelDetail(@PathVariable("id") Long id) {
         DetailModelResponse models = modelService.getModelDetail(id);
         var result = ApiResponse.<DetailModelResponse>builder()
                 .status(HttpStatus.OK.toString())

@@ -17,28 +17,20 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyClaim;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ClaimAttachmentRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.ClaimAttachmentService;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class ClaimAttachmentServiceImpl implements ClaimAttachmentService {
 
-    private final ClaimAttachmentRepository claimAttachmentRepository;
+    final ClaimAttachmentRepository claimAttachmentRepository;
 
-    public ClaimAttachment uploadImage(UploadImageRequest request, WarrantyClaim warrantyClaim)
-            throws IOException {
-        ClaimAttachment ca = ClaimAttachment.builder()
-                .name(request.getFile().getOriginalFilename())
-                .type(request.getFile().getContentType())
-                .imageData(compressImage(request.getFile().getBytes()))
-                .warrantyClaim(warrantyClaim)
-                .build();
-        return this.claimAttachmentRepository.save(ca);
-    }
-
-    public byte[] compressImage(byte[] data) {
+    public static byte[] compressImage(byte[] data) {
         Deflater deflater = new Deflater();
         deflater.setLevel(deflater.BEST_COMPRESSION);
         deflater.setInput(data);
@@ -66,7 +58,7 @@ public class ClaimAttachmentServiceImpl implements ClaimAttachmentService {
                 .build();
     }
 
-    private static byte[] decompressImage(byte[] data) {
+    public static byte[] decompressImage(byte[] data) {
         Inflater inflater = new Inflater();
         inflater.setInput(data);
 

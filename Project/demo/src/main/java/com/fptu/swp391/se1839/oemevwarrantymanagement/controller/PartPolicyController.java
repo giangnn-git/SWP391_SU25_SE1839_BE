@@ -14,11 +14,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePartPolicyRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartPolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyCodeResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PartPolicyService;
 
 import lombok.AccessLevel;
@@ -84,8 +84,7 @@ public class PartPolicyController {
         @GetMapping("/part-policy/code")
         @PreAuthorize("hasAnyAuthority('ADMIN','EVM_STAFF')")
         public ResponseEntity<ApiResponse<PartPolicyCodeResponse>> getPartPolicyCode(
-                        @Validated
-                        @AuthenticationPrincipal Jwt jwt) {
+                        @Validated @AuthenticationPrincipal Jwt jwt) {
 
                 PartPolicyCodeResponse response = partPolicyService.handleGetPartPolicyCode();
                 var result = ApiResponse.<PartPolicyCodeResponse>builder()

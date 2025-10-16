@@ -13,6 +13,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OtpRequest {
-    private String emailOrPhoneNumber;
-    private String verify;
+    String emailOrPhoneNumber;
+    String verify;
 }

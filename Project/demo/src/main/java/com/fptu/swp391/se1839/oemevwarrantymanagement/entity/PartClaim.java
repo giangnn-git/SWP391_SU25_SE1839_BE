@@ -34,24 +34,24 @@ public class PartClaim {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "partId", nullable = false)
-    private Part part;
+    Part part;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "warrantyClaimId", nullable = false)
-    private WarrantyClaim warrantyClaim;
+    WarrantyClaim warrantyClaim;
 
     @Min(value = 1, message = "Quantity must be at least 1")
     @Builder.Default
-    private long quantity = 1;
+    long quantity = 1;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private ClaimStatus status = ClaimStatus.PENDING;
+    ClaimStatus status = ClaimStatus.PENDING;
 
     public enum ClaimStatus {
         PENDING, APPROVED, REJECTED

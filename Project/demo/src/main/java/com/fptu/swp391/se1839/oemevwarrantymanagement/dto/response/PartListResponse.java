@@ -15,5 +15,5 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PartListResponse {
-    private Set<PartResponse> partList;
+    Set<PartResponse> partList;
 }

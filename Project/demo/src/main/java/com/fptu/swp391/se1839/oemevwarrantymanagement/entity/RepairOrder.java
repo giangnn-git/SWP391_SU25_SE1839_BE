@@ -17,6 +17,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Min;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,31 +38,43 @@ public class RepairOrder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "claimID", nullable = false)
-    private WarrantyClaim warrantyClaim;
+    WarrantyClaim warrantyClaim;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name = "userId")
-    private User technical;
+    User technical;
 
-    private LocalDateTime startDate;
-    private LocalDateTime endDate;
+    @Column(nullable = false)
+    @Min(0)
+    int estimated;
+
+    @Column(nullable = false)
+    @Min(0)
+    int endTime;
+
+    LocalDateTime startDate;
+    LocalDateTime endDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private OrderStatus status = OrderStatus.WAITING;
+    OrderStatus status = OrderStatus.WAITING;
 
     @OneToMany(mappedBy = "repairOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<RepairDetail> repairDetails = new HashSet<>();
+    Set<RepairDetail> repairDetails = new HashSet<>();
 
     @OneToMany(mappedBy = "repairOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<SCExpense> scExpenses = new HashSet<>();
+    Set<RepairStep> steps = new HashSet<>();
+
+    @OneToMany(mappedBy = "repairOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    Set<SCExpense> scExpenses = new HashSet<>();
 
     public enum OrderStatus {
         WAITING, PENDING, IN_PROGRESS, COMPLETED, CANCELLED

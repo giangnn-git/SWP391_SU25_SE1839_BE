@@ -16,15 +16,18 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.service.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 
 @Component
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
         @Autowired
-        private UserService userService;
+        UserService userService;
 
         @Autowired
-        private UserRepository userRepository;
+        UserRepository userRepository;
 
         @Override
         public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,

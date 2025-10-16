@@ -30,18 +30,18 @@ public class PartInventory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @ManyToOne
     @JoinColumn(name = "partID", nullable = false)
-    private Part part;
+    Part part;
 
     @Column(nullable = false)
-    private int quantity;
+    int quantity;
 
     @ManyToOne
     @JoinColumn(name = "serviceCenterId", nullable = false)
-    private ServiceCenter serviceCenter;
+    ServiceCenter serviceCenter;
 
     @Override
     public boolean equals(Object o) {

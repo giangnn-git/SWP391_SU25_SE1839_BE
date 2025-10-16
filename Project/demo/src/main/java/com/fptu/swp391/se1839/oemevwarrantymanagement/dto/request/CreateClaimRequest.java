@@ -15,9 +15,10 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreateClaimRequest {
-    private String description;
-    private int mileage;
-    private String vin;
-    private String status;
-    private Set<PartClaimRequest> partClaims;
+    String description;
+    int mileage;
+    String vin;
+    String status;
+    String priority;
+    Set<PartClaimRequest> partClaims;
 }

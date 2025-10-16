@@ -13,9 +13,9 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SummaryClaimResponse {
-    private SummaryItemResponse total;
-    private SummaryItemResponse pending;
-    private SummaryItemResponse approved;
-    private SummaryItemResponse cost;
-    private boolean status;
+    SummaryItemResponse total;
+    SummaryItemResponse pending;
+    SummaryItemResponse approved;
+    SummaryItemResponse cost;
+    boolean status;
 }

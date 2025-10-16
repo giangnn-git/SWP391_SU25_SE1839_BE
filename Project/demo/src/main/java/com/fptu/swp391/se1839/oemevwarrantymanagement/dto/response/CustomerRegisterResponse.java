@@ -13,9 +13,9 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CustomerRegisterResponse {
-    private Long id;
-    private String name;
-    private String phoneNumber;
-    private String email;
-    private String address;
+    Long id;
+    String name;
+    String phoneNumber;
+    String email;
+    String address;
 }

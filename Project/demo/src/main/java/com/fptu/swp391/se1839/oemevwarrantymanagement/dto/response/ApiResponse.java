@@ -1,4 +1,4 @@
-package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
+package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
 import java.time.LocalDateTime;
 
@@ -17,10 +17,10 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ApiResponse<T> {
-    private String status;
-    private String message;
-    private T data;
-    private String errorCode;
+    String status;
+    String message;
+    T data;
+    String errorCode;
     @Builder.Default
-    private LocalDateTime timestamp = LocalDateTime.now();
+    LocalDateTime timestamp = LocalDateTime.now();
 }

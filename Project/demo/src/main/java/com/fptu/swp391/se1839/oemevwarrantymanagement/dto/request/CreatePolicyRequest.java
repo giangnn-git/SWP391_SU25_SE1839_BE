@@ -12,15 +12,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class CreatePolicyRequest {
-    private String name;
+    String name;
 
-    private int durationPeriod;
+    int durationPeriod;
 
-    private int mileageLimit;
-
-    private String description;
-
-    private String code;
-
-    private String type;
+    int mileageLimit;
+    String description;
 }

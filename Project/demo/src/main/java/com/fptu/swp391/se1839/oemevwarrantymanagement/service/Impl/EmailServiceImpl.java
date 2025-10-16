@@ -10,16 +10,19 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.EmailDetailsRe
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.EmailService;
 
 import jakarta.mail.internet.MimeMessage;
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 
 @Service
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class EmailServiceImpl implements EmailService {
 
     @Autowired
-    private JavaMailSender javaMailSender;
+    JavaMailSender javaMailSender;
 
     // Lấy email người gửi từ application.properties
     @Value("${spring.mail.username}")
-    private String sender;
+    String sender;
 
     @Override
     public String sendHtmlMail(EmailDetailsRequest details) {

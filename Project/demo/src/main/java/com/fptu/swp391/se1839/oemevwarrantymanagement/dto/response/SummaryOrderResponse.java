@@ -13,9 +13,9 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SummaryOrderResponse {
-    private SummaryItemResponse active;
-    private SummaryItemResponse waitting;
-    private SummaryItemResponse complete;
-    private SummaryItemResponse avgComplete;
-    private boolean status;
+    SummaryItemResponse active;
+    SummaryItemResponse waitting;
+    SummaryItemResponse complete;
+    SummaryItemResponse avgComplete;
+    boolean status;
 }

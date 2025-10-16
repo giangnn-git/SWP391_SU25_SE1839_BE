@@ -3,8 +3,6 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.service;
 import java.text.ParseException;
 import java.util.List;
 
-import org.springframework.stereotype.Service;
-
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangePasswordRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ForgotPasswordRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.IntrospectRequest;
@@ -15,6 +13,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.RefeshTokenReq
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserCreateRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserSearchRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserUpdateRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetTechnicalsResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.IntrospectResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.LoginResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OTPResponse;
@@ -22,7 +21,6 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.UserResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.User;
 import com.nimbusds.jose.JOSEException;
 
-@Service
 public interface UserService {
     LoginResponse authenticate(LoginRequest request);
 
@@ -46,10 +44,6 @@ public interface UserService {
 
     UserResponse getUserById(Long id);
 
-    UserResponse deactiveUser(Long id, Long ownId);
-
-    UserResponse deleteUser(Long id, Long ownId);
-
     List<UserResponse> searchUsers(UserSearchRequest request);
 
     UserResponse restoreUser(Long id);
@@ -57,4 +51,8 @@ public interface UserService {
     UserResponse changePassword(Long id, ChangePasswordRequest request);
 
     String forgotPassword(ForgotPasswordRequest request);
+
+    GetTechnicalsResponse handleTechnicalStatus(long repairOrderId);
+
+    UserResponse deleteUser(Long id, Long ownId);
 }

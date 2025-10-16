@@ -1,18 +1,25 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.FieldDefaults;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class PartInventoryResponse {
-    private Long id;
-    private Long partId;
-    private String partName;
-    private String partCategory;
-    private Long serviceCenterId;
-    private String serviceCenterName;
-    private String serviceCenterAddress;
-    private int quantity;
-    private String unit;
+    Long id;
+    Long partId;
+    String partName;
+    String partCategory;
+    Long serviceCenterId;
+    String serviceCenterName;
+    String serviceCenterAddress;
+    int quantity;
+    String unit;
 }

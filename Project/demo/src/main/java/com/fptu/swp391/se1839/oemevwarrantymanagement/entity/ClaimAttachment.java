@@ -33,23 +33,23 @@ public class ClaimAttachment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "warranty_claim_id", nullable = false)
-    private WarrantyClaim warrantyClaim;
+    WarrantyClaim warrantyClaim;
 
     @NotBlank
     @Column(nullable = false)
-    private String name;
+    String name;
 
     @NotBlank
     @Column(nullable = false)
-    private String type;
+    String type;
 
     @Lob
     @Column(columnDefinition = "LONGBLOB")
-    private byte[] imageData;
+    byte[] imageData;
 
     @Override
     public boolean equals(Object o) {

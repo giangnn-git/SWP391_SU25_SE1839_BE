@@ -31,21 +31,20 @@ public class PartPriceHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @ManyToOne(optional = false) // rõ nghĩa hơn
     @JoinColumn(name = "partID", nullable = false)
-    private Part part;
+    Part part;
 
     @Column(nullable = false)
-    private Double price;
-
+    Double price;
     @Column(nullable = false)
     @Builder.Default
-    private LocalDate startDate = LocalDate.now();
+    LocalDate startDate = LocalDate.now();
 
     @Column
-    private LocalDate endDate;
+    LocalDate endDate;
 
     @Override
     public boolean equals(Object o) {

@@ -10,10 +10,13 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartInventory;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartInventoryRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PartInventoryService;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PartInventoryServiceImpl implements PartInventoryService {
 
     private final PartInventoryRepository partInventoryRepository;

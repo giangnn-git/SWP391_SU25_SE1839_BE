@@ -16,17 +16,14 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserUpdateRequest {
-    @Email
-    @NotBlank
-    private String email;
+    String email;
 
-    @NotBlank
     private String name;
-    @Pattern(regexp = "\\d{10}", message = "Phone number must contain exactly 10 digits")
-    private String phoneNumber;
-    private String role;
-    private Long serviceCenterId;
-    private Status status;
+
+    String phoneNumber;
+    String role;
+    Long serviceCenterId;
+    Status status;
 
     public enum Status {
         ACTIVE, INACTIVE, SUSPENDED

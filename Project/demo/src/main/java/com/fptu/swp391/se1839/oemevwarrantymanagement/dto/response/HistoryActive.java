@@ -13,7 +13,7 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class HistoryActive {
-    private String message;
-    private String model;
-    private String vin;
+    String message;
+    String model;
+    String vin;
 }

@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardClaimSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardOrderSummaryResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairOrderService;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.WarrantyClaimService;
 
@@ -27,8 +27,8 @@ import lombok.experimental.FieldDefaults;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = false)
 public class DashboardController {
-    private final RepairOrderService repairOrderService;
-    private final WarrantyClaimService warrantyClaimService;
+    final RepairOrderService repairOrderService;
+    final WarrantyClaimService warrantyClaimService;
 
     @GetMapping("/summary")
     public ResponseEntity<ApiResponse<DashboardResponse>> getDashboardSummary(@AuthenticationPrincipal Jwt jwt) {

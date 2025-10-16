@@ -11,20 +11,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePolicyRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UpdatePolicyRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CreatePolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DeletePolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.UpdatePolicyResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PolicyService;
 
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -81,33 +81,33 @@ public class PolicyController {
         @PutMapping("/policy/{policyId}")
         @PreAuthorize("hasAuthority('ADMIN')")
         public ResponseEntity<ApiResponse<UpdatePolicyResponse>> updatePolicy(
-                @AuthenticationPrincipal Jwt jwt,
-                @PathVariable Long policyId,
-                @Valid @RequestBody UpdatePolicyRequest request) {
+                        @AuthenticationPrincipal Jwt jwt,
+                        @PathVariable Long policyId,
+                        @Valid @RequestBody UpdatePolicyRequest request) {
 
-        UpdatePolicyResponse response = policyService.handleUpdatePolicy(policyId, request);
+                UpdatePolicyResponse response = policyService.handleUpdatePolicy(policyId, request);
 
-        var result = ApiResponse.<UpdatePolicyResponse>builder()
-                .data(response)
-                .build();
+                var result = ApiResponse.<UpdatePolicyResponse>builder()
+                                .data(response)
+                                .build();
 
-        return ResponseEntity.ok(result);
+                return ResponseEntity.ok(result);
         }
 
         @DeleteMapping("/policy/{policyId}")
         @PreAuthorize("hasAuthority('ADMIN')")
         public ResponseEntity<ApiResponse<DeletePolicyResponse>> deletePolicy(
-                @AuthenticationPrincipal Jwt jwt,
-                @PathVariable Long policyId) {
+                        @AuthenticationPrincipal Jwt jwt,
+                        @PathVariable Long policyId) {
 
-        DeletePolicyResponse response = policyService.handleDeletePolicy(policyId);
+                DeletePolicyResponse response = policyService.handleDeletePolicy(policyId);
 
-        var result = ApiResponse.<DeletePolicyResponse>builder()
-                .status(HttpStatus.OK.toString())
-                .message(response.getMessage())
-                .data(response)
-                .build();
+                var result = ApiResponse.<DeletePolicyResponse>builder()
+                                .status(HttpStatus.OK.toString())
+                                .message(response.getMessage())
+                                .data(response)
+                                .build();
 
-        return ResponseEntity.ok(result);
+                return ResponseEntity.ok(result);
         }
 }

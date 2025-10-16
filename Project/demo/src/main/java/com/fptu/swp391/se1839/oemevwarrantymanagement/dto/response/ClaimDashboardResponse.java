@@ -15,6 +15,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ClaimDashboardResponse {
-    private SummaryClaimResponse scr;
-    private List<FilterClaimResponse> fcr;
+    SummaryClaimResponse scr;
+    List<FilterClaimResponse> fcr;
 }

@@ -3,15 +3,16 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.PartListRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartCategoryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartListResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PartService;
 
 import lombok.AccessLevel;
@@ -23,7 +24,6 @@ import lombok.experimental.FieldDefaults;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = false)
 public class PartController {
-
     private final PartService partService;
 
     @GetMapping("/categories")
@@ -37,9 +37,9 @@ public class PartController {
         return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/categories/parts")
+    @GetMapping("/parts/{category}")
     public ResponseEntity<ApiResponse<PartListResponse>> partFlCategory(
-            @RequestBody PartListRequest request) {
+            @PathVariable("category") PartListRequest request) {
         PartListResponse partListResponse = this.partService.handlePartList(request);
         var result = ApiResponse.<PartListResponse>builder()
                 .status(HttpStatus.OK.toString())

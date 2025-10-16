@@ -1,6 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.controller;
 
 import java.text.ParseException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -8,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,15 +23,17 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ForgotPassword
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.IntrospectRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LoginRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LogoutRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.OtpRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.RefeshTokenRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserCreateRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserSearchRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserUpdateRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetTechnicalsResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.IntrospectResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.LoginResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OTPResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.UserResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.UserService;
 import com.nimbusds.jose.JOSEException;
 
@@ -43,10 +45,10 @@ import lombok.experimental.FieldDefaults;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = false)
 public class UserController {
 
-        private final UserService employeeService;
+        final UserService employeeService;
 
         @PostMapping("/token")
         public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
@@ -57,7 +59,33 @@ public class UserController {
                                 .data(user)
                                 .build();
                 return ResponseEntity.ok(result);
+
         }
+
+        // @PostMapping("/login")
+        // public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody
+        // LoginRequest request) {
+        // LoginResponse user = this.employeeService.authenticate(request);
+        // var result = ApiResponse.<LoginResponse>builder()
+        // .status(HttpStatus.OK.toString())
+        // .message("Input user and password correct")
+        // .data(user)
+        // .build();
+        // return ResponseEntity.ok(result);
+
+        // }
+
+        // @PostMapping("/verify-otp")
+        // public ResponseEntity<ApiResponse<OTPResponse>> verifyOtp(@RequestBody
+        // OtpRequest request) {
+        // OTPResponse verify = this.employeeService.handleVerifyOTP(request);
+        // var result = ApiResponse.<OTPResponse>builder()
+        // .status(HttpStatus.OK.toString())
+        // .message("Invalid OTP")
+        // .data(verify)
+        // .build();
+        // return ResponseEntity.ok(result);
+        // }
 
         @PostMapping("/introspect")
         public ResponseEntity<ApiResponse<IntrospectResponse>> checkToken(@RequestBody IntrospectRequest request)
@@ -77,10 +105,11 @@ public class UserController {
                 this.employeeService.handleLogout(request);
                 var result = ApiResponse.<Void>builder()
                                 .status(HttpStatus.OK.toString())
-                                .message("Logout successfully")
+                                .message("Logout successfully at " + LocalDateTime.now())
                                 .data(null)
                                 .build();
                 return ResponseEntity.ok(result);
+
         }
 
         @PostMapping("/refesh")
@@ -93,6 +122,7 @@ public class UserController {
                                 .data(user)
                                 .build();
                 return ResponseEntity.ok(result);
+
         }
 
         @PostMapping("/user")
@@ -139,22 +169,7 @@ public class UserController {
                 return ResponseEntity.ok(result);
         }
 
-        @PutMapping("/users/inactive/{userID}")
-        @PreAuthorize("hasAuthority('ADMIN')")
-        public ResponseEntity<ApiResponse<UserResponse>> deactiveUsers(
-                        @AuthenticationPrincipal Jwt jwt,
-                        @PathVariable Long userID) {
-                Long currentUserId = jwt.getClaim("id");
-                UserResponse response = employeeService.deactiveUser(userID, currentUserId);
-                var result = ApiResponse.<UserResponse>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("User deleted successfully")
-                                .data(response)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
-
-        @DeleteMapping("/users/{userID}")
+        @PatchMapping("/users/inactive/{userID}")
         @PreAuthorize("hasAuthority('ADMIN')")
         public ResponseEntity<ApiResponse<UserResponse>> deleteUsers(
                         @AuthenticationPrincipal Jwt jwt,
@@ -197,7 +212,7 @@ public class UserController {
                 return ResponseEntity.ok(result);
         }
 
-        @PutMapping("/users/active/{userID}")
+        @PatchMapping("/users/active/{userID}")
         @PreAuthorize("hasAuthority('ADMIN')")
         public ResponseEntity<ApiResponse<UserResponse>> restoreUser(
                         @AuthenticationPrincipal Jwt jwt,
@@ -238,4 +253,15 @@ public class UserController {
                 return ResponseEntity.ok(result);
         }
 
+        @GetMapping("/techinicals")
+        public ResponseEntity<ApiResponse<GetTechnicalsResponse>> getTechnician(@AuthenticationPrincipal Jwt jwt) {
+                Long serviceCenterId = Long.parseLong(jwt.getClaim("serviceCenterId").toString());
+                GetTechnicalsResponse technicalList = employeeService.handleTechnicalStatus(serviceCenterId);
+                var result = ApiResponse.<GetTechnicalsResponse>builder()
+                                .status(HttpStatus.OK.toString())
+                                .message("successfull")
+                                .data(technicalList)
+                                .build();
+                return ResponseEntity.ok(result);
+        }
 }

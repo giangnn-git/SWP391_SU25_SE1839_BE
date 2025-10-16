@@ -16,14 +16,17 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Part;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PartService;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class PartServiceImpl implements PartService {
-    private final PartRepository partRepository;
+    final PartRepository partRepository;
 
     public PartCategoryResponse handleListCategory() {
         boolean status = true;
@@ -58,21 +61,21 @@ public class PartServiceImpl implements PartService {
                 .build();
     }
 
-        public GetAllPartResponse handleGetPartList() {
-            List<Part> partList = this.partRepository.findAll();
-            List<PartResponse> responseList = new ArrayList<>();
-            for (Part p : partList) {
-                PartResponse pr = PartResponse.builder()
-                        .id(p.getId())
-                        .description(p.getDescription())
-                        .code(p.getCode())
-                        .name(p.getName())
-                        .partCategory(p.getPartCategory())
-                        .build();
-                responseList.add(pr);
-            }
-            return GetAllPartResponse.builder()
-                    .partList(responseList)
+    public GetAllPartResponse handleGetPartList() {
+        List<Part> partList = this.partRepository.findAll();
+        List<PartResponse> responseList = new ArrayList<>();
+        for (Part p : partList) {
+            PartResponse pr = PartResponse.builder()
+                    .id(p.getId())
+                    .description(p.getDescription())
+                    .code(p.getCode())
+                    .name(p.getName())
+                    .partCategory(p.getPartCategory())
                     .build();
+            responseList.add(pr);
+        }
+        return GetAllPartResponse.builder()
+                .partList(responseList)
+                .build();
     }
 }

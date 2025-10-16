@@ -43,7 +43,8 @@ public class PartPolicyServiceImpl implements PartPolicyService {
                                                 .id(p.getId())
                                                 .partName(p.getPart() != null ? p.getPart().getName() : null)
                                                 .partCode(p.getPart() != null ? p.getPart().getCode() : null)
-                                                .policyCode(p.getWarrantyPolicy() != null ? p.getWarrantyPolicy().getCode()
+                                                .policyCode(p.getWarrantyPolicy() != null
+                                                                ? p.getWarrantyPolicy().getCode()
                                                                 : null)
                                                 .startDate(p.getStartDate() != null ? p.getStartDate().format(formatter)
                                                                 : null)
@@ -179,6 +180,4 @@ public class PartPolicyServiceImpl implements PartPolicyService {
                                 .policyCode(policyCodes)
                                 .build();
         }
-
-
 }

@@ -27,23 +27,22 @@ import lombok.experimental.FieldDefaults;
 public class VehiclePart {
 
     @Id
-    private String serialNumber;
+    String serialNumber;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "vehicleVin", nullable = false)
-    private Vehicle vehicle;
+    Vehicle vehicle;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "partId", nullable = false)
-    private Part part;
+    Part part;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "claimId", nullable = false)
-    private WarrantyClaim warrantyClaim;
+    WarrantyClaim warrantyClaim;
+    LocalDate installationDate;
 
-    private LocalDate installationDate;
-
-    private LocalDate removalDate;
+    LocalDate removalDate;
 
     @Override
     public boolean equals(Object o) {

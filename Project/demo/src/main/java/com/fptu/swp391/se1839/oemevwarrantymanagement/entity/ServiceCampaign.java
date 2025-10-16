@@ -1,6 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -8,6 +9,8 @@ import java.util.Set;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -88,8 +91,8 @@ public class ServiceCampaign {
 
     @Override
     public String toString() {
-        return "ServiceCampaign [id=" + id + ", name=" + name + ", description=" + description +
-                ", startDate=" + startDate + ", endDate=" + endDate +
-                ", produceDateFrom=" + produceDateFrom + ", produceDateTo=" + produceDateTo + "]";
+        return "ServiceCampaign [id=" + id + ", name=" + name + ", description=" + description + ", startDate="
+                + startDate + ", endDate=" + endDate + ", campaignVehicle=" + campaignVehicles + ", warrantyClaim="
+                + warrantyClaims.size() + "]";
     }
 }

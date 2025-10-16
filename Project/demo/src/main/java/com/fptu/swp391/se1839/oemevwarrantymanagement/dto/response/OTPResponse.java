@@ -13,7 +13,8 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OTPResponse {
-    private String token;
-    private boolean status;
-    private String message;
+    String token;
+    boolean status;
+    String message;
+    String name;
 }

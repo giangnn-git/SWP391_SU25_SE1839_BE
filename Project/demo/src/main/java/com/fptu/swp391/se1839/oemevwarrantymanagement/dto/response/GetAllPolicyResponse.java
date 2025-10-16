@@ -2,7 +2,6 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
 import java.util.List;
 
-
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,5 +19,5 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class GetAllPolicyResponse {
-    private List<PolicyResponse> policyList;
+    List<PolicyResponse> policyList;
 }
