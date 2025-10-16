@@ -3,7 +3,6 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreateCampaignRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllCampaignResponse;
@@ -18,6 +17,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCampaign
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehicleRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.CampaignService;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -131,7 +131,4 @@ public class CampaignServiceImpl implements CampaignService {
                 }
                 serviceCampaignRepository.deleteById(id);
         }
-
-
-
 }

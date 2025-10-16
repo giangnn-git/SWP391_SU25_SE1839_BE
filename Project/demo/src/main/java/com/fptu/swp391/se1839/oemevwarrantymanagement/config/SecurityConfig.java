@@ -25,7 +25,7 @@ import lombok.experimental.FieldDefaults;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = false)
 public class SecurityConfig {
 
     private final String[] PUBLIC_ENDPOINTS = {
