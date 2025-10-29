@@ -4,8 +4,9 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChooseTechnica
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.FilterRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChooseTechnicalResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardOrderSummaryResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.FilterOrderResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDashboardResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDetailResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderSummaryResponse;
 
 public interface RepairOrderService {
     DashboardOrderSummaryResponse findSunSummaryOrder(long serviceCenterId);
@@ -13,7 +14,21 @@ public interface RepairOrderService {
     OrderDashboardResponse handleOrderDashboard(long serviceCenterId,
             FilterRequest request, Long userId);
 
-    ChooseTechnicalResponse handleChooseTechinical(long repairOrderId, ChooseTechnicalRequest request);
+    ChooseTechnicalResponse handleChooseTechnical(long repairOrderId, ChooseTechnicalRequest request);
 
-    FilterOrderResponse handleGetDetailOrder(long orderId);
+    OrderDetailResponse handleGetDetailOrder(long serviceCenterId, long orderId);
+
+    int handleCalculateResponseScore(long serviceCenterId);
+
+    int handleCalculatePerformanceMetrics(long serviceCenterId);
+
+    int handleCalculateOverdueRepairs(long serviceCenterId);
+
+    int hanldeCalculateCompleteToday(long serviceCenterId);
+
+    double handleCalculateAvgDays(long serviceCenterId);
+
+    int handleCalculateResolutionRate(long serviceCenterId);
+
+    OrderSummaryResponse handleCalculateResolutionRateDifferent(long serviceCenterId);
 }

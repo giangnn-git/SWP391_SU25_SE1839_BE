@@ -52,11 +52,27 @@ public class PartInventoryServiceImpl implements PartInventoryService {
                 .build();
     }
 
-    @Override
-    public List<PartInventoryResponse> getPartInventoriesByServiceCenterID(Long serviceCenterId) {
-        return partInventoryRepository.findByServiceCenter_Id(serviceCenterId)
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public int handleCalculatePartAvailability(long serviceCenterId) {
+        long totalPartsRequested = partInventoryRepository.countByServiceCenterId(serviceCenterId);
+        long availableParts = partInventoryRepository.countByServiceCenterIdAndQuantityGreaterThan(serviceCenterId, 0);
+        return totalPartsRequested == 0 ? 100 : (int) Math.round((availableParts * 100.0) / totalPartsRequested);
     }
+
+    public int countLowStockParts(long serviceCenterId) {
+        List<PartInventory> parts = partInventoryRepository.findByServiceCenter_Id(serviceCenterId);
+
+        double avgQuantity = parts.stream()
+                .mapToInt(PartInventory::getQuantity)
+                .average()
+                .orElse(0);
+
+        int lowStockThreshold = (int) Math.ceil(avgQuantity * 0.2);
+
+        long count = parts.stream()
+                .filter(pi -> pi.getQuantity() <= lowStockThreshold)
+                .count();
+
+        return (int) count; // cast long → int
+    }
+
 }

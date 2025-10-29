@@ -1,7 +1,5 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
 
-import java.util.Set;
-
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,4 +18,5 @@ public class CreateClaimRequest {
     String vin;
     String status;
     String priority;
+    boolean agreeRecall;
 }

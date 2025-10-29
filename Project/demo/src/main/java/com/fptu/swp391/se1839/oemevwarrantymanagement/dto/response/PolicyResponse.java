@@ -20,8 +20,9 @@ public class PolicyResponse {
     int mileageLimit;
     String description;
     PolicyType policyType;
+
     public enum PolicyType {
-        NORMAL, 
-        PROMOTION 
+        NORMAL,
+        PROMOTION
     }
 }

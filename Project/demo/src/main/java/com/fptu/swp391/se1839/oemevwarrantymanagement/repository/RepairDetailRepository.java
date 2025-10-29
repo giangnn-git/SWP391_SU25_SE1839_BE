@@ -29,6 +29,6 @@ public interface RepairDetailRepository extends JpaRepository<RepairDetail, Long
                         JOIN rd.repairOrder ro
                         WHERE ro.id = :repairOrderId
                         """)
-        List<RepairDetail> findByRepairOrderId(@Param("repairOrderId") long repairOrderId);
+        List<RepairDetail> findByRepairOrderId(@Param("repairOrderId") Long repairOrderId);
 
 }

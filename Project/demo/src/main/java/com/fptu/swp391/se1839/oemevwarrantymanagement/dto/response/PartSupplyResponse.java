@@ -21,4 +21,3 @@ public class PartSupplyResponse {
     String status;
     String note;
 }
-

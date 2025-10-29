@@ -12,6 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class PartRequestDetailResponse {
+    Long id;
     String partCode;
     String partName;
     int requestedQuantity;

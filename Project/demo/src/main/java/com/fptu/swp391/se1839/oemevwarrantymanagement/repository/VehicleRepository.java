@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Customer;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
 
 @Repository
@@ -25,11 +24,13 @@ public interface VehicleRepository extends JpaRepository<Vehicle, String> {
             """)
     List<Vehicle> findByCustomerPhone(@Param("phone") String phone);
 
-    List<Vehicle> findByCustomer(Customer customer);
+    Optional<Vehicle> findByLicensePlate(String licensePlate);
 
     boolean existsByLicensePlate(String licensePlate);
 
     Optional<Vehicle> findByCustomerId(Long customerId);
 
-    Optional<Vehicle> findByLicensePlate(String licensePlate);
+    @Query("SELECT v FROM Vehicle v WHERE v.customer IS NOT NULL")
+    List<Vehicle> findAllRegisteredVehicles();
+
 }

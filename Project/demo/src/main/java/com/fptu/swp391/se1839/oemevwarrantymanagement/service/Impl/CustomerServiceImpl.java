@@ -1,18 +1,21 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.AddVehicleRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CustomerRegisterRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CustomerRegisterResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RegisteredVehicleResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Customer;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.CustomerRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehicleRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.CustomerService;
 
+import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -80,7 +83,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public CustomerRegisterResponse handleFindCustomerByVin(String vin) {
         var vehicle = vehicleRepository.findByVin(vin)
-                .orElseThrow(() -> new NoSuchElementException("Vehicle with VIN: " + vin + " not found")); 
+                .orElseThrow(() -> new NoSuchElementException("Vehicle with VIN: " + vin + " not found"));
         Customer customer = customerRepository.findById(vehicle.getCustomer().getId())
                 .orElseThrow(() -> new NoSuchElementException("Customer with VIN " + vin + " not found"));
         return new CustomerRegisterResponse(
@@ -92,7 +95,6 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    @Transactional
     public CustomerRegisterResponse updateCustomer(Long id, CustomerRegisterRequest req) {
         // 1️⃣ Tìm customer
         var customer = customerRepository.findById(id)
@@ -116,7 +118,8 @@ public class CustomerServiceImpl implements CustomerService {
         if (req.getLicensePlate() != null && !req.getLicensePlate().isBlank()) {
             vehicleRepository.findByLicensePlate(req.getLicensePlate())
                     .ifPresent(existingVehicle -> {
-                        if (existingVehicle.getCustomer() != null && !Objects.equals(existingVehicle.getCustomer().getId(), id)) {
+                        if (existingVehicle.getCustomer() != null
+                                && !Objects.equals(existingVehicle.getCustomer().getId(), id)) {
                             throw new IllegalArgumentException("License plate already belongs to another customer");
                         }
                     });
@@ -143,8 +146,49 @@ public class CustomerServiceImpl implements CustomerService {
                 saved.getName(),
                 saved.getPhoneNumber(),
                 saved.getEmail(),
-                saved.getAddress()
-        );
+                saved.getAddress());
+    }
+
+    @Override
+    @Transactional
+    public CustomerRegisterResponse addVehicleForExistingCustomer(Long customerId, AddVehicleRequest req) {
+        var customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new NoSuchElementException("Customer not found"));
+
+        var vehicle = vehicleRepository.findByVin(req.getVin())
+                .orElseThrow(() -> new NoSuchElementException("Vehicle with VIN " + req.getVin() + " not found"));
+
+        if (vehicle.getCustomer() != null)
+            throw new IllegalArgumentException("This vehicle already has an owner");
+
+        if (vehicleRepository.existsByLicensePlate(req.getLicensePlate()))
+            throw new IllegalArgumentException("License plate already exists");
+
+        vehicle.setCustomer(customer);
+        vehicle.setLicensePlate(req.getLicensePlate());
+        vehicleRepository.save(vehicle);
+
+        return new CustomerRegisterResponse(
+                customer.getId(),
+                customer.getName(),
+                customer.getPhoneNumber(),
+                customer.getEmail(),
+                customer.getAddress());
+    }
+
+    @Override
+    public List<RegisteredVehicleResponse> getAllRegisteredVehicles() {
+        return vehicleRepository.findAllRegisteredVehicles()
+                .stream()
+                .map(v -> RegisteredVehicleResponse.builder()
+                        .vin(v.getVin())
+                        .licensePlate(v.getLicensePlate())
+                        .purchaseDate(v.getPurchaseDate())
+                        .modelName(v.getModel().getName())
+                        .customerName(v.getCustomer().getName())
+                        .customerPhone(v.getCustomer().getPhoneNumber())
+                        .build())
+                .toList();
     }
 
 

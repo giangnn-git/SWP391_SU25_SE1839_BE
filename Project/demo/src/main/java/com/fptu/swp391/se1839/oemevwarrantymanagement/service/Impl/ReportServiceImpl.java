@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairOrderDurationStatsResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairOrderDurationStatusResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCenterPerformanceResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.ReportService;
@@ -37,14 +37,14 @@ public class ReportServiceImpl implements ReportService {
                 .collect(Collectors.toList());
     }
 
-    public RepairOrderDurationStatsResponse getCompletedOrderDurationStats() {
+    public RepairOrderDurationStatusResponse getCompletedOrderDurationStats() {
 
         long under24h = repairOrderRepository.countCompletedUnder24h();
         long under72h = repairOrderRepository.countCompletedUnder72h();
         long under168h = repairOrderRepository.countCompletedUnder168h();
         long over168h = repairOrderRepository.countCompletedOver168h();
 
-        return RepairOrderDurationStatsResponse.builder()
+        return RepairOrderDurationStatusResponse.builder()
                 .under24h(under24h)
                 .under72h(under72h)
                 .under168h(under168h)

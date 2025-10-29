@@ -10,10 +10,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.DownloadImageRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UploadImageRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DownloadImageResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ClaimAttachment;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyClaim;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ClaimAttachmentRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.ClaimAttachmentService;
 
@@ -73,4 +71,10 @@ public class ClaimAttachmentServiceImpl implements ClaimAttachmentService {
         }
         return outputStream.toByteArray();
     }
+
+    public String handleDeleteTempFile(long attachmentId) throws IOException {
+        this.claimAttachmentRepository.deleteById(attachmentId);
+        return "Delete temp file successfully";
+    }
+
 }

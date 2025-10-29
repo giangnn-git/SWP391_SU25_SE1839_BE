@@ -14,6 +14,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -49,16 +50,16 @@ public class Vehicle {
     @Column(nullable = false)
     int productYear;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = true, unique = true)
     @NotNull
-    @Pattern(regexp = "^[0-9]{2}[A-Z]-[0-9]{3}[0-9]{2}$", message = "Invalid license plate format (e.g., 30A-123.45)")
+    @Pattern(regexp = "^[0-9]{2}[A-Z]-[0-9]{3}.[0-9]{2}$", message = "Invalid license plate format (e.g., 30A-123.45)")
     private String licensePlate;
 
     @Column(nullable = false)
     @Default
     LocalDate purchaseDate = LocalDate.now();
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = true)
     @JoinColumn(name = "customerId")
     Customer customer;
 
@@ -74,7 +75,7 @@ public class Vehicle {
     @Builder.Default
     Set<WarrantyClaim> warrantyClaims = new HashSet<>();
 
-    @Column(name = "production_date")
+    @Column(name = "product_date")
     LocalDate productionDate;
 
     @Override

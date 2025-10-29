@@ -75,9 +75,9 @@ public class PolicyServiceImpl implements PolicyService {
                                 .description(request.getDescription())
                                 .durationPeriod(request.getDurationPeriod())
                                 .mileageLimit(request.getMileageLimit())
-                                .type(request.getType() == null ? WarrantyPolicy.PolicyType.NORMAL : WarrantyPolicy.PolicyType.valueOf(request.getType().name()))
+                                .type(request.getType() == null ? WarrantyPolicy.PolicyType.NORMAL
+                                                : WarrantyPolicy.PolicyType.valueOf(request.getType().name()))
                                 .build();
-
 
                 WarrantyPolicy saved = policyRepository.save(policy);
                 log.info("Created new WarrantyPolicy with id: {}", saved.getId());

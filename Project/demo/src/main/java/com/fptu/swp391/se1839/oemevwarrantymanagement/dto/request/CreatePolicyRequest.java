@@ -21,8 +21,9 @@ public class CreatePolicyRequest {
     String description;
 
     PolicyType type;
+
     public enum PolicyType {
-        NORMAL, 
-        PROMOTION 
+        NORMAL,
+        PROMOTION
     }
 }

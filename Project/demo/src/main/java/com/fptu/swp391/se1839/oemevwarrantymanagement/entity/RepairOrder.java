@@ -16,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
 import lombok.AccessLevel;
@@ -40,8 +41,8 @@ public class RepairOrder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "claimID", nullable = false)
+    @OneToOne
+    @JoinColumn(name = "claimid", referencedColumnName = "id")
     WarrantyClaim warrantyClaim;
 
     @ManyToOne
@@ -97,10 +98,16 @@ public class RepairOrder {
 
     @Override
     public String toString() {
-        return "RepairOrder{" + "id=" + id + ", warrantyClaimId="
-                + (warrantyClaim != null ? warrantyClaim.getId() : null) + ", technicianId="
-                + (technical != null ? technical.getId() : null) + ", startDate=" + startDate + ", endDate=" + endDate
-                + ", status=" + status + ", repairDetailsCount=" + (repairDetails != null ? repairDetails.size() : 0)
-                + ", scExpensesCount=" + (scExpenses != null ? scExpenses.size() : 0) + '}';
+        return "RepairOrder{" +
+                "id=" + id +
+                ", warrantyClaimId=" + (warrantyClaim != null ? warrantyClaim.getId() : null) +
+                ", technicalId=" + (technical != null ? technical.getId() : null) +
+                ", startDate=" + startDate +
+                ", endDate=" + endDate +
+                ", status=" + status +
+                ", repairDetailsCount=" + (repairDetails != null ? repairDetails.size() : 0) +
+                ", scExpensesCount=" + (scExpenses != null ? scExpenses.size() : 0) +
+                '}';
     }
+
 }

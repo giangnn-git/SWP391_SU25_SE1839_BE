@@ -19,6 +19,6 @@ import lombok.experimental.FieldDefaults;
 public class ApproveOrRejectPartRequest {
     private Long partSupplyId;
     private String action; // APPROVE hoặc REJECT
-    private String note;   // ghi chú chung cho yêu cầu
-    private List<PartApprovalDetail> details;
+    private String note; // ghi chú chung cho yêu cầu
+    private List<PartApprovalDetailResquest> details;
 }

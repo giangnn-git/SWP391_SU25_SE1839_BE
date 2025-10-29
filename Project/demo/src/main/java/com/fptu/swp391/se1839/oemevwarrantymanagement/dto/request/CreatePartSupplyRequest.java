@@ -20,5 +20,3 @@ public class CreatePartSupplyRequest {
     String note;
     List<PartRequestDetailRequest> details;
 }
-
-

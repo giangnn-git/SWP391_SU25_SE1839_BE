@@ -28,23 +28,29 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = false)
 public class SecurityConfig {
 
-    private final String[] PUBLIC_ENDPOINTS = {
-            "/api/temp-file/{filename}",
-            "/api/customers",
-            "/api/dashboard/summary",
-            "/api/models", "/api/model/detail/{id}",
-            "/auth/login", "/auth/verify-otp", /* "/auth/token" */ "/auth/introspect",
-            "/auth/logout",
-            "/auth/refesh",
-            "/api/claims/vehicle",
-            "/auth/forgot-password", "/auth/{userID}/change-password", "/auth/users/active/{userID}",
-            "/auth/users/search", "/auth/users/inactive/{userID}",
-            "/auth/user", "/auth/users/{userID}", "/auth/techinicals",
-            "/api/categories", "/api/parts", "/api/claims", "/auth/users",
-            "/api/repairOrders",
-            "/api/servicecenters",
-            "/api/repairOrders", "/api/repairOrders/{id}", "/api/claims/{id}", "/api/categories/parts"
-    };
+    // private final String[] PUBLIC_ENDPOINTS = {
+    // "/api/temp-file/{filename}",
+    // "/api/customers",
+    // "/api/dashboard/summary",
+    // "/api/models", "/api/model/detail/{id}",
+    // "/api/categories", "/api/parts", "/api/categories/parts",
+    // "/api/partInventories", "/api/partInventory/serviceCenter/{id}",
+    // "/api/partPolicies", "/api/partPolicies/{id}", "/api/partPolicy",
+    // "/api/partPolicy/code",
+    // "/api/policies", "/api/policy/{policyId}", "/api/policy",
+    // "/api/repairDetails/{id}",
+    // "/api/repairOrders", "/api/repairOrders/{id}",
+    // "/api/repairSteps/{id}",
+    // "/api/campaigns", "/api/campaigns/{id}",
+    // "/api/servicecenters",
+    // "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh",
+    // "/auth/user", "/auth/users/{userID}",
+    // "/auth/users", "/auth/users/inactive/{userID}", "/auth/users/search",
+    // "/auth/users/active/{userID}",
+    // "/auth/change-password", "/ạuth/forgot-password",
+    // "/api/claims/vehicle/{phone}",
+    // "/api/claims", "/api/claims/{id}"
+    // };
 
     private CustomerJwtDecoder customerJwtDecoder;
 
@@ -63,9 +69,9 @@ public class SecurityConfig {
                 }) // hoặc cors(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS).permitAll()
-                        .anyRequest().permitAll())
+                        .requestMatchers("/auth/token", "/auth/refresh", "/auth/introspect", "/auth/forgot-password")
+                        .permitAll()
+                        .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .decoder(customerJwtDecoder)

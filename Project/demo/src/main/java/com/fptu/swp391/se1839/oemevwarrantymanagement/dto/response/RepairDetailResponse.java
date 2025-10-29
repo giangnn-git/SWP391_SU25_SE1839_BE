@@ -20,5 +20,6 @@ public class RepairDetailResponse {
     int prodcutYear;
     String modelName;
     String vin;
+    String licensePlate;
     String category;
 }

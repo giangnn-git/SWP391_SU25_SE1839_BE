@@ -18,5 +18,5 @@ public interface PartPriceHistoryRepository extends JpaRepository<PartPriceHisto
                         "AND p.startDate <= :claimDate " +
                         "AND (p.endDate IS NULL OR p.endDate >= :claimDate)")
         Optional<PartPriceHistory> findCurrentPrice(@Param("partId") Long partId,
-                        @Param("claimDate") LocalDate claimDate);  
+                        @Param("claimDate") LocalDate claimDate);
 }

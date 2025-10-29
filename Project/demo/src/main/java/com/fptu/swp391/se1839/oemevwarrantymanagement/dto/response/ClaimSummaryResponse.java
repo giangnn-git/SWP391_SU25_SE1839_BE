@@ -1,4 +1,6 @@
-package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
+package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
+
+import java.util.Map;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -12,9 +14,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UpdateStatusPartPolicyRequest {
-    Status status;
-    public enum Status {
-        ACTIVE, INACTIVE
-    }
+public class ClaimSummaryResponse {
+    double currentRate;
+    double changePercent;
 }

@@ -14,8 +14,8 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PartInventoryResponse {
     Long id;
-    String partCode;
     Long partId;
+    String partCode;
     String partName;
     String partCategory;
     Long serviceCenterId;

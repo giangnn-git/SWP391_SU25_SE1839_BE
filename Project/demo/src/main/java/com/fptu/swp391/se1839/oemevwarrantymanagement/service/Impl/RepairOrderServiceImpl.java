@@ -1,10 +1,14 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -12,25 +16,35 @@ import java.util.NoSuchElementException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
+import com.fptu.swp391.se1839.oemevwarrantymanagement.annotation.Activity;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChooseTechnicalRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.FilterRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChooseTechnicalResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardOrderSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.FilterOrderResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetTechnicalsResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDashboardResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDetailResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryItemResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryOrderResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.TechnicalsResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Model;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartPriceHistory;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairDetail;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder.OrderStatus;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairStep;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.SCExpense;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ServiceCenter;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.User;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyClaim;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ModelRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairDetailRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairStepRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.SCExpenseReposiotry;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCenterRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehicleRepository;
@@ -56,6 +70,9 @@ public class RepairOrderServiceImpl implements RepairOrderService {
     final ModelRepository modelRepository;
     final RepairStepRepository repairStepRepository;
     final UserRepository userRepository;
+    final RepairDetailRepository repairDetailRepository;
+    final SCExpenseReposiotry scExpenseReposiotry;
+    final ActivityLogServiceImpl activityLogServiceImpl;
 
     Vehicle getVehicleByVin(String vin) {
         Vehicle vehicle = this.vehicleRepository.findByVin(vin)
@@ -208,7 +225,9 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 .build();
     }
 
-    List<FilterOrderResponse> handleFilterOrder(List<RepairOrder> roList) {
+    @Activity(title = "Repair Order Completed", status = "COMPLETED", detail = "Repair order #{orderId} was completed")
+    public List<FilterOrderResponse> handleFilterOrder(List<RepairOrder> roList) {
+
         List<FilterOrderResponse> forList = new ArrayList<>();
 
         for (RepairOrder ro : roList) {
@@ -220,8 +239,14 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 ro.setStatus(RepairOrder.OrderStatus.IN_PROGRESS);
             } else {
                 ro.setStatus(RepairOrder.OrderStatus.COMPLETED);
-                ro.setEndDate(LocalDateTime.now());
+
+                if (ro.getEndDate() == null) {
+                    ro.setEndDate(LocalDateTime.now());
+                }
+
+                createExpensesIfOrderCompleted(ro);
             }
+
             repairOrderRepository.save(ro);
 
             String technicalName = ro.getTechnical() != null ? ro.getTechnical().getName() : "Unknown";
@@ -246,7 +271,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
             forList.add(response);
         }
 
-        forList.sort(Comparator.comparing(FilterOrderResponse::getOrderDate).reversed());
+        forList.sort(Comparator.comparing(FilterOrderResponse::getRepairOrderId).reversed());
 
         return forList;
     }
@@ -320,32 +345,37 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 .build();
     }
 
-    public ChooseTechnicalResponse handleChooseTechinical(long repairOrderId, ChooseTechnicalRequest request) {
-        System.out.println(">>> Debug: finding repair order id=" + repairOrderId);
-        var repairOrder = repairOrderRepository.findById(repairOrderId)
-                .orElseThrow(() -> new NoSuchElementException("This repair order is not exist " + repairOrderId));
+    @Activity(title = "Technician Assigned", status = "PENDING", detail = "Technician {technicalName} was assigned to repair order #{orderId}")
+    @Override
+    public ChooseTechnicalResponse handleChooseTechnical(long repairOrderId, ChooseTechnicalRequest request) {
+        // Lấy RepairOrder theo id
+        RepairOrder repairOrder = repairOrderRepository.findById(repairOrderId)
+                .orElseThrow(() -> new NoSuchElementException("Repair order not found: " + repairOrderId));
 
-        System.out.println(">>> Found repair order id=" + repairOrder.getId());
-
+        // Lấy kỹ thuật viên theo tên
         User technical = userRepository.findByName(request.getTechnicalName());
         if (technical == null) {
             throw new NoSuchElementException("Technician not found: " + request.getTechnicalName());
         }
 
+        // Gán thông tin kỹ thuật và các trường khác
         repairOrder.setTechnical(technical);
         repairOrder.setEstimated(request.getEstimated());
         repairOrder.setStartDate(request.getStartDate());
         repairOrder.setEndDate(request.getEndDate());
-        repairOrder.setStatus(OrderStatus.PENDING);
+        repairOrder.setStatus(RepairOrder.OrderStatus.PENDING);
+
+        // Lưu RepairOrder
         repairOrderRepository.save(repairOrder);
 
+        // Trả về phản hồi
         return ChooseTechnicalResponse.builder()
-                .message("Choose successfully")
+                .message("Phân công kỹ thuật viên thành công.")
                 .status(true)
                 .build();
     }
 
-    public FilterOrderResponse handleGetDetailOrder(long orderId) {
+    FilterOrderResponse handleFilterOrder(long orderId) {
         RepairOrder ro = this.repairOrderRepository.findById(orderId)
                 .orElseThrow(() -> new NoSuchElementException("Not find repair order"));
 
@@ -359,6 +389,216 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 .licensePlate(ro.getWarrantyClaim().getVehicle().getLicensePlate())
                 .techinal(technicalName)
                 .percentInProcess(calculateProgress(orderId))
+                .build();
+    }
+
+    GetTechnicalsResponse handleTechnicalStatus(long serviceCenterId, long orderId) {
+        RepairOrder order = repairOrderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order không tồn tại"));
+
+        if (order.getTechnical() != null) {
+            long countJobs = repairOrderRepository.countByTechnicalIdAndStatusIn(
+                    order.getTechnical().getId(),
+                    Arrays.asList(RepairOrder.OrderStatus.WAITING, RepairOrder.OrderStatus.PENDING,
+                            RepairOrder.OrderStatus.IN_PROGRESS));
+
+            String message = countJobs > 0
+                    ? "Busy, hiện có " + countJobs + " công việc đang xử lý"
+                    : "Available";
+
+            TechnicalsResponse technicians = TechnicalsResponse.builder()
+                    .id(order.getTechnical().getId())
+                    .name(order.getTechnical().getName())
+                    .countJob(countJobs)
+                    .message(message)
+                    .build();
+            return GetTechnicalsResponse.builder()
+                    .technicians(Collections.singletonList(technicians))
+                    .build();
+        }
+
+        // Lấy danh sách tất cả kỹ thuật viên ở trung tâm
+        List<User> technicians = userRepository
+                .findByWorkStatusInAndServiceCenterIdAndRole(
+                        Arrays.asList(User.WorkStatus.AVAILABLE, User.WorkStatus.BUSY),
+                        serviceCenterId,
+                        User.Role.TECHNICIAN);
+
+        List<TechnicalsResponse> result = new ArrayList<>();
+
+        for (User tech : technicians) {
+            // Bỏ qua nếu kỹ thuật viên nghỉ hôm nay
+            boolean hasLeave = userRepository.existsByTechnicianIdAndDate(tech.getId(), LocalDate.now());
+            if (hasLeave)
+                continue;
+
+            // Đếm số công việc đang chờ hoặc đang làm
+            long countJobs = repairOrderRepository.countByTechnicalIdAndStatusIn(
+                    tech.getId(),
+                    Arrays.asList(RepairOrder.OrderStatus.WAITING, RepairOrder.OrderStatus.PENDING,
+                            RepairOrder.OrderStatus.IN_PROGRESS));
+
+            result.add(TechnicalsResponse.builder()
+                    .id(tech.getId())
+                    .name(tech.getName())
+                    .countJob(countJobs)
+                    .message("Đang hoạt động")
+                    .build());
+        }
+
+        return GetTechnicalsResponse.builder()
+                .technicians(result)
+                .build();
+    }
+
+    public OrderDetailResponse handleGetDetailOrder(long serviceCenterId, long orderId) {
+        return OrderDetailResponse.builder()
+                .filterOrderResponse(handleFilterOrder(orderId))
+                .getTechnicalsResponse(handleTechnicalStatus(serviceCenterId, orderId))
+                .build();
+    }
+
+    private void createExpensesIfOrderCompleted(RepairOrder order) {
+        if (order.getStatus() != RepairOrder.OrderStatus.COMPLETED)
+            return;
+
+        List<RepairDetail> replacedDetails = repairDetailRepository.findByRepairOrderId(order.getId())
+                .stream()
+                .filter(d -> d.getStatus() == RepairDetail.DetailStatus.REPLACED)
+                .toList();
+
+        for (RepairDetail d : replacedDetails) {
+            Double price = d.getPart().getPartPriceHistories() // Set<PartPriceHistory>
+                    .stream()
+                    .filter(p -> p.getEndDate() == null || p.getEndDate().isAfter(LocalDate.now()))
+                    .max((p1, p2) -> p1.getStartDate().compareTo(p2.getStartDate())) // lấy bản mới nhất
+                    .map(PartPriceHistory::getPrice)
+                    .orElse(0.0); // nếu ko có thì default 0
+
+            SCExpense expense = SCExpense.builder()
+                    .repairOrder(order)
+                    .serviceCenter(order.getWarrantyClaim().getServiceCenter()) // set service center
+                    .description("Chi phí part: " + d.getPart().getName())
+                    .amount(price)
+                    .status(SCExpense.ExpenseStatus.UNPAID) // set status mặc định
+                    .paidDate(null) // chưa thanh toán
+                    .build();
+            scExpenseReposiotry.save(expense);
+        }
+    }
+
+    public int handleCalculateResponseScore(long serviceCenterId) {
+        List<RepairOrder> allOrders = repairOrderRepository.findAll();
+        double avgResponseHours = allOrders.stream()
+                .filter(o -> o.getWarrantyClaim() != null && o.getStartDate() != null)
+                .mapToDouble(o -> Duration.between(o.getWarrantyClaim().getClaimDate(), o.getStartDate()).toHours())
+                .average().orElse(0);
+
+        return (int) Math.round(Math.max(0, 100 - avgResponseHours * 5)); // càng nhanh, điểm càng cao
+    }
+
+    public int handleCalculatePerformanceMetrics(long serviceCenterId) {
+        List<RepairOrder> completedOrders = repairOrderRepository.findByServiceCenterIdAndStatus(serviceCenterId,
+                RepairOrder.OrderStatus.COMPLETED);
+
+        long onTimeCount = completedOrders.stream()
+                .filter(o -> o.getStartDate() != null && o.getEndDate() != null)
+                .filter(o -> Duration.between(o.getStartDate(), o.getEndDate()).toDays() <= 3) // thời hạn 3 ngày
+                .count();
+
+        return completedOrders.isEmpty() ? 0
+                : (int) Math.round((onTimeCount * 100.0) / completedOrders.size());
+    }
+
+    public int handleCalculateOverdueRepairs(long serviceCenterId) {
+        LocalDateTime now = LocalDateTime.now();
+
+        long count = this.repairOrderRepository.findByServiceCenterId(serviceCenterId)
+                .stream()
+                .filter(o -> o.getStartDate() != null && o.getEstimated() > 0)
+                .filter(o -> o.getEndDate() == null)
+                .peek(order -> {
+                    WarrantyClaim claim = order.getWarrantyClaim();
+
+                    long daysSinceClaim = Duration.between(claim.getClaimDate(), now).toDays();
+
+                    if (daysSinceClaim > 7) {
+                        claim.setPriority(WarrantyClaim.ClaimPriority.HIGH);
+                    } else if (order.getEstimated() <= 2) {
+                        claim.setPriority(WarrantyClaim.ClaimPriority.NORMAL);
+                    }
+
+                    warrantyClaimRepository.save(claim); // lưu claim
+                })
+                // Lọc các order quá hạn (start + estimated < now)
+                .filter(o -> o.getStartDate().plusDays(o.getEstimated()).isBefore(now))
+                .count();
+
+        return (int) count;
+    }
+
+    public int hanldeCalculateCompleteToday(long serviceCenterId) {
+        LocalDate today = LocalDate.now();
+        return repairOrderRepository.countByServiceCenterIdAndStatusAndEndDateBetween(
+                serviceCenterId,
+                RepairOrder.OrderStatus.COMPLETED,
+                today.atStartOfDay(),
+                today.plusDays(1).atStartOfDay());
+
+    }
+
+    public double handleCalculateAvgDays(long serviceCenterId) {
+        List<RepairOrder> completedOrders = repairOrderRepository.findByServiceCenterIdAndStatus(
+                serviceCenterId,
+                RepairOrder.OrderStatus.COMPLETED);
+
+        double avgDays = completedOrders.stream()
+                .filter(o -> o.getStartDate() != null && o.getEndDate() != null)
+                .mapToDouble(o -> Duration.between(o.getStartDate(), o.getEndDate()).toHours() / 24.0)
+                .average()
+                .orElse(0);
+
+        return new BigDecimal(avgDays).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    public int handleCalculateResolutionRate(long serviceCenterId) {
+        long totalOrders = repairOrderRepository.countByServiceCenterId(serviceCenterId);
+        long completedOrders = repairOrderRepository.countByServiceCenterIdAndStatus(serviceCenterId,
+                RepairOrder.OrderStatus.COMPLETED);
+        return totalOrders == 0 ? 0 : (int) Math.round((completedOrders * 100.0) / totalOrders);
+    }
+
+    public OrderSummaryResponse handleCalculateResolutionRateDifferent(long serviceCenterId) {
+        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfMonth = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+
+        LocalDate startOfPrevMonth = startOfMonth.minusMonths(1);
+        LocalDate endOfPrevMonth = startOfMonth.minusDays(1);
+
+        long totalCurrent = repairOrderRepository.countByServiceCenterIdAndStartDateBetween(
+                serviceCenterId, startOfMonth.atStartOfDay(), endOfMonth.plusDays(1).atStartOfDay());
+        long completedCurrent = repairOrderRepository.countByServiceCenterIdAndStatusAndStartDateBetween(
+                serviceCenterId, RepairOrder.OrderStatus.COMPLETED,
+                startOfMonth.atStartOfDay(), endOfMonth.plusDays(1).atStartOfDay());
+
+        double currentRate = totalCurrent == 0 ? 0 : (completedCurrent * 100.0) / totalCurrent;
+
+        long totalPrev = repairOrderRepository.countByServiceCenterIdAndStartDateBetween(
+                serviceCenterId, startOfPrevMonth.atStartOfDay(), endOfPrevMonth.plusDays(1).atStartOfDay());
+        long completedPrev = repairOrderRepository.countByServiceCenterIdAndStatusAndStartDateBetween(
+                serviceCenterId, RepairOrder.OrderStatus.COMPLETED,
+                startOfPrevMonth.atStartOfDay(), endOfPrevMonth.plusDays(1).atStartOfDay());
+
+        double prevRate = totalPrev == 0 ? 0 : (completedPrev * 100.0) / totalPrev;
+
+        double difference = (prevRate == 0) ? (currentRate > 0 ? 100 : 0)
+                : ((currentRate - prevRate) / prevRate) * 100;
+
+        return OrderSummaryResponse.builder()
+                .averageResolution(new SummaryItemResponse((long) currentRate, "Average Resolution Time"))
+                .diffirence(new SummaryItemResponse(
+                        (long) Math.round(difference),
+                        difference >= 0 ? "Increase" : "Decrease"))
                 .build();
     }
 

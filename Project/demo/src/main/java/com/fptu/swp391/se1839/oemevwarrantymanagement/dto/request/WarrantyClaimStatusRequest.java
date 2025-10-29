@@ -17,5 +17,5 @@ import lombok.experimental.FieldDefaults;
 public class WarrantyClaimStatusRequest {
     String changeStatus;
     String reason;
-    Set<PartClaimRequest> parts;
+    // Set<PartClaimRequest> parts;
 }

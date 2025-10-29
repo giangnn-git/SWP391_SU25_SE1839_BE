@@ -9,5 +9,7 @@ public interface PartInventoryService {
 
     List<PartInventoryResponse> getPartInventoriesByServiceCenter(Long serviceCenterId);
 
-    List<PartInventoryResponse> getPartInventoriesByServiceCenterID(Long serviceCenterId);
+    int handleCalculatePartAvailability(long serviceCenterId);
+
+    int countLowStockParts(long serviceCenterId);
 }

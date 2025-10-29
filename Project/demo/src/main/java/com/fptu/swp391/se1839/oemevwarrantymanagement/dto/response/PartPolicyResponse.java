@@ -20,6 +20,7 @@ public class PartPolicyResponse {
     String startDate;
     String endDate;
     Status status;
+
     public enum Status {
         ACTIVE, INACTIVE
     }

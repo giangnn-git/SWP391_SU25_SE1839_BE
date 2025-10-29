@@ -16,11 +16,8 @@ public interface VehiclePartRepository extends JpaRepository<VehiclePart, String
     @Query("SELECT vp FROM VehiclePart vp WHERE vp.vehicle = :vehicle AND vp.part = :part AND vp.removalDate IS NULL")
     Optional<VehiclePart> findActiveVehiclePart(@Param("vehicle") Vehicle vehicle, @Param("part") Part part);
 
-    @Query("SELECT vp FROM VehiclePart vp WHERE vp.vehicle.id = :vehicleId AND vp.part.id = :partId AND vp.removalDate IS NULL")
-    Optional<VehiclePart> findByVehicleIdAndPartId(@Param("vehicleId") Long vehicleId, @Param("partId") Long partId);
-
-    @Query("SELECT vp FROM VehiclePart vp WHERE vp.vehicle.vin = :vin AND vp.part.id = :partId AND vp.removalDate IS NULL")
-    Optional<VehiclePart> findByVehicleVinAndPartId(@Param("vin") String vin, @Param("partId") Long partId);
-
+    @Query("SELECT vp FROM VehiclePart vp WHERE vp.vehicle.vin = :vehicleVin AND vp.part.id = :partId AND vp.removalDate IS NULL")
+    Optional<VehiclePart> findByVehicleVinAndPartId(@Param("vehicleVin") String vehicleVin,
+            @Param("partId") Long partId);
 
 }

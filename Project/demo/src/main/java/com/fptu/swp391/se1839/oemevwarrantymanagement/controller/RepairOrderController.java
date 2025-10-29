@@ -9,6 +9,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChooseTechnicalResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.FilterOrderResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDashboardResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairOrderService;
 
 import lombok.AccessLevel;
@@ -48,10 +49,12 @@ public class RepairOrderController {
     }
 
     @GetMapping("/repairOrders/{id}")
-    public ResponseEntity<ApiResponse<FilterOrderResponse>> getRepairOrderDetail(
+    public ResponseEntity<ApiResponse<OrderDetailResponse>> getRepairOrderDetail(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable("id") long orderId) {
-        FilterOrderResponse orderDetail = this.repairOrderService.handleGetDetailOrder(orderId);
-        var result = ApiResponse.<FilterOrderResponse>builder()
+        Long serviceCenterId = Long.parseLong(jwt.getClaim("serviceCenterId").toString());
+        OrderDetailResponse orderDetail = this.repairOrderService.handleGetDetailOrder(serviceCenterId, orderId);
+        var result = ApiResponse.<OrderDetailResponse>builder()
                 .status(HttpStatus.OK.toString())
                 .message("Get inf dashboard successfully")
                 .data(orderDetail)
@@ -62,7 +65,7 @@ public class RepairOrderController {
     @PutMapping("/repairOrders/{id}")
     public ResponseEntity<ApiResponse<ChooseTechnicalResponse>> chooseTechinician(
             @PathVariable("id") Long repairOrderId, @RequestBody ChooseTechnicalRequest requets) {
-        ChooseTechnicalResponse ctr = this.repairOrderService.handleChooseTechinical(repairOrderId, requets);
+        ChooseTechnicalResponse ctr = this.repairOrderService.handleChooseTechnical(repairOrderId, requets);
         var result = ApiResponse.<ChooseTechnicalResponse>builder()
                 .status(HttpStatus.OK.toString())
                 .message("Choose techinician successfully")

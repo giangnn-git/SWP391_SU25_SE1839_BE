@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -22,6 +23,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ForgotPassword
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.IntrospectRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LoginRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LogoutRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.OtpRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.RefeshTokenRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserCreateRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserSearchRequest;
@@ -110,8 +112,8 @@ public class UserController {
 
         }
 
-        @PostMapping("/refesh")
-        public ResponseEntity<ApiResponse<OTPResponse>> refesh(@RequestBody RefeshTokenRequest request)
+        @PostMapping("/refresh")
+        public ResponseEntity<ApiResponse<OTPResponse>> refresh(@RequestBody RefeshTokenRequest request)
                         throws JOSEException, ParseException {
                 OTPResponse user = this.employeeService.handleRefeshToken(request);
                 var result = ApiResponse.<OTPResponse>builder()
@@ -126,9 +128,7 @@ public class UserController {
         @PostMapping("/user")
         @PreAuthorize("hasAuthority('ADMIN')")
         public ResponseEntity<ApiResponse<UserResponse>> createUser(
-                        @AuthenticationPrincipal Jwt jwt,
                         @Valid @RequestBody UserCreateRequest request) {
-
                 UserResponse createdUser = employeeService.createUser(request);
                 var result = ApiResponse.<UserResponse>builder()
                                 .status(HttpStatus.CREATED.toString())
@@ -141,10 +141,8 @@ public class UserController {
         @PutMapping("/users/{userID}")
         @PreAuthorize("hasAuthority('ADMIN')")
         public ResponseEntity<ApiResponse<UserResponse>> updateUser(
-                        @AuthenticationPrincipal Jwt jwt,
                         @PathVariable Long userID,
                         @Valid @RequestBody UserUpdateRequest request) {
-
                 UserResponse updateUser = employeeService.updateUser(request, userID);
                 var result = ApiResponse.<UserResponse>builder()
                                 .status(HttpStatus.OK.toString())
@@ -156,8 +154,7 @@ public class UserController {
 
         @GetMapping("/users")
         @PreAuthorize("hasAuthority('ADMIN')")
-        public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers(
-                        @AuthenticationPrincipal Jwt jwt) {
+        public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
                 List<UserResponse> users = employeeService.getAllUsers();
                 var result = ApiResponse.<List<UserResponse>>builder()
                                 .status(HttpStatus.OK.toString())
@@ -167,12 +164,12 @@ public class UserController {
                 return ResponseEntity.ok(result);
         }
 
-        @PutMapping("/users/inactive/{userID}")
+        @PatchMapping("/users/inactive/{userID}")
         @PreAuthorize("hasAuthority('ADMIN')")
         public ResponseEntity<ApiResponse<UserResponse>> deleteUsers(
                         @AuthenticationPrincipal Jwt jwt,
                         @PathVariable Long userID) {
-                Long currentUserId = jwt.getClaim("id");
+                Long currentUserId = Long.parseLong(jwt.getClaim("userId").toString());
                 UserResponse response = employeeService.deleteUser(userID, currentUserId);
                 var result = ApiResponse.<UserResponse>builder()
                                 .status(HttpStatus.OK.toString())
@@ -182,38 +179,37 @@ public class UserController {
                 return ResponseEntity.ok(result);
         }
 
-        @GetMapping("/users/{userID}")
-        @PreAuthorize("hasAuthority('ADMIN')")
-        public ResponseEntity<ApiResponse<UserResponse>> getUserByID(
-                        @AuthenticationPrincipal Jwt jwt,
-                        @PathVariable Long userID) {
-                UserResponse user = employeeService.getUserById(userID);
-                var result = ApiResponse.<UserResponse>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("Get user " + userID + " successfully")
-                                .data(user)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
+        // @GetMapping("/users/{userID}")
+        // @PreAuthorize("hasAuthority('ADMIN')")
+        // public ResponseEntity<ApiResponse<UserResponse>> getUserByID(
+        // @AuthenticationPrincipal Jwt jwt,
+        // @PathVariable Long userID) {
+        // UserResponse user = employeeService.getUserById(userID);
+        // var result = ApiResponse.<UserResponse>builder()
+        // .status(HttpStatus.OK.toString())
+        // .message("Get user " + userID + " successfully")
+        // .data(user)
+        // .build();
+        // return ResponseEntity.ok(result);
+        // }
 
-        @GetMapping("/users/search")
-        @PreAuthorize("hasAuthority('ADMIN')")
-        public ResponseEntity<ApiResponse<List<UserResponse>>> searchUsers(
-                        @AuthenticationPrincipal Jwt jwt,
-                        @Valid @RequestBody UserSearchRequest request) {
-                List<UserResponse> userList = employeeService.searchUsers(request);
-                var result = ApiResponse.<List<UserResponse>>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("Users found")
-                                .data(userList)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
+        // @GetMapping("/users/search")
+        // @PreAuthorize("hasAuthority('ADMIN')")
+        // public ResponseEntity<ApiResponse<List<UserResponse>>> searchUsers(
+        // @AuthenticationPrincipal Jwt jwt,
+        // @Valid @RequestBody UserSearchRequest request) {
+        // List<UserResponse> userList = employeeService.searchUsers(request);
+        // var result = ApiResponse.<List<UserResponse>>builder()
+        // .status(HttpStatus.OK.toString())
+        // .message("Users found")
+        // .data(userList)
+        // .build();
+        // return ResponseEntity.ok(result);
+        // }
 
-        @PutMapping("/users/active/{userID}")
+        @PatchMapping("/users/active/{userID}")
         @PreAuthorize("hasAuthority('ADMIN')")
         public ResponseEntity<ApiResponse<UserResponse>> restoreUser(
-                        @AuthenticationPrincipal Jwt jwt,
                         @PathVariable Long userID) {
                 UserResponse user = employeeService.restoreUser(userID);
                 var result = ApiResponse.<UserResponse>builder()
@@ -247,18 +243,6 @@ public class UserController {
                                 .status(HttpStatus.OK.toString())
                                 .message("successful")
                                 .data(message)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
-
-        @GetMapping("/techinicals")
-        public ResponseEntity<ApiResponse<GetTechnicalsResponse>> getTechnician(@AuthenticationPrincipal Jwt jwt) {
-                Long serviceCenterId = Long.parseLong(jwt.getClaim("serviceCenterId").toString());
-                GetTechnicalsResponse technicalList = employeeService.handleTechnicalStatus(serviceCenterId);
-                var result = ApiResponse.<GetTechnicalsResponse>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("successfull")
-                                .data(technicalList)
                                 .build();
                 return ResponseEntity.ok(result);
         }

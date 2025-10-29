@@ -19,4 +19,5 @@ public class LoginResponse {
     String name;
     String phone;
     boolean requiresPasswordChange;
+    String scAddress;
 }

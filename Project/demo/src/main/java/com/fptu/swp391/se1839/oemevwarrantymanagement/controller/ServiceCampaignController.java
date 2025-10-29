@@ -1,5 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,6 +25,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllCampaig
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllVehicleCampaignResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.CampaignService;
 
 import lombok.AccessLevel;
@@ -100,41 +103,56 @@ public class ServiceCampaignController {
 
         @PutMapping("/campaigns/{id}")
         public ResponseEntity<ServiceCampaignResponse> updateCampaign(
-                @RequestBody UpdateCampaignRequest request,
-                @PathVariable Long id,
-                @AuthenticationPrincipal Jwt jwt) {
+                        @RequestBody UpdateCampaignRequest request,
+                        @PathVariable Long id,
+                        @AuthenticationPrincipal Jwt jwt) {
                 ServiceCampaignResponse response = serviceCampaignService.handleUpdateCampaign(request, id);
                 return ResponseEntity.ok(response);
         }
 
         @GetMapping("/campaign")
         @PreAuthorize("hasAnyAuthority('ADMIN','EVM_STAFF')")
-        public ResponseEntity<ApiResponse<ServiceCampaignDetailResponse>> getCampaignByVin(
-                        @RequestParam String vin,
+        public ResponseEntity<ApiResponse<List<ServiceCampaignSummaryResponse>>> getCampaignByVin(@RequestParam String vin, @AuthenticationPrincipal Jwt jwt) {
+
+        List<ServiceCampaignSummaryResponse> detail = serviceCampaignService.handleGetCampaignByVin(vin);
+
+        var result = ApiResponse.<List<ServiceCampaignSummaryResponse>>builder()
+                .status(HttpStatus.OK.toString())
+                .message("Get campaign detail successfully")
+                .data(detail)
+                .build();
+
+        return ResponseEntity.ok(result);
+        }
+
+
+        @GetMapping("/campaigns/vehicles")
+        @PreAuthorize("hasAnyAuthority('ADMIN','EVM_STAFF')")
+        public ResponseEntity<ApiResponse<GetAllVehicleCampaignResponse>> getAllVehiclesWithCampaigns(
                         @AuthenticationPrincipal Jwt jwt) {
 
-                ServiceCampaignDetailResponse detail = serviceCampaignService.handleGetCampaignByVin(vin);
-                
-                var result = ApiResponse.<ServiceCampaignDetailResponse>builder()
+                GetAllVehicleCampaignResponse response = serviceCampaignService.handleGetAllVehiclesWithCampaigns();
+
+                var result = ApiResponse.<GetAllVehicleCampaignResponse>builder()
                                 .status(HttpStatus.OK.toString())
-                                .message("Get campaign detail successfully")
-                                .data(detail)
+                                .message("Get all vehicles with campaigns successfully")
+                                .data(response)
                                 .build();
 
                 return ResponseEntity.ok(result);
         }
 
-        @GetMapping("/campaigns/vehicles")
+        @PostMapping("/campaigns/{id}/notify")
         @PreAuthorize("hasAnyAuthority('ADMIN','EVM_STAFF')")
-        public ResponseEntity<ApiResponse<GetAllVehicleCampaignResponse>> getAllVehiclesWithCampaigns(
+        public ResponseEntity<ApiResponse<String>> notifyCustomers(
+                @PathVariable Long id,
                 @AuthenticationPrincipal Jwt jwt) {
 
-        GetAllVehicleCampaignResponse response = serviceCampaignService.handleGetAllVehiclesWithCampaigns();
+        String resultMessage = serviceCampaignService.notifyCustomersByCampaign(id);
 
-        var result = ApiResponse.<GetAllVehicleCampaignResponse>builder()
+        var result = ApiResponse.<String>builder()
                 .status(HttpStatus.OK.toString())
-                .message("Get all vehicles with campaigns successfully")
-                .data(response)
+                .message(resultMessage)
                 .build();
 
         return ResponseEntity.ok(result);

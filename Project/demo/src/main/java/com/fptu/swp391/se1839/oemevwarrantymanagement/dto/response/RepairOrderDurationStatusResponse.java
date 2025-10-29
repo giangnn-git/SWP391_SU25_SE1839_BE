@@ -5,7 +5,7 @@ import lombok.Value;
 
 @Value
 @Builder
-public class RepairOrderDurationStatsResponse {
+public class RepairOrderDurationStatusResponse {
     long under24h;
     long under72h;
     long under168h;

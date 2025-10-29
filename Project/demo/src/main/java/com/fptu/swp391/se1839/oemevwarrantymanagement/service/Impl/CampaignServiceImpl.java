@@ -1,24 +1,29 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreateCampaignRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.EmailDetailsRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UpdateCampaignRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllCampaignResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllVehicleCampaignResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.VehicleCampaignResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.CampaignVehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.CampaignVehicle.CampaignVehicleStatus;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Customer;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ServiceCampaign;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.CampaignVehicleRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCampaignRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehicleRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.CampaignService;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.service.EmailService;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +36,7 @@ public class CampaignServiceImpl implements CampaignService {
         private final ServiceCampaignRepository serviceCampaignRepository;
         private final VehicleRepository vehicleRepository;
         private final CampaignVehicleRepository campaignVehicleRepository;
+        private final EmailService emailService;
 
         @Override
         public ServiceCampaignResponse handleCreateCampaign(CreateCampaignRequest request) {
@@ -181,36 +187,30 @@ public class CampaignServiceImpl implements CampaignService {
         }
 
         @Override
-        public ServiceCampaignDetailResponse handleGetCampaignByVin(String vin) {
-                // 1️⃣ Kiểm tra xe có tồn tại
-                Vehicle vehicle = vehicleRepository.findById(vin)
-                                .orElseThrow(() -> new IllegalArgumentException(
-                                                "Vehicle with VIN " + vin + " not found"));
+        public List<ServiceCampaignSummaryResponse> handleGetCampaignByVin(String vin) {
 
-                // 2️⃣ Tìm campaignVehicle gắn với VIN
-                CampaignVehicle campaignVehicle = campaignVehicleRepository.findByVehicleVin(vin)
-                                .orElseThrow(() -> new IllegalArgumentException("No campaign found for VIN: " + vin));
+                List<CampaignVehicle> campaignVehicles = campaignVehicleRepository.findAllByVehicleVin(vin);
 
-                // 3️⃣ Lấy ra campaign
-                ServiceCampaign campaign = campaignVehicle.getServiceCampaign();
+                if (campaignVehicles.isEmpty()) {
+                        throw new IllegalArgumentException("No campaign found for VIN: " + vin);
+                }
 
-                // 4️⃣ Lấy toàn bộ VIN thuộc cùng campaign
-                List<String> vins = campaign.getCampaignVehicles().stream()
-                                .map(cv -> cv.getVehicle().getVin())
+                return campaignVehicles.stream()
+                                .<ServiceCampaignSummaryResponse>map(cv -> {
+                                        ServiceCampaign c = cv.getServiceCampaign();
+                                        return ServiceCampaignSummaryResponse.builder()
+                                                        .campaignId(c.getId())
+                                                        .campaignCode(c.getCode())
+                                                        .campaignName(c.getName())
+                                                        .description(c.getDescription())
+                                                        .startDate(c.getStartDate())
+                                                        .endDate(c.getEndDate())
+                                                        .produceDateFrom(c.getProduceDateFrom())
+                                                        .produceDateTo(c.getProduceDateTo())
+                                                        .status(cv.getStatus().name())
+                                                        .build();
+                                })
                                 .toList();
-
-                // 5️⃣ Trả về DTO chi tiết
-                return ServiceCampaignDetailResponse.builder()
-                                .id(campaign.getId())
-                                .name(campaign.getName())
-                                .description(campaign.getDescription())
-                                .startDate(campaign.getStartDate())
-                                .endDate(campaign.getEndDate())
-                                .produceDateFrom(campaign.getProduceDateFrom())
-                                .produceDateTo(campaign.getProduceDateTo())
-                                .code(campaign.getCode())
-                                .vehicleVins(vins)
-                                .build();
         }
 
         @Override
@@ -239,6 +239,75 @@ public class CampaignServiceImpl implements CampaignService {
                 return GetAllVehicleCampaignResponse.builder()
                                 .vehicles(list)
                                 .build();
+        }
+
+        @Override
+        public String notifyCustomersByCampaign(Long campaignId) {
+                ServiceCampaign campaign = serviceCampaignRepository.findById(campaignId)
+                                .orElseThrow(() -> new IllegalArgumentException("Campaign not found"));
+
+                // Lấy tất cả xe trong campaign
+                List<CampaignVehicle> campaignVehicles = campaignVehicleRepository.findByServiceCampaignId(campaignId);
+
+                // Thu thập email khách hàng hợp lệ (tránh trùng)
+                List<String> customerEmails = campaignVehicles.stream()
+                                .map(cv -> cv.getVehicle().getCustomer())
+                                .filter(Objects::nonNull)
+                                .map(Customer::getEmail)
+                                .filter(Objects::nonNull)
+                                .distinct()
+                                .toList();
+
+                if (customerEmails.isEmpty()) {
+                        return "No valid customer emails found for campaign: " + campaign.getName();
+                }
+
+                // Chủ đề và nội dung email chuyên nghiệp
+                String subject = "Important Notice: Vehicle Recall Campaign - " + campaign.getName();
+
+                String message = String.format(
+                                """
+                                                <div style="font-family: Arial, sans-serif; color: #333;">
+                                                    <h2 style="color: #004aad;">Vehicle Recall Notification</h2>
+                                                    <p>Dear Valued Customer,</p>
+                                                    <p>
+                                                        We would like to inform you that your vehicle has been identified as part of our
+                                                        <b>recall campaign "%s"</b>.
+                                                    </p>
+                                                    <p>
+                                                        To ensure your safety and the optimal performance of your vehicle, please visit an authorized
+                                                        service center to have the necessary inspection and repairs performed <b>free of charge</b>.
+                                                    </p>
+                                                    <p>
+                                                        <b>Campaign period:</b> %s → %s
+                                                    </p>
+                                                    <p>
+                                                        For more information or assistance, please contact our Customer Support Team.
+                                                    </p>
+                                                    <p>
+                                                        Thank you for your continued trust in our brand.
+                                                    </p>
+                                                    <p>
+                                                        Best regards,<br>
+                                                        <b>OEM EV Warranty Management Team</b><br>
+                                                        <i>OEM Electric Vehicle Division</i>
+                                                    </p>
+                                                </div>
+                                                """,
+                                campaign.getName(), campaign.getStartDate(), campaign.getEndDate());
+
+                // Tạo email request (gửi 1 email, BCC toàn bộ khách hàng)
+                EmailDetailsRequest emailDetails = EmailDetailsRequest.builder()
+                                .recipient("noreply@oem.com") // địa chỉ To (không cần thật)
+                                .bccList(customerEmails) // danh sách BCC khách hàng
+                                .subject(subject)
+                                .messageBody(message)
+                                .build();
+
+                emailService.sendHtmlMail(emailDetails);
+
+                return "Recall notification sent (BCC) to " + customerEmails.size() +
+                                " customers in campaign: " + campaign.getName();
         }
 
 }

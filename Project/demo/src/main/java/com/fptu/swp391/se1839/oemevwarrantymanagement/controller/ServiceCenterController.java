@@ -23,9 +23,8 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = false)
 public class ServiceCenterController {
     final ServiceCenterService serviceCenterService;
-
-    @GetMapping("/servicecenters")
-    @PreAuthorize("hasAuthority('admin')")
+    @GetMapping("/service-centers")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<List<ServiceCenterResponse>>> getAllSC() {
         List<ServiceCenterResponse> serviceCenters = serviceCenterService.getAllSC();
         var result = ApiResponse.<List<ServiceCenterResponse>>builder()

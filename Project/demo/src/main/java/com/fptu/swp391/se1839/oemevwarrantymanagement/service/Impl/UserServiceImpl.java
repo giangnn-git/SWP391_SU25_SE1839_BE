@@ -6,7 +6,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -16,34 +15,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.Utilities.PasswordGeneration;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangePasswordRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.EmailDetailsRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ForgotPasswordRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.IntrospectRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LoginRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LogoutRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.OtpRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.RefeshTokenRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserCreateRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserSearchRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserUpdateRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetTechnicalsResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.IntrospectResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.LoginResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OTPResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.TechnicalsResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.UserResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.InvalidToken;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ServiceCenter;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.User;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.InvalidTokenRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCenterRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.service.EmailService;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.service.UserService;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -59,6 +30,34 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+
+import com.fptu.swp391.se1839.oemevwarrantymanagement.Utilities.PasswordGeneration;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangePasswordRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.EmailDetailsRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ForgotPasswordRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.IntrospectRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LoginRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.LogoutRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.OtpRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.RefeshTokenRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserCreateRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserSearchRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserUpdateRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.IntrospectResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.LoginResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OTPResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.TechnicianPerformanceResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.UserResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.InvalidToken;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ServiceCenter;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.User;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.InvalidTokenRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCenterRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.service.EmailService;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.service.UserService;
 
 @Service
 @RequiredArgsConstructor
@@ -111,6 +110,7 @@ public class UserServiceImpl implements UserService {
                 .name(user.getName())
                 .phone(user.getPhoneNumber())
                 .requiresPasswordChange(user.isRequiresPasswordChange())
+                .scAddress(user.getServiceCenter() != null ? user.getServiceCenter().getAddress() : null)
                 .build();
     }
 
@@ -496,39 +496,36 @@ public class UserServiceImpl implements UserService {
         return signedJWT;
     }
 
-    @Override
-    public GetTechnicalsResponse handleTechnicalStatus(long serviceCenterId) {
+    public TechnicianPerformanceResponse calculateTechnicianPerformanceWithComparison(Long serviceCenterId) {
+        LocalDate startOfThisMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfThisMonth = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+        LocalDate startOfLastMonth = startOfThisMonth.minusMonths(1);
+        LocalDate endOfLastMonth = startOfThisMonth.minusDays(1);
 
-        // Lấy danh sách tất cả kỹ thuật viên ở trung tâm
-        List<User> technicians = userRepository
-                .findByWorkStatusInAndServiceCenterIdAndRole(
-                        Arrays.asList(User.WorkStatus.AVAILABLE, User.WorkStatus.BUSY),
-                        serviceCenterId,
-                        User.Role.TECHNICIAN);
+        long totalThisMonth = repairOrderRepository.countByServiceCenterIdAndStartDateBetween(
+                serviceCenterId, startOfThisMonth.atStartOfDay(), endOfThisMonth.plusDays(1).atStartOfDay());
 
-        List<TechnicalsResponse> result = new ArrayList<>();
+        long completedThisMonth = repairOrderRepository.countByServiceCenterIdAndStatusAndStartDateBetween(
+                serviceCenterId, RepairOrder.OrderStatus.COMPLETED,
+                startOfThisMonth.atStartOfDay(), endOfThisMonth.plusDays(1).atStartOfDay());
 
-        for (User tech : technicians) {
-            // Bỏ qua nếu kỹ thuật viên nghỉ hôm nay
-            boolean hasLeave = userRepository.existsByTechnicianIdAndDate(tech.getId(), LocalDate.now());
-            if (hasLeave)
-                continue;
+        double rateThisMonth = totalThisMonth == 0 ? 0 : (completedThisMonth * 100.0) / totalThisMonth;
 
-            // Đếm số công việc đang chờ hoặc đang làm
-            long countJobs = repairOrderRepository.countByTechnicalAndStatusIn(
-                    tech.getId(),
-                    Arrays.asList(RepairOrder.OrderStatus.PENDING, RepairOrder.OrderStatus.IN_PROGRESS));
+        long totalLastMonth = repairOrderRepository.countByServiceCenterIdAndStartDateBetween(
+                serviceCenterId, startOfLastMonth.atStartOfDay(), endOfLastMonth.plusDays(1).atStartOfDay());
 
-            result.add(TechnicalsResponse.builder()
-                    .id(tech.getId())
-                    .name(tech.getName())
-                    .countJob(countJobs)
-                    .message("Đang hoạt động")
-                    .build());
-        }
+        long completedLastMonth = repairOrderRepository.countByServiceCenterIdAndStatusAndStartDateBetween(
+                serviceCenterId, RepairOrder.OrderStatus.COMPLETED,
+                startOfLastMonth.atStartOfDay(), endOfLastMonth.plusDays(1).atStartOfDay());
 
-        return GetTechnicalsResponse.builder()
-                .technicians(result)
+        double rateLastMonth = totalLastMonth == 0 ? 0 : (completedLastMonth * 100.0) / totalLastMonth;
+
+        double changePercent = rateLastMonth == 0 ? 0 : ((rateThisMonth - rateLastMonth) / rateLastMonth) * 100;
+
+        return TechnicianPerformanceResponse.builder()
+                .currentRate(rateThisMonth)
+                .changePercent(changePercent)
                 .build();
     }
+
 }

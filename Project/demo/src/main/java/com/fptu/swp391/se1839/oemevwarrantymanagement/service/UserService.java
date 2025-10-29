@@ -17,6 +17,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetTechnicals
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.IntrospectResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.LoginResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OTPResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.TechnicianPerformanceResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.UserResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.User;
 import com.nimbusds.jose.JOSEException;
@@ -52,7 +53,7 @@ public interface UserService {
 
     String forgotPassword(ForgotPasswordRequest request);
 
-    GetTechnicalsResponse handleTechnicalStatus(long repairOrderId);
-
     UserResponse deleteUser(Long id, Long ownId);
+
+    TechnicianPerformanceResponse calculateTechnicianPerformanceWithComparison(Long serviceCenterId);
 }

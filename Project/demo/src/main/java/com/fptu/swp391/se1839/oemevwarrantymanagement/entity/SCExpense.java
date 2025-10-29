@@ -1,6 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 import jakarta.persistence.Column;
@@ -48,6 +49,12 @@ public class SCExpense {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     ExpenseStatus status;// = ExpenseStatus.UNPAID;
+
+    @Column
+    String description;
+
+    @Column
+    LocalDateTime createdAt;
 
     LocalDate paidDate;
 

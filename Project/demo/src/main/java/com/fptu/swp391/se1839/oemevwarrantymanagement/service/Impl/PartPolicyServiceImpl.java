@@ -162,21 +162,21 @@ public class PartPolicyServiceImpl implements PartPolicyService {
         @Override
         public PartPolicyResponse handleUpdateStatusPartPolicy(Long partPolicyId) {
                 PartPolicy partPolicy = partPolicyRepository.findById(partPolicyId)
-                                        .orElseThrow(() -> new NoSuchElementException("ID not found"));
-                if (partPolicy.getStatus() == PartPolicy.Status.INACTIVE){
+                                .orElseThrow(() -> new NoSuchElementException("ID not found"));
+                if (partPolicy.getStatus() == PartPolicy.Status.INACTIVE) {
                         partPolicy.setStatus(PartPolicy.Status.ACTIVE);
-                }else{
+                } else {
                         partPolicy.setStatus(PartPolicy.Status.INACTIVE);
-                }                
+                }
                 PartPolicy saved = partPolicyRepository.save(partPolicy);
                 return PartPolicyResponse.builder()
-                        .id(saved.getId())
-                        .partName(saved.getPart().getName())
-                        .partCode(saved.getPart().getCode())
-                        .policyCode(saved.getWarrantyPolicy().getCode())
-                        .startDate(formatter.format(saved.getStartDate()))
-                        .endDate(formatter.format(saved.getEndDate()))
-                        .status(PartPolicyResponse.Status.valueOf(saved.getStatus().name()))
-                        .build();
+                                .id(saved.getId())
+                                .partName(saved.getPart().getName())
+                                .partCode(saved.getPart().getCode())
+                                .policyCode(saved.getWarrantyPolicy().getCode())
+                                .startDate(formatter.format(saved.getStartDate()))
+                                .endDate(formatter.format(saved.getEndDate()))
+                                .status(PartPolicyResponse.Status.valueOf(saved.getStatus().name()))
+                                .build();
         }
 }

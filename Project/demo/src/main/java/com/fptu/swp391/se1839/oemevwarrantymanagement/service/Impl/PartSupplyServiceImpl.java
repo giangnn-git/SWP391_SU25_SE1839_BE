@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ApproveOrRejectPartRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePartSupplyRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.PartApprovalDetail;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.PartApprovalDetailResquest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CreatePartSupplyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartSupplyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartRequestDetailResponse;
@@ -93,13 +93,13 @@ public class PartSupplyServiceImpl implements PartSupplyService {
 
         List<PartSupplyResponse> responses = supplies.stream()
                 .map(supply -> (PartSupplyResponse) PartSupplyResponse.builder()
-                .id(supply.getId())
-                .serviceCenterName(supply.getServiceCenter().getName())
-                .createdBy(supply.getCreatedBy().getName())
-                .createdDate(supply.getCreatedDate())
-                .status(supply.getStatus().name())
-                .note(supply.getNote())
-                .build())
+                        .id(supply.getId())
+                        .serviceCenterName(supply.getServiceCenter().getName())
+                        .createdBy(supply.getCreatedBy().getName())
+                        .createdDate(supply.getCreatedDate())
+                        .status(supply.getStatus().name())
+                        .note(supply.getNote())
+                        .build())
                 .collect(Collectors.toList());
 
         return GetAllPartSupplyResponse.builder()
@@ -121,12 +121,13 @@ public class PartSupplyServiceImpl implements PartSupplyService {
                 .note(supply.getNote())
                 .details(supply.getDetails().stream()
                         .map(d -> PartRequestDetailResponse.builder()
-                        .partCode(d.getPart().getCode())
-                        .partName(d.getPart().getName())
-                        .requestedQuantity(d.getRequestedQuantity())
-                        .approvedQuantity(d.getApprovedQuantity())
-                        .remark(d.getRemark())
-                        .build())
+                                .id(d.getId())
+                                .partCode(d.getPart().getCode())
+                                .partName(d.getPart().getName())
+                                .requestedQuantity(d.getRequestedQuantity())
+                                .approvedQuantity(d.getApprovedQuantity())
+                                .remark(d.getRemark())
+                                .build())
                         .toList())
                 .build();
     }
@@ -139,10 +140,10 @@ public class PartSupplyServiceImpl implements PartSupplyService {
 
         // Cập nhật approvedQuantity và remark
         if (request.getDetails() != null && !request.getDetails().isEmpty()) {
-            for (PartApprovalDetail d : request.getDetails()) {
+            for (PartApprovalDetailResquest d : request.getDetails()) {
                 PartRequestDetail detail = partRequestDetailRepository.findById(d.getDetailId())
                         .orElseThrow(() -> new IllegalArgumentException(
-                        "Part request detail not found"));
+                                "Part request detail not found"));
                 detail.setApprovedQuantity(d.getApprovedQuantity());
                 detail.setRemark(d.getRemark());
                 partRequestDetailRepository.save(detail);
@@ -154,10 +155,10 @@ public class PartSupplyServiceImpl implements PartSupplyService {
             ServiceCenter oemWarehouse = serviceCenterRepository.findById(1L)
                     .orElseThrow(() -> new IllegalArgumentException("OEM warehouse not found"));
 
-            for (PartApprovalDetail d : request.getDetails()) {
+            for (PartApprovalDetailResquest d : request.getDetails()) {
                 PartRequestDetail detail = partRequestDetailRepository.findById(d.getDetailId())
                         .orElseThrow(() -> new IllegalArgumentException(
-                        "Part request detail not found"));
+                                "Part request detail not found"));
                 Part part = detail.getPart();
                 int approvedQty = d.getApprovedQuantity();
 
@@ -165,12 +166,12 @@ public class PartSupplyServiceImpl implements PartSupplyService {
                 PartInventory oemInventory = partInventoryRepository
                         .findByPartAndServiceCenter(part, oemWarehouse)
                         .orElseThrow(() -> new IllegalArgumentException(
-                        "Part " + part.getCode()
-                        + " not found in OEM warehouse"));
+                                "Part " + part.getCode()
+                                        + " not found in OEM warehouse"));
                 if (oemInventory.getQuantity() < approvedQty) {
                     throw new IllegalArgumentException(
                             "Insufficient stock for part " + part.getCode()
-                            + " in OEM warehouse");
+                                    + " in OEM warehouse");
                 }
                 oemInventory.setQuantity(oemInventory.getQuantity() - approvedQty);
                 partInventoryRepository.save(oemInventory);
@@ -201,11 +202,11 @@ public class PartSupplyServiceImpl implements PartSupplyService {
         List<PartRequestDetailResponse> details = partRequestDetailRepository.findByPartRequest(supply)
                 .stream()
                 .map(d -> PartRequestDetailResponse.builder()
-                .partName(d.getPart().getName())
-                .requestedQuantity(d.getRequestedQuantity())
-                .approvedQuantity(d.getApprovedQuantity())
-                .remark(d.getRemark())
-                .build())
+                        .partName(d.getPart().getName())
+                        .requestedQuantity(d.getRequestedQuantity())
+                        .approvedQuantity(d.getApprovedQuantity())
+                        .remark(d.getRemark())
+                        .build())
                 .toList();
 
         return PartSupplyDetailResponse.builder()

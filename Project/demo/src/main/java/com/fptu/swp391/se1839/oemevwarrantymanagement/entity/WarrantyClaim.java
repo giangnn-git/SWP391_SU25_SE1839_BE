@@ -19,7 +19,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -57,6 +59,7 @@ public class WarrantyClaim {
     LocalDateTime claimDate = LocalDateTime.now();
 
     @NotNull
+    @Min(0) // mileage >= 0
     @Column(nullable = false)
     int mileage;
 
@@ -101,9 +104,8 @@ public class WarrantyClaim {
     @Builder.Default
     List<ClaimAttachment> claimAttachments = new ArrayList<>();
 
-    @OneToMany(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    Set<RepairOrder> repairOrders = new HashSet<>();
+    @OneToOne(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true)
+    RepairOrder repairOrder;
 
     @OneToMany(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -134,15 +136,21 @@ public class WarrantyClaim {
 
     @Override
     public String toString() {
-        return "WarrantyClaim{" + "id=" + id + ", vehicleVIN=" + (vehicle == null ? "null" : vehicle.getVin())
-                + ", serviceCenterId=" + (serviceCenter == null ? "null" : serviceCenter.getId()) + ", claimDate="
-                + claimDate + ", mileage=" + mileage + ", description="
-                + (description == null ? "null" : "'" + description + "'") + ", decisionDate=" + decisionDate
-                + ", status=" + status + ", priority=" + priority + ", claimAttachmentCount="
-                + (claimAttachments == null ? 0 : claimAttachments.size()) + ", repairOrderCount="
-                + (repairOrders == null ? 0 : repairOrders.size()) + ", vehiclePartCount="
-                + (vehicleParts == null ? 0 : vehicleParts.size()) + ", serviceCampaignId="
-                + (serviceCampaign == null ? "null" : serviceCampaign.getId()) + ", partClaimCount="
-                + (partClaims == null ? 0 : partClaims.size()) + '}';
+        return "WarrantyClaim{" +
+                "id=" + id +
+                ", vehicleVIN=" + (vehicle == null ? "null" : vehicle.getVin()) +
+                ", serviceCenterId=" + (serviceCenter == null ? "null" : serviceCenter.getId()) +
+                ", claimDate=" + claimDate +
+                ", mileage=" + mileage +
+                ", description=" + (description == null ? "null" : "'" + description + "'") +
+                ", decisionDate=" + decisionDate +
+                ", status=" + status +
+                ", priority=" + priority +
+                ", claimAttachmentCount=" + (claimAttachments == null ? 0 : claimAttachments.size()) +
+                ", repairOrderId=" + (repairOrder == null ? "null" : repairOrder.getId()) +
+                ", vehiclePartCount=" + (vehicleParts == null ? 0 : vehicleParts.size()) +
+                ", serviceCampaignId=" + (serviceCampaign == null ? "null" : serviceCampaign.getId()) +
+                ", partClaimCount=" + (partClaims == null ? 0 : partClaims.size()) +
+                '}';
     }
 }

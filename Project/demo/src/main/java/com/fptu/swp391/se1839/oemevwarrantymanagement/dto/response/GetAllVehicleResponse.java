@@ -20,5 +20,4 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class GetAllVehicleResponse {
     private List<GetVehicleResponse> vehicles;
-
 }

@@ -21,6 +21,7 @@ public class FilterClaimResponse {
     int milege;
     int productYear;
     String modelName;
+    long modelId;
     String vin;
     String licensePlate;
     String userName;
@@ -31,4 +32,5 @@ public class FilterClaimResponse {
     String priority;
     String currentStatus;
     Set<String> availableStatuses;
+    String rejectReason;
 }

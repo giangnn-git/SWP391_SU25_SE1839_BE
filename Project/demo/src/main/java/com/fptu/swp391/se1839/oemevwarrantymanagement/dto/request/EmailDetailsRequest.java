@@ -1,5 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
 
+import java.util.List;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,4 +19,5 @@ public class EmailDetailsRequest {
     String subject;
     String messageBody;
     String attachment;
+    List<String> bccList;
 }

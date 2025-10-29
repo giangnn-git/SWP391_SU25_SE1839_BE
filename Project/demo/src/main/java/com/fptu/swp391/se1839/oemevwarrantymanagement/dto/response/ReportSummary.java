@@ -1,7 +1,5 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
-import java.util.List;
-
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,6 +12,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class VehicleResponse {
-    List<GetVehicleResponse> vehicles;
+public class ReportSummary {
+    String summary;
+    String different;
 }
