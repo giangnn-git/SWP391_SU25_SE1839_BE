@@ -33,4 +33,10 @@ public interface VehicleRepository extends JpaRepository<Vehicle, String> {
     @Query("SELECT v FROM Vehicle v WHERE v.customer IS NOT NULL")
     List<Vehicle> findAllRegisteredVehicles();
 
+        @Query("""
+        SELECT DISTINCT v FROM Vehicle v
+        LEFT JOIN FETCH v.campaignVehicles
+        WHERE v.customer.id = :customerId
+        """)
+        List<Vehicle> findAllByCustomerIdWithCampaigns(@Param("customerId") Long customerId);
 }

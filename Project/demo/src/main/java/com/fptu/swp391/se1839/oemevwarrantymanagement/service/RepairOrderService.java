@@ -31,4 +31,6 @@ public interface RepairOrderService {
     int handleCalculateResolutionRate(long serviceCenterId);
 
     OrderSummaryResponse handleCalculateResolutionRateDifferent(long serviceCenterId);
+
+    String sendRepairCompletedEmail(Long repairOrderId);
 }

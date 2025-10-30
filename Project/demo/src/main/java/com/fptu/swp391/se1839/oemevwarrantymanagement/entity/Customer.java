@@ -1,7 +1,11 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -74,4 +78,5 @@ public class Customer {
         return "Customer [id=" + id + ", name=" + name + ", phoneNumber=" + phoneNumber + ", email=" + email
                 + ", address=" + address + ", vehicles=" + vehicles + "]";
     }
+
 }

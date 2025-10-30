@@ -9,8 +9,11 @@ import org.springframework.stereotype.Service;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.AddVehicleRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CustomerRegisterRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CustomerRegisterResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CustomerSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RegisteredVehicleResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.VehicleInfoResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Customer;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.CustomerRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehicleRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.CustomerService;
@@ -187,6 +190,42 @@ public class CustomerServiceImpl implements CustomerService {
                         .modelName(v.getModel().getName())
                         .customerName(v.getCustomer().getName())
                         .customerPhone(v.getCustomer().getPhoneNumber())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    public List<CustomerSummaryResponse> getAllCustomerSummaries() {
+        List<Customer> customers = customerRepository.findAll();
+
+        return customers.stream()
+                .map(customer -> CustomerSummaryResponse.builder()
+                        .id(customer.getId())
+                        .name(customer.getName())
+                        .phoneNumber(customer.getPhoneNumber())
+                        .email(customer.getEmail())
+                        .address(customer.getAddress())
+                        .vehicleCount(customer.getVehicles() != null ? customer.getVehicles().size() : 0)
+                        .build())
+                .toList();
+    }
+
+    @Override
+    public List<VehicleInfoResponse> getVehiclesByCustomerId(Long customerId) {
+        List<Vehicle> vehicles = vehicleRepository.findAllByCustomerIdWithCampaigns(customerId);
+
+        return vehicles.stream()
+                .map((Vehicle v) -> VehicleInfoResponse.builder()
+                        .vin(v.getVin())
+                        .modelName(v.getModel().getName()) // nếu có Model
+                        .licensePlate(v.getLicensePlate())
+                        .purchaseDate(v.getPurchaseDate())
+                        .campaignNames(v.getCampaignVehicles() != null
+                                ? v.getCampaignVehicles().stream()
+                                        .map(c -> c.getServiceCampaign().getName())
+                                        .distinct()
+                                        .toList()
+                                : List.<String>of())
                         .build())
                 .toList();
     }

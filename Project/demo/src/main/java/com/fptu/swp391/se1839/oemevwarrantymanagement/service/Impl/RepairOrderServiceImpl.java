@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.annotation.Activity;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChooseTechnicalRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.EmailDetailsRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.FilterRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChooseTechnicalResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardOrderSummaryResponse;
@@ -29,6 +30,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderSummaryR
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryItemResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryOrderResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.TechnicalsResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Customer;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Model;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartPriceHistory;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairDetail;
@@ -49,6 +51,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCenterRe
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehicleRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.WarrantyClaimRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.service.EmailService;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairOrderService;
 
 import jakarta.persistence.PersistenceException;
@@ -73,6 +76,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
     final RepairDetailRepository repairDetailRepository;
     final SCExpenseReposiotry scExpenseReposiotry;
     final ActivityLogServiceImpl activityLogServiceImpl;
+    final EmailService emailService;
 
     Vehicle getVehicleByVin(String vin) {
         Vehicle vehicle = this.vehicleRepository.findByVin(vin)
@@ -601,5 +605,48 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                         difference >= 0 ? "Increase" : "Decrease"))
                 .build();
     }
+
+    @Override
+    public String sendRepairCompletedEmail(Long repairOrderId) {
+        RepairOrder repairOrder = repairOrderRepository.findById(repairOrderId)
+                .orElseThrow(() -> new RuntimeException("Repair order not found"));
+
+        if(repairOrder.getStatus() != RepairOrder.OrderStatus.COMPLETED) {
+            throw new RuntimeException("Repair order is not completed yet");
+        }
+        // Join through relationships:
+        WarrantyClaim claim = repairOrder.getWarrantyClaim();
+        if (claim == null || claim.getVehicle() == null || claim.getVehicle().getCustomer() == null) {
+            throw new RuntimeException("Customer information not found for this repair order");
+        }
+
+        Customer customer = claim.getVehicle().getCustomer();
+        String customerName = customer.getName();
+        String customerEmail = customer.getEmail();
+        String vin = claim.getVehicle().getVin();
+
+        // Create email content
+        String subject = "Repair Completion Notification - OEM EV Warranty";
+        String htmlContent = "<html><body>"
+                + "<h3>Dear " + customerName + ",</h3>"
+                + "<p>Your Vinfast" + claim.getVehicle().getModel().getName() + " (VIN: <b>" + vin + "</b>) has been successfully repaired.</p>"
+                + "<p>Please visit our service center to pick up your vehicle.</p>"
+                + "<p>If you have any questions, feel free to contact us.</p>"
+                + "<p>Service center opens 7:00AM - 18:00PM from Monday to Tuesday</p>"
+                + "<p>Thank you for trusting OEM EV Warranty service!</p>"
+                + "<br><b>OEM EV Warranty Team</b>"
+                + "</body></html>";
+
+        // Build email request
+        EmailDetailsRequest emailDetails = new EmailDetailsRequest();
+        emailDetails.setRecipient(customerEmail);
+        emailDetails.setSubject(subject);
+        emailDetails.setMessageBody(htmlContent);
+
+        // Send email
+        emailService.sendHtmlMail(emailDetails);
+        return "Repair completion email sent to " + customerEmail;
+    }
+
 
 }

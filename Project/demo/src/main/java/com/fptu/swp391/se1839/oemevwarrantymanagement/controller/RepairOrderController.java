@@ -1,5 +1,13 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -7,7 +15,6 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChooseTechnica
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.FilterRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChooseTechnicalResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.FilterOrderResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDashboardResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairOrderService;
@@ -15,14 +22,6 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairOrderService
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
 @RequestMapping("/api")
@@ -70,6 +69,17 @@ public class RepairOrderController {
                 .status(HttpStatus.OK.toString())
                 .message("Choose techinician successfully")
                 .data(ctr)
+                .build();
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{id}/send-complete-email")
+    public ResponseEntity<ApiResponse<String>> sendRepairCompletedEmail(@PathVariable Long id) {
+        String success= repairOrderService.sendRepairCompletedEmail(id);
+        var result = ApiResponse.<String>builder()
+                .status(HttpStatus.OK.toString())
+                .message("Choose techinician successfully")
+                .data(success)
                 .build();
         return ResponseEntity.ok(result);
     }

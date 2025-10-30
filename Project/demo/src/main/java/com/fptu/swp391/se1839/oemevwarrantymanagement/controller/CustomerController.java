@@ -19,7 +19,9 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.AddVehicleRequ
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CustomerRegisterRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CustomerRegisterResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CustomerSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RegisteredVehicleResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.VehicleInfoResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.CustomerService;
 
 import jakarta.validation.Valid;
@@ -97,14 +99,37 @@ public class CustomerController {
         @GetMapping("/vehicles/registered")
         @PreAuthorize("hasAnyAuthority('SC_STAFF', 'ADMIN')")
         public ResponseEntity<ApiResponse<List<RegisteredVehicleResponse>>> getAllRegisteredVehicles() {
-        var data = customerService.getAllRegisteredVehicles();
-        var result = ApiResponse.<List<RegisteredVehicleResponse>>builder()
-                .status(HttpStatus.OK.toString())
-                .message("Get all registered vehicles successfully")
-                .data(data)
-                .build();
-        return ResponseEntity.ok(result);
+                var data = customerService.getAllRegisteredVehicles();
+                var result = ApiResponse.<List<RegisteredVehicleResponse>>builder()
+                                .status(HttpStatus.OK.toString())
+                                .message("Get all registered vehicles successfully")
+                                .data(data)
+                                .build();
+                return ResponseEntity.ok(result);
         }
 
+        @GetMapping("/customers")
+        @PreAuthorize("hasAnyAuthority('SC_STAFF', 'ADMIN')")
+        public ResponseEntity<ApiResponse<List<CustomerSummaryResponse>>> getCustomerSummary() {
+                var data = customerService.getAllCustomerSummaries();
+                var result = ApiResponse.<List<CustomerSummaryResponse>>builder()
+                                .status(HttpStatus.OK.toString())
+                                .message("Get customer summary successfully")
+                                .data(data)
+                                .build();
+                return ResponseEntity.ok(result);
+        }
 
+        @GetMapping("/{customerId}/vehicles")
+        public ResponseEntity<ApiResponse<List<VehicleInfoResponse>>> getVehiclesByCustomerId(
+                        @PathVariable Long customerId) {
+                List<VehicleInfoResponse> vehicles = customerService.getVehiclesByCustomerId(customerId);
+                var result = ApiResponse.<List<VehicleInfoResponse>>builder()
+                                .status(HttpStatus.OK.toString())
+                                .message("Get customer summary successfully")
+                                .data(vehicles)
+                                .build();
+                return ResponseEntity.ok(result);
+
+        }
 }

@@ -5,7 +5,9 @@ import java.util.List;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.AddVehicleRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CustomerRegisterRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CustomerRegisterResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CustomerSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RegisteredVehicleResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.VehicleInfoResponse;
 
 public interface CustomerService {
     CustomerRegisterResponse registerCustomer(CustomerRegisterRequest req);
@@ -18,5 +20,8 @@ public interface CustomerService {
 
     List<RegisteredVehicleResponse> getAllRegisteredVehicles();
 
+    List<CustomerSummaryResponse> getAllCustomerSummaries();
+
+    List<VehicleInfoResponse> getVehiclesByCustomerId(Long customerId);
 
 }
