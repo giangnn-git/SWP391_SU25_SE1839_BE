@@ -1,8 +1,8 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
 
 import java.time.LocalDate;
+import java.util.List;
 
-import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,6 +20,7 @@ public class CreateCampaignRequest {
     String description;
     LocalDate startDate;
     LocalDate endDate;
+    List<Long> affectedModelIds;
     LocalDate produceDateFrom;
     LocalDate produceDateTo;
     String code;

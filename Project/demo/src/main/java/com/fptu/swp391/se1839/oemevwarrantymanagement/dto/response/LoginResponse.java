@@ -16,8 +16,4 @@ public class LoginResponse {
     // private String message;
     String token;
     boolean status;
-    String name;
-    String phone;
-    boolean requiresPasswordChange;
-    String scAddress;
 }

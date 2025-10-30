@@ -89,23 +89,24 @@ public class PartSupplyServiceImpl implements PartSupplyService {
 
     @Override
     public GetAllPartSupplyResponse handleGetAllPartSupplies() {
-        List<PartSupply> supplies = partSupplyRepository.findAll();
+            List<PartSupply> supplies = partSupplyRepository.findAllByOrderByCreatedDateDesc();
 
-        List<PartSupplyResponse> responses = supplies.stream()
-                .map(supply -> (PartSupplyResponse) PartSupplyResponse.builder()
-                        .id(supply.getId())
-                        .serviceCenterName(supply.getServiceCenter().getName())
-                        .createdBy(supply.getCreatedBy().getName())
-                        .createdDate(supply.getCreatedDate())
-                        .status(supply.getStatus().name())
-                        .note(supply.getNote())
-                        .build())
-                .collect(Collectors.toList());
+            List<PartSupplyResponse> responses = supplies.stream()
+                            .map(supply -> PartSupplyResponse.builder()
+                                            .id(supply.getId())
+                                            .serviceCenterName(supply.getServiceCenter().getName())
+                                            .createdBy(supply.getCreatedBy().getName())
+                                            .createdDate(supply.getCreatedDate())
+                                            .status(supply.getStatus().name())
+                                            .note(supply.getNote())
+                                            .build())
+                            .collect(Collectors.toList());
 
-        return GetAllPartSupplyResponse.builder()
-                .partSupplies(responses)
-                .build();
+            return GetAllPartSupplyResponse.builder()
+                            .partSupplies(responses)
+                            .build();
     }
+
 
     @Override
     public PartSupplyDetailResponse handleGetPartSupplyDetail(Long id) {

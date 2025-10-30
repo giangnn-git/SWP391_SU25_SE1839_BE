@@ -107,10 +107,6 @@ public class UserServiceImpl implements UserService {
         return LoginResponse.builder()
                 .token(token)
                 .status(true)
-                .name(user.getName())
-                .phone(user.getPhoneNumber())
-                .requiresPasswordChange(user.isRequiresPasswordChange())
-                .scAddress(user.getServiceCenter() != null ? user.getServiceCenter().getAddress() : null)
                 .build();
     }
 
@@ -184,6 +180,8 @@ public class UserServiceImpl implements UserService {
                 .claim("serviceCenterId", user.getServiceCenter().getId())
                 .claim("name", user.getName())
                 .claim("userId", user.getId())
+                .claim("phone", user.getPhoneNumber())
+                .claim("requiresPasswordChange", user.isRequiresPasswordChange())
                 .jwtID(UUID.randomUUID().toString())
                 .build();
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());

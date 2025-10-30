@@ -65,11 +65,15 @@ public class CampaignServiceImpl implements CampaignService {
 
                 serviceCampaignRepository.save(campaign);
 
-                List<Vehicle> vehicles = vehicleRepository.findByProductionDateBetween(
+                List<Vehicle> vehicles = vehicleRepository.findByModelIdInAndProductionDateBetween(
+                                request.getAffectedModelIds(),
                                 request.getProduceDateFrom(),
                                 request.getProduceDateTo());
 
+                // Chỉ thêm xe chưa tồn tại trong campaign
                 List<CampaignVehicle> campaignVehicles = vehicles.stream()
+                                .filter(v -> !campaignVehicleRepository
+                                                .existsByServiceCampaignIdAndVehicleVin(campaign.getId(), v.getVin()))
                                 .map(vehicle -> CampaignVehicle.builder()
                                                 .serviceCampaign(campaign)
                                                 .vehicle(vehicle)

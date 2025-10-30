@@ -7,6 +7,7 @@ import java.util.NoSuchElementException;
 import org.springframework.stereotype.Service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePolicyRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.TogglePolicyStatusRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UpdatePolicyRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CreatePolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DeletePolicyResponse;
@@ -19,6 +20,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartPolicyRepos
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PolicyRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PolicyService;
 
+import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -149,6 +151,49 @@ public class PolicyServiceImpl implements PolicyService {
                                 .success(true)
                                 .message("Policy deleted successfully.")
                                 .build();
+        }
+
+        @Override
+        @Transactional
+        public UpdatePolicyResponse handleInactivatePolicyWithReplacement(Long policyId,
+                        TogglePolicyStatusRequest request) {
+                WarrantyPolicy policy = policyRepository.findById(policyId)
+                                .orElseThrow(() -> new NoSuchElementException("Policy not found with ID: " + policyId));
+
+                if (policy.getStatus() == WarrantyPolicy.Status.INACTIVE) {
+                        throw new IllegalArgumentException("Policy is already INACTIVE");
+                }
+
+                // Lấy tất cả PartPolicy ACTIVE liên quan
+                List<PartPolicy> activePartPolicies = partPolicyRepository.findActivePartPoliciesByPolicyId(policyId);
+
+                if (!activePartPolicies.isEmpty() && request.getReplacementPolicyId() != null) {
+                        WarrantyPolicy replacement = policyRepository.findById(request.getReplacementPolicyId())
+                                        .orElseThrow(() -> new NoSuchElementException(
+                                                        "Replacement policy not found with ID: "
+                                                                        + request.getReplacementPolicyId()));
+
+                        if (replacement.getStatus() != WarrantyPolicy.Status.ACTIVE) {
+                                throw new IllegalArgumentException("Replacement policy must be ACTIVE");
+                        }
+
+                        // Gán PartPolicy ACTIVE sang replacement
+                        activePartPolicies.forEach(pp -> pp.setWarrantyPolicy(replacement));
+                        partPolicyRepository.saveAll(activePartPolicies);
+
+                } else if (!activePartPolicies.isEmpty()) {
+                        // Không có replacement, inactivate tất cả
+                        List<Long> ids = activePartPolicies.stream().map(PartPolicy::getId).toList();
+                        partPolicyRepository.updateStatusByIds(ids, PartPolicy.Status.INACTIVE);
+                }
+
+                // Inactivate chính WarrantyPolicy
+                policy.setStatus(WarrantyPolicy.Status.INACTIVE);
+                WarrantyPolicy updated = policyRepository.save(policy);
+
+                log.info("Inactivated WarrantyPolicy id {} and updated its PartPolicies", updated.getId());
+
+                return UpdatePolicyResponse.builder().policy(updated).build();
         }
 
 }

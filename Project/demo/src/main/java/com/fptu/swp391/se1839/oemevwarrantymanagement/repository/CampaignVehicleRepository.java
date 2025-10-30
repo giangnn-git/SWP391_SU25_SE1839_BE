@@ -19,4 +19,6 @@ public interface CampaignVehicleRepository extends JpaRepository<CampaignVehicle
     Optional<CampaignVehicle> findByVehicleVin(@Param("vin") String vin);
 
     List<CampaignVehicle> findByServiceCampaignId(Long serviceCampaignId);
+
+    boolean existsByServiceCampaignIdAndVehicleVin(Long campaignId, String vin);
 }

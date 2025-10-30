@@ -1,6 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePolicyRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.TogglePolicyStatusRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UpdatePolicyRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CreatePolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DeletePolicyResponse;
@@ -18,4 +19,7 @@ public interface PolicyService {
     UpdatePolicyResponse handleUpdatePolicy(Long policyId, UpdatePolicyRequest request);
 
     DeletePolicyResponse handleDeletePolicy(Long policyId);
+
+    UpdatePolicyResponse handleInactivatePolicyWithReplacement(Long policyId, TogglePolicyStatusRequest request);
+
 }

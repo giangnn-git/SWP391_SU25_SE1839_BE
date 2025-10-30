@@ -16,7 +16,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, String> {
 
     Optional<Vehicle> findByVin(String vin);
 
-    List<Vehicle> findByProductionDateBetween(LocalDate fromDate, LocalDate toDate);
+    List<Vehicle> findByModelIdInAndProductionDateBetween(List<Long> modelIds, LocalDate from, LocalDate to);
 
     @Query("""
             SELECT v FROM Vehicle v

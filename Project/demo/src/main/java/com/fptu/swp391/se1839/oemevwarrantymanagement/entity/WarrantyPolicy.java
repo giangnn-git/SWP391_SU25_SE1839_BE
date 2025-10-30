@@ -78,6 +78,16 @@ public class WarrantyPolicy {
         PROMOTION // part-time/festival/bonus policies
     }
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private Status status = Status.INACTIVE;
+
+    public enum Status {
+        ACTIVE,
+        INACTIVE
+    }
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
