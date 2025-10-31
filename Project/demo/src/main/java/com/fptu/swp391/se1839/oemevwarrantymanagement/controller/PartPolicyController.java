@@ -7,6 +7,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -15,12 +16,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePartPolicyRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.TogglePolicyStatusRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartPolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyCodeResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.UpdatePolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PartPolicyService;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PolicyService;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +37,7 @@ import lombok.experimental.FieldDefaults;
 public class PartPolicyController {
 
         PartPolicyService partPolicyService;
+        PolicyService policyService;
 
         @GetMapping("/part-policies")
         @PreAuthorize("hasAnyAuthority('ADMIN','EVM_STAFF')")
@@ -111,6 +116,22 @@ public class PartPolicyController {
                                 .data(response)
                                 .build();
 
+                return ResponseEntity.ok(result);
+        }
+
+        @PatchMapping("/policies/{policyId}/toggle-with-replacement")
+        @PreAuthorize("hasAuthority('ADMIN')")
+
+        public ResponseEntity<ApiResponse<UpdatePolicyResponse>> togglePolicyWithReplacement(
+                        @PathVariable Long policyId,
+                        @RequestBody TogglePolicyStatusRequest request) {
+
+                UpdatePolicyResponse response = policyService.handleInactivatePolicyWithReplacement(policyId, request);
+                var result = ApiResponse.<UpdatePolicyResponse>builder()
+                                .status(HttpStatus.OK.toString())
+                                .message("Policy status toggled successfully")
+                                .data(response)
+                                .build();
                 return ResponseEntity.ok(result);
         }
 }

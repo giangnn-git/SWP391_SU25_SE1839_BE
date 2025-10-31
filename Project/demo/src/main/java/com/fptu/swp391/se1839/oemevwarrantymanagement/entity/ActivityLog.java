@@ -48,4 +48,8 @@ public class ActivityLog {
     @ManyToOne
     @JoinColumn(name = "repairOrderId")
     RepairOrder repairOrder;
+
+    @ManyToOne
+    @JoinColumn(name = "partClaimId")
+    PartClaim partClaim;
 }

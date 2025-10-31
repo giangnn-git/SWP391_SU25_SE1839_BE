@@ -114,6 +114,16 @@ public class PolicyServiceImpl implements PolicyService {
                         throw new IllegalArgumentException("Warranty policy name already exists");
                 }
 
+                if (existingPolicy.getStatus() != WarrantyPolicy.Status.ACTIVE) {
+                        throw new IllegalArgumentException("Only ACTIVE policies can be updated.");
+                }
+
+                boolean hasPartApplied = partPolicyRepository.existsByWarrantyPolicyId(policyId);
+                if (hasPartApplied) {
+                        throw new IllegalArgumentException(
+                                        "Cannot update a policy that is already applied to parts or vehicles.");
+                }
+
                 existingPolicy.setName(request.getName());
                 existingPolicy.setDescription(request.getDescription());
                 existingPolicy.setDurationPeriod(request.getDurationPeriod());
@@ -130,26 +140,32 @@ public class PolicyServiceImpl implements PolicyService {
 
         @Override
         public DeletePolicyResponse handleDeletePolicy(Long policyId) {
-                WarrantyPolicy existingPolicy = policyRepository.findById(policyId)
+                policyRepository.findById(policyId)
                                 .orElseThrow(() -> new NoSuchElementException(
                                                 "Policy with ID " + policyId + " not found"));
 
+                // Kiểm tra policy đã từng được gắn vào part policy nào chưa
+                boolean hasEverBeenUsed = partPolicyRepository.existsByWarrantyPolicyId(policyId);
+                if (hasEverBeenUsed) {
+                        throw new IllegalArgumentException(
+                                        "Cannot delete policy: it has been used in at least one PartPolicy record (even if expired).");
+                }
+
+                // Kiểm tra nếu còn part policy chưa hết hạn (thêm chặt chẽ hơn)
                 LocalDate today = LocalDate.now();
-
-                // kiểm tra part policy còn hạn
                 List<PartPolicy> unexpiredParts = partPolicyRepository.findUnexpiredPartPolicies(policyId, today);
-
                 if (!unexpiredParts.isEmpty()) {
                         throw new IllegalArgumentException(
                                         "Cannot delete policy: there are still part policies that have not expired.");
                 }
 
-                policyRepository.delete(existingPolicy);
+                // Nếu chưa từng được dùng, cho phép xóa cứng
+                policyRepository.deleteById(policyId);
                 log.info("Deleted WarrantyPolicy with id: {}", policyId);
 
                 return DeletePolicyResponse.builder()
                                 .success(true)
-                                .message("Policy deleted successfully.")
+                                .message("Warranty policy deleted successfully.")
                                 .build();
         }
 
@@ -177,6 +193,10 @@ public class PolicyServiceImpl implements PolicyService {
                                 throw new IllegalArgumentException("Replacement policy must be ACTIVE");
                         }
 
+                        if (!replacement.getType().equals(policy.getType())) {
+                                throw new IllegalArgumentException("Replacement policy type must match the original policy type");
+                        }
+
                         // Gán PartPolicy ACTIVE sang replacement
                         activePartPolicies.forEach(pp -> pp.setWarrantyPolicy(replacement));
                         partPolicyRepository.saveAll(activePartPolicies);
@@ -186,6 +206,8 @@ public class PolicyServiceImpl implements PolicyService {
                         List<Long> ids = activePartPolicies.stream().map(PartPolicy::getId).toList();
                         partPolicyRepository.updateStatusByIds(ids, PartPolicy.Status.INACTIVE);
                 }
+
+                
 
                 // Inactivate chính WarrantyPolicy
                 policy.setStatus(WarrantyPolicy.Status.INACTIVE);

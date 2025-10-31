@@ -13,10 +13,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.annotation.Activity;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChooseTechnicalRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.EmailDetailsRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.FilterRequest;
@@ -35,13 +35,13 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Model;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartPriceHistory;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairDetail;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder.OrderStatus;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairStep;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.SCExpense;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ServiceCenter;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.User;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyClaim;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.event.EntityUpdatedEvent;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ModelRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairDetailRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
@@ -75,8 +75,8 @@ public class RepairOrderServiceImpl implements RepairOrderService {
     final UserRepository userRepository;
     final RepairDetailRepository repairDetailRepository;
     final SCExpenseReposiotry scExpenseReposiotry;
-    final ActivityLogServiceImpl activityLogServiceImpl;
     final EmailService emailService;
+    final ApplicationEventPublisher applicationEventPublisher;
 
     Vehicle getVehicleByVin(String vin) {
         Vehicle vehicle = this.vehicleRepository.findByVin(vin)
@@ -229,7 +229,6 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 .build();
     }
 
-    @Activity(title = "Repair Order Completed", status = "COMPLETED", detail = "Repair order #{orderId} was completed")
     public List<FilterOrderResponse> handleFilterOrder(List<RepairOrder> roList) {
 
         List<FilterOrderResponse> forList = new ArrayList<>();
@@ -253,6 +252,8 @@ public class RepairOrderServiceImpl implements RepairOrderService {
 
             repairOrderRepository.save(ro);
 
+            applicationEventPublisher.publishEvent(new EntityUpdatedEvent<>(this, ro));
+
             String technicalName = ro.getTechnical() != null ? ro.getTechnical().getName() : "Unknown";
 
             WarrantyClaim claim = getWarrantyClaimId(ro.getWarrantyClaim().getId());
@@ -260,19 +261,22 @@ public class RepairOrderServiceImpl implements RepairOrderService {
             Model model = modelRepository.findById(vehicle.getModel().getId())
                     .orElseThrow(() -> new RuntimeException("Model not found"));
 
-            FilterOrderResponse response = FilterOrderResponse.builder()
-                    .repairOrderId(ro.getId())
-                    .percentInProcess(progress)
-                    .techinal(technicalName)
-                    .prodcutYear(vehicle.getProductYear())
-                    .vin(vehicle.getVin())
-                    .licensePlate(vehicle.getLicensePlate())
-                    .modelName(model.getName())
-                    .status(true)
-                    .orderDate(ro.getStartDate()) // sử dụng startDate để sắp xếp
-                    .build();
+            if (claim.getStatus() == WarrantyClaim.ClaimStatus.APPROVED) {
+                FilterOrderResponse response = FilterOrderResponse.builder()
+                        .repairOrderId(ro.getId())
+                        .claimId(claim.getId())
+                        .claimStatus(claim.getStatus().toString())
+                        .percentInProcess(progress)
+                        .techinal(technicalName)
+                        .prodcutYear(vehicle.getProductYear())
+                        .vin(vehicle.getVin())
+                        .licensePlate(vehicle.getLicensePlate())
+                        .modelName(model.getName())
+                        .orderDate(ro.getStartDate()) // sử dụng startDate để sắp xếp
+                        .build();
 
-            forList.add(response);
+                forList.add(response);
+            }
         }
 
         forList.sort(Comparator.comparing(FilterOrderResponse::getRepairOrderId).reversed());
@@ -349,12 +353,22 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 .build();
     }
 
-    @Activity(title = "Technician Assigned", status = "PENDING", detail = "Technician {technicalName} was assigned to repair order #{orderId}")
     @Override
     public ChooseTechnicalResponse handleChooseTechnical(long repairOrderId, ChooseTechnicalRequest request) {
         // Lấy RepairOrder theo id
         RepairOrder repairOrder = repairOrderRepository.findById(repairOrderId)
                 .orElseThrow(() -> new NoSuchElementException("Repair order not found: " + repairOrderId));
+
+        // Lấy WarrantyClaim liên kết với RepairOrder
+        WarrantyClaim claim = repairOrder.getWarrantyClaim();
+        if (claim == null) {
+            throw new IllegalStateException("Repair order has no associated warranty claim");
+        }
+
+        // ❗ Kiểm tra trạng thái claim
+        if (claim.getStatus() != WarrantyClaim.ClaimStatus.APPROVED) {
+            throw new IllegalStateException("Cannot assign technician: warranty claim is not APPROVED");
+        }
 
         // Lấy kỹ thuật viên theo tên
         User technical = userRepository.findByName(request.getTechnicalName());
@@ -369,8 +383,16 @@ public class RepairOrderServiceImpl implements RepairOrderService {
         repairOrder.setEndDate(request.getEndDate());
         repairOrder.setStatus(RepairOrder.OrderStatus.PENDING);
 
+        repairOrder.getSteps().forEach(step -> {
+            step.setAssignedTechnician(technical.getName());
+            if (step.getStatus() == RepairStep.StepStatus.WAITING) {
+                step.setStatus(RepairStep.StepStatus.PENDING);
+            }
+        });
+
         // Lưu RepairOrder
         repairOrderRepository.save(repairOrder);
+        applicationEventPublisher.publishEvent(new EntityUpdatedEvent<>(this, repairOrder));
 
         // Trả về phản hồi
         return ChooseTechnicalResponse.builder()
@@ -387,6 +409,8 @@ public class RepairOrderServiceImpl implements RepairOrderService {
 
         return FilterOrderResponse.builder()
                 .repairOrderId(orderId)
+                .claimId(ro.getWarrantyClaim().getId())
+                .claimStatus(ro.getWarrantyClaim().getStatus().toString())
                 .prodcutYear(ro.getWarrantyClaim().getVehicle().getProductYear())
                 .modelName(ro.getWarrantyClaim().getVehicle().getModel().getName())
                 .vin(ro.getWarrantyClaim().getVehicle().getVin())
@@ -611,7 +635,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
         RepairOrder repairOrder = repairOrderRepository.findById(repairOrderId)
                 .orElseThrow(() -> new RuntimeException("Repair order not found"));
 
-        if(repairOrder.getStatus() != RepairOrder.OrderStatus.COMPLETED) {
+        if (repairOrder.getStatus() != RepairOrder.OrderStatus.COMPLETED) {
             throw new RuntimeException("Repair order is not completed yet");
         }
         // Join through relationships:
@@ -629,7 +653,8 @@ public class RepairOrderServiceImpl implements RepairOrderService {
         String subject = "Repair Completion Notification - OEM EV Warranty";
         String htmlContent = "<html><body>"
                 + "<h3>Dear " + customerName + ",</h3>"
-                + "<p>Your Vinfast" + claim.getVehicle().getModel().getName() + " (VIN: <b>" + vin + "</b>) has been successfully repaired.</p>"
+                + "<p>Your Vinfast" + claim.getVehicle().getModel().getName() + " (VIN: <b>" + vin
+                + "</b>) has been successfully repaired.</p>"
                 + "<p>Please visit our service center to pick up your vehicle.</p>"
                 + "<p>If you have any questions, feel free to contact us.</p>"
                 + "<p>Service center opens 7:00AM - 18:00PM from Monday to Tuesday</p>"
@@ -645,8 +670,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
 
         // Send email
         emailService.sendHtmlMail(emailDetails);
+        applicationEventPublisher.publishEvent(new EntityUpdatedEvent<>(this, repairOrder));
         return "Repair completion email sent to " + customerEmail;
     }
-
-
 }

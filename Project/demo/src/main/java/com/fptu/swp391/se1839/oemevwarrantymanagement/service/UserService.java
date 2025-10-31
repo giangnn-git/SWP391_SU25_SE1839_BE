@@ -13,7 +13,6 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.RefeshTokenReq
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserCreateRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserSearchRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UserUpdateRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetTechnicalsResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.IntrospectResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.LoginResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OTPResponse;

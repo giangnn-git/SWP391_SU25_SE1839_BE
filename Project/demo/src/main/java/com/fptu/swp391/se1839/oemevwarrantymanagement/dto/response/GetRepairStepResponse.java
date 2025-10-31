@@ -1,6 +1,6 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
-import java.time.LocalDate;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -17,20 +17,11 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RepairDetailResponse {
-    long id;
-    String partName;
-    String oldSerialNumber;
-    long quantity;
-    int productYear;
-    String modelName;
-    String vin;
-    String licensePlate;
-    String category;
-
-    LocalDate installationDate;
-    String technicianName;
-    String replacementDescription;
-    String newSerialNumber;
-
+public class GetRepairStepResponse {
+    long stepId;
+    String title;
+    double estimatedHour;
+    double actualHour;
+    String status;
+    Set<String> nextStatuses;
 }

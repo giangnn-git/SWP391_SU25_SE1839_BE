@@ -58,16 +58,6 @@ public class PartClaim {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof ClaimAttachment))
-            return false;
-        ClaimAttachment that = (ClaimAttachment) o;
-        return id != null && id.equals(that.getId());
-    }
-
-    @Override
     public int hashCode() {
         return Objects.hashCode(id);
     }

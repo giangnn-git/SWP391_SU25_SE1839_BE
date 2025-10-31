@@ -2,15 +2,23 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
 import java.time.LocalDate;
 import java.util.List;
+
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.FieldDefaults;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class VehicleInfoResponse {
-    private String vin;
-    private String modelName;
-    private String licensePlate;
-    private LocalDate purchaseDate;
-    private List<String> campaignNames;
+    String vin;
+    String modelName;
+    String licensePlate;
+    LocalDate purchaseDate;
+    List<String> campaignNames;
 }

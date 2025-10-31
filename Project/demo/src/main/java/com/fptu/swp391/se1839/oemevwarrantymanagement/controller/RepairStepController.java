@@ -1,19 +1,20 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreateRepairStepRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangeStatusRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChangeStatusRepairStepResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CreateRepairStepResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetRepairStepResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairStepService;
 
 import lombok.AccessLevel;
@@ -28,26 +29,26 @@ public class RepairStepController {
 
         final RepairStepService repairStepService;
 
-        @PostMapping("/repairSteps/{id}")
-        public ResponseEntity<ApiResponse<CreateRepairStepResponse>> createStep(
-                        @PathVariable Long repairOrderId, @RequestBody CreateRepairStepRequest requets) {
-                CreateRepairStepResponse crsr = this.repairStepService.handleCreateRepairStep(requets, repairOrderId);
-                var result = ApiResponse.<CreateRepairStepResponse>builder()
+        @GetMapping("/repair-steps/{id}")
+        public ResponseEntity<ApiResponse<List<GetRepairStepResponse>>> getStep(
+                        @PathVariable("id") Long repairOrderId) {
+                List<GetRepairStepResponse> response = this.repairStepService.handleGetRepairStep(repairOrderId);
+                var result = ApiResponse.<List<GetRepairStepResponse>>builder()
                                 .status(HttpStatus.OK.toString())
-                                .message("Choose techinician successfully")
-                                .data(crsr)
+                                .message("Get Step successfully")
+                                .data(response)
                                 .build();
                 return ResponseEntity.ok(result);
         }
 
-        @PatchMapping("/repairSteps/{id}")
+        @PatchMapping("/repair-steps/{id}")
         public ResponseEntity<ApiResponse<ChangeStatusRepairStepResponse>> changeStatus(
-                        @PathVariable("id") Long repairStepId, @RequestBody String status) {
+                        @PathVariable("id") Long repairStepId, @RequestBody ChangeStatusRequest status) {
                 ChangeStatusRepairStepResponse changeStatusRepairStep = this.repairStepService
                                 .changeStepStatus(repairStepId, status);
                 var result = ApiResponse.<ChangeStatusRepairStepResponse>builder()
                                 .status(HttpStatus.OK.toString())
-                                .message("Get Repair Order successfully")
+                                .message("Change status step successfully")
                                 .data(changeStatusRepairStep)
                                 .build();
                 return ResponseEntity.ok(result);

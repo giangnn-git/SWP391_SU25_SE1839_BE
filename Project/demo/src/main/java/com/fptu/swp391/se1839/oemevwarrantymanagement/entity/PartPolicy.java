@@ -1,9 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 

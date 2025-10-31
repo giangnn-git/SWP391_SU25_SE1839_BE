@@ -1,7 +1,6 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Set;
 
 import lombok.AccessLevel;
@@ -33,4 +32,5 @@ public class FilterClaimResponse {
     String currentStatus;
     Set<String> availableStatuses;
     String rejectReason;
+    String statusRecall;
 }

@@ -17,4 +17,6 @@ public class PartQuantityResponse {
     long quantity;
     String category;
     String description;
+
+    long remainingStock;
 }

@@ -6,18 +6,27 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Getter
+@Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-
-public class ChangeStatusRepairDetailResponse {
-    LocalDate date;
-    String technicianName;
-    String serailNumber;
+public class GetPartClaimResponse {
+    long partClaimId;
+    String partClaimName;
+    String status;
+    double estimatedCost;
+    String campaignName;
     String description;
+    long durationPeriord;
+    LocalDate effect;
+    String coverage;
+    String conditional;
 }

@@ -20,4 +20,6 @@ public interface VehiclePartRepository extends JpaRepository<VehiclePart, String
     Optional<VehiclePart> findByVehicleVinAndPartId(@Param("vehicleVin") String vehicleVin,
             @Param("partId") Long partId);
 
+    Optional<VehiclePart> findByVehicleVinAndPartIdAndWarrantyClaimId(String vin, Long partId, Long claimId);
+
 }

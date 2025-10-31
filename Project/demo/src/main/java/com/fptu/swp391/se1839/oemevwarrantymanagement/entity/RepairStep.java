@@ -51,7 +51,8 @@ public class RepairStep {
         PENDING,
         IN_PROGRESS, // Đang thực hiện
         COMPLETED, // Đã hoàn thành
-        CANCELLED // Bị hủy
+        CANCELLED, // Bị hủy
+        REJECTED // Bị từ chối
     }
 
     @Override

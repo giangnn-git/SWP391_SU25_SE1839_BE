@@ -1,13 +1,5 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.controller;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,6 +14,14 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairOrderService
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
 @RequestMapping("/api")
@@ -30,7 +30,7 @@ import lombok.experimental.FieldDefaults;
 public class RepairOrderController {
     final RepairOrderService repairOrderService;
 
-    @GetMapping("/repairOrders")
+    @GetMapping("/repair-orders")
     public ResponseEntity<ApiResponse<OrderDashboardResponse>> getRepairOrder(@AuthenticationPrincipal Jwt jwt,
             @RequestBody(required = false) FilterRequest request) {
         Long serviceCenterId = Long.parseLong(jwt.getClaim("serviceCenterId").toString());
@@ -47,7 +47,7 @@ public class RepairOrderController {
         return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/repairOrders/{id}")
+    @GetMapping("/repair-orders/{id}")
     public ResponseEntity<ApiResponse<OrderDetailResponse>> getRepairOrderDetail(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable("id") long orderId) {
@@ -61,7 +61,7 @@ public class RepairOrderController {
         return ResponseEntity.ok(result);
     }
 
-    @PutMapping("/repairOrders/{id}")
+    @PutMapping("/repair-orders/{id}")
     public ResponseEntity<ApiResponse<ChooseTechnicalResponse>> chooseTechinician(
             @PathVariable("id") Long repairOrderId, @RequestBody ChooseTechnicalRequest requets) {
         ChooseTechnicalResponse ctr = this.repairOrderService.handleChooseTechnical(repairOrderId, requets);

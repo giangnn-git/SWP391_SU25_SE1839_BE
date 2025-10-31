@@ -73,11 +73,6 @@ public class WarrantyPolicy {
     @Builder.Default
     private Set<PartPolicy> partPolicies = new HashSet<>();
 
-    public enum PolicyType {
-        NORMAL, // normmal policies
-        PROMOTION // part-time/festival/bonus policies
-    }
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
     private Status status = Status.INACTIVE;
@@ -87,6 +82,10 @@ public class WarrantyPolicy {
         INACTIVE
     }
 
+    public enum PolicyType {
+        NORMAL, // normmal policies
+        PROMOTION // part-time/festival/bonus policies
+    }
 
     @Override
     public boolean equals(Object o) {

@@ -1,11 +1,14 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreateRepairStepRequest;
+import java.util.List;
+
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangeStatusRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChangeStatusRepairStepResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CreateRepairStepResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetRepairStepResponse;
 
 public interface RepairStepService {
-    CreateRepairStepResponse handleCreateRepairStep(CreateRepairStepRequest request, long repairOrderId);
 
-    ChangeStatusRepairStepResponse changeStepStatus(long repairStepId, String newStatusStr);
+    List<GetRepairStepResponse> handleGetRepairStep(long epairOrderId);
+
+    ChangeStatusRepairStepResponse changeStepStatus(long repairStepId, ChangeStatusRequest newStatusStr);
 }

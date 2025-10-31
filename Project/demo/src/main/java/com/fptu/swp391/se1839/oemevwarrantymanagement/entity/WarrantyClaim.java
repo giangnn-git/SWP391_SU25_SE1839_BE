@@ -2,9 +2,7 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -71,7 +69,7 @@ public class WarrantyClaim {
     LocalDate decisionDate;
 
     public enum ClaimStatus {
-        DRAFT, PENDING, APPROVED, REJECTED
+        DRAFT, PENDING, APPROVED, REJECTED, COMPLETED
     }
 
     @Column(nullable = false)
@@ -98,11 +96,6 @@ public class WarrantyClaim {
     @Column(nullable = false, length = 20)
     @Builder.Default
     ClaimPriority priority = ClaimPriority.NORMAL;
-
-    // One claim can have many attachments
-    @OneToMany(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    List<ClaimAttachment> claimAttachments = new ArrayList<>();
 
     @OneToOne(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true)
     RepairOrder repairOrder;
@@ -146,11 +139,11 @@ public class WarrantyClaim {
                 ", decisionDate=" + decisionDate +
                 ", status=" + status +
                 ", priority=" + priority +
-                ", claimAttachmentCount=" + (claimAttachments == null ? 0 : claimAttachments.size()) +
                 ", repairOrderId=" + (repairOrder == null ? "null" : repairOrder.getId()) +
                 ", vehiclePartCount=" + (vehicleParts == null ? 0 : vehicleParts.size()) +
                 ", serviceCampaignId=" + (serviceCampaign == null ? "null" : serviceCampaign.getId()) +
                 ", partClaimCount=" + (partClaims == null ? 0 : partClaims.size()) +
                 '}';
     }
+
 }

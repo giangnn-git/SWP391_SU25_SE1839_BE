@@ -1,19 +1,10 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Optional;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.DownloadImageRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DownloadImageResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ClaimAttachment;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ClaimAttachmentRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.service.ClaimAttachmentService;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ClaimAttachmentServiceImpl implements ClaimAttachmentService {
-
-    final ClaimAttachmentRepository claimAttachmentRepository;
+public class ClaimAttachmentServiceImpl {
 
     public static byte[] compressImage(byte[] data) {
         Deflater deflater = new Deflater();
@@ -47,15 +36,6 @@ public class ClaimAttachmentServiceImpl implements ClaimAttachmentService {
         return outputStream.toByteArray();
     }
 
-    public DownloadImageResponse downloadImage(DownloadImageRequest request) {
-        Optional<ClaimAttachment> dbImageDate = this.claimAttachmentRepository.findByName(request.getNameFile());
-        byte[] images = decompressImage(dbImageDate.get().getImageData());
-        return DownloadImageResponse.builder()
-                .file(images)
-                .contentType(MediaType.IMAGE_PNG_VALUE)
-                .build();
-    }
-
     public static byte[] decompressImage(byte[] data) {
         Inflater inflater = new Inflater();
         inflater.setInput(data);
@@ -70,11 +50,6 @@ public class ClaimAttachmentServiceImpl implements ClaimAttachmentService {
         } catch (Exception e) {
         }
         return outputStream.toByteArray();
-    }
-
-    public String handleDeleteTempFile(long attachmentId) throws IOException {
-        this.claimAttachmentRepository.deleteById(attachmentId);
-        return "Delete temp file successfully";
     }
 
 }

@@ -12,6 +12,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CustomerRegis
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CustomerSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RegisteredVehicleResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.VehicleInfoResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.CampaignVehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Customer;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.CustomerRepository;
@@ -211,24 +212,24 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public List<VehicleInfoResponse> getVehiclesByCustomerId(Long customerId) {
+        public List<VehicleInfoResponse> getVehiclesByCustomerId(Long customerId) {
         List<Vehicle> vehicles = vehicleRepository.findAllByCustomerIdWithCampaigns(customerId);
 
         return vehicles.stream()
-                .map((Vehicle v) -> VehicleInfoResponse.builder()
+                .map(v -> VehicleInfoResponse.builder()
                         .vin(v.getVin())
-                        .modelName(v.getModel().getName()) // nếu có Model
+                        .modelName(v.getModel().getName())
                         .licensePlate(v.getLicensePlate())
                         .purchaseDate(v.getPurchaseDate())
                         .campaignNames(v.getCampaignVehicles() != null
                                 ? v.getCampaignVehicles().stream()
-                                        .map(c -> c.getServiceCampaign().getName())
+                                        .filter(cv -> cv.getStatus() != CampaignVehicle.CampaignVehicleStatus.COMPLETED) // lọc ở đây
+                                        .map(cv -> cv.getServiceCampaign().getName())
                                         .distinct()
                                         .toList()
                                 : List.<String>of())
                         .build())
                 .toList();
-    }
-
+        }
 
 }

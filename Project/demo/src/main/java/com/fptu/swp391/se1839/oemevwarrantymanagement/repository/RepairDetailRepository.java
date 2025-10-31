@@ -31,4 +31,5 @@ public interface RepairDetailRepository extends JpaRepository<RepairDetail, Long
                         """)
         List<RepairDetail> findByRepairOrderId(@Param("repairOrderId") Long repairOrderId);
 
+        List<RepairDetail> findByRepairOrderIdAndPartId(Long repairOrderId, Long partId);
 }

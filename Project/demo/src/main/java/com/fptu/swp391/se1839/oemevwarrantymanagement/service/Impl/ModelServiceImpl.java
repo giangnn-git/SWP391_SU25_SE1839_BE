@@ -37,7 +37,6 @@ public class ModelServiceImpl implements ModelService {
                 .collect(Collectors.toList());
     }
 
-
     @Override
     public DetailModelResponse getModelDetail(Long modelId) {
         Model model = modelRepository.findById(modelId)

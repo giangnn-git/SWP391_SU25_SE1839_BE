@@ -29,7 +29,7 @@ public class VehiclePart {
 
     @Id
     @Column(name = "serial_number")
-    String serialNumber;
+    String oldSerialNumber;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "vehicleVin", nullable = false)
@@ -46,6 +46,9 @@ public class VehiclePart {
 
     LocalDate removalDate;
 
+    @Column(name = "old_serial_number")
+    String newSerialNumber;
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -53,18 +56,18 @@ public class VehiclePart {
         if (!(o instanceof VehiclePart))
             return false;
         VehiclePart that = (VehiclePart) o;
-        return serialNumber != null && serialNumber.equals(that.serialNumber);
+        return oldSerialNumber != null && oldSerialNumber.equals(that.oldSerialNumber);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(serialNumber);
+        return Objects.hashCode(oldSerialNumber);
     }
 
     // toString
     @Override
     public String toString() {
-        return "VehiclePart{" + "serialNumber='" + serialNumber + '\'' + ", vehicleVin="
+        return "VehiclePart{" + "oldSerialNumber='" + oldSerialNumber + '\'' + ", vehicleVin="
                 + (vehicle != null ? vehicle.getVin() : null) + ", partId=" + (part != null ? part.getId() : null)
                 + ", claimId=" + (warrantyClaim != null ? warrantyClaim.getId() : null) + ", installationDate="
                 + installationDate + ", removalDate=" + removalDate + '}';

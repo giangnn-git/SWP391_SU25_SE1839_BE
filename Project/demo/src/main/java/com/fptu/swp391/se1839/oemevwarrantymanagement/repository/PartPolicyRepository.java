@@ -47,5 +47,5 @@ public interface PartPolicyRepository extends JpaRepository<PartPolicy, Long> {
         @Query("UPDATE PartPolicy p SET p.status = :status WHERE p.id IN :ids")
         void updateStatusByIds(@Param("ids") List<Long> ids, @Param("status") PartPolicy.Status status);
 
-
+        boolean existsByWarrantyPolicyId(Long policyId);
 }

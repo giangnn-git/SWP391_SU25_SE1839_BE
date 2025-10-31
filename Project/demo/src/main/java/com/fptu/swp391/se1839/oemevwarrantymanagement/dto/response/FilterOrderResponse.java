@@ -16,6 +16,8 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class FilterOrderResponse {
     long repairOrderId;
+    long claimId;
+    String claimStatus;
     int prodcutYear;
     String modelName;
     String vin;

@@ -2,8 +2,6 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
 import java.io.File;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,13 +20,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.annotation.Activity;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.*;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.*;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.*;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.event.EntityCreatedEvent;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.*;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.WarrantyClaimService;
+
+import jakarta.transaction.Transactional;
+
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
+
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
@@ -52,6 +55,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         final SCExpenseReposiotry scExpenseReposiotry;
         final RepairDetailRepository repairDetailRepository;
         final RepairStepRepository repairStepRepository;
+        final ApplicationEventPublisher applicationEventPublisher;
 
         // ================= Dashboard & Summary =================
 
@@ -77,13 +81,15 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 long countAll = getAllClaims(serviceCenterId);
                 long countInProcess = getClaimsByStatus(serviceCenterId, WarrantyClaim.ClaimStatus.PENDING);
                 long countSuccess = getClaimsByStatus(serviceCenterId, WarrantyClaim.ClaimStatus.APPROVED);
-                double totalPrice = calculateEstimatedCost(warrantyClaims.toArray(new WarrantyClaim[0]));
+                double totalEstimatedCost = warrantyClaims.stream()
+                                .mapToDouble(this::calculateEstimatedCost)
+                                .sum();
 
                 return SummaryClaimResponse.builder()
                                 .total(new SummaryItemResponse(countAll, "All claims"))
                                 .pending(new SummaryItemResponse(countInProcess, "Pending claims"))
                                 .approved(new SummaryItemResponse(countSuccess, "Approved claims"))
-                                .cost(new SummaryItemResponse((long) totalPrice, "Estimated Cost"))
+                                .cost(new SummaryItemResponse(totalEstimatedCost, "Estimated Cost"))
                                 .status(true)
                                 .build();
         }
@@ -123,26 +129,30 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 return statuses;
         }
 
-        double calculateEstimatedCost(WarrantyClaim... claims) {
-                double price = 0;
-                for (WarrantyClaim wc : claims) {
-                        for (PartClaim pc : wc.getPartClaims()) {
-                                PartPriceHistory pph = partPriceHistoryRepository
-                                                .findCurrentPrice(pc.getPart().getId(), wc.getClaimDate().toLocalDate())
-                                                .orElseGet(() -> {
-                                                        log.warn("⚠️ No price found for part: {} (Claim ID: {})",
-                                                                        pc.getPart().getName(), wc.getId());
-                                                        PartPriceHistory dummy = new PartPriceHistory();
-                                                        dummy.setPrice(0.0);
-                                                        return dummy;
-                                                });
-                                BigDecimal totalPrice = BigDecimal.valueOf(pph.getPrice())
-                                                .multiply(BigDecimal.valueOf(pc.getQuantity()))
-                                                .setScale(2, RoundingMode.HALF_UP);
-                                price += totalPrice.doubleValue();
-                        }
-                }
-                return price;
+        public double calculateEstimatedCost(WarrantyClaim wc) {
+                List<PartClaim> partClaims = partClaimRepository.findByWarrantyClaimId(wc.getId());
+                LocalDate claimDate = wc.getClaimDate().toLocalDate();
+
+                return partClaims.stream()
+                                .mapToDouble(p -> {
+                                        Set<PartPriceHistory> histories = p.getPart().getPartPriceHistories();
+                                        double validPrice = histories.stream()
+                                                        .filter(h -> !h.getStartDate().isAfter(claimDate))
+                                                        .filter(h -> h.getEndDate() == null
+                                                                        || !h.getEndDate().isBefore(claimDate))
+                                                        .map(PartPriceHistory::getPrice)
+                                                        .findFirst()
+                                                        .orElseGet(() -> {
+                                                                return histories.stream()
+                                                                                .max(Comparator.comparing(
+                                                                                                PartPriceHistory::getStartDate))
+                                                                                .map(PartPriceHistory::getPrice)
+                                                                                .orElse(0.0);
+                                                        });
+
+                                        return validPrice * p.getQuantity();
+                                })
+                                .sum();
         }
 
         Set<PartClaim> buildPartClaims(Set<PartClaimRequest> requests, WarrantyClaim claim) {
@@ -196,7 +206,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         }
 
         @Override
-        @Activity(title = "New Warranty Claim Submitted", status = "DRAFT", detail = "Warranty claim #{claimId} created")
+        @Transactional
         public CreateClaimResponse handleCreateClaim(CreateClaimRequest request, long serviceCenterId,
                         MultipartFile[] attachments, long userId) throws IOException {
                 WarrantyClaim.ClaimPriority priorityEnum = resolvePriority(request.getPriority());
@@ -208,14 +218,9 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                         assignCampaign(warrantyClaim, request.getVin());
                 }
 
-                boolean exists = warrantyClaimRepository.existsByVehicle_VinAndServiceCenter_IdAndStatusNot(
-                                request.getVin(), serviceCenterId, WarrantyClaim.ClaimStatus.APPROVED);
-
-                if (exists) {
-                        throw new RuntimeException("Claim for this vehicle at this service center is already created.");
-                }
-
                 warrantyClaimRepository.save(warrantyClaim);
+                warrantyClaimRepository.flush(); // thêm dòng này!
+                applicationEventPublisher.publishEvent(new EntityCreatedEvent<>(this, warrantyClaim));
 
                 List<String> attachmentPaths = saveAttachmentsToDocker(warrantyClaim, attachments);
 
@@ -241,7 +246,6 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                 .mileage(request.getMileage())
                                 .vehicle(getVehicleByVin(request.getVin()))
                                 .serviceCenter(getServiceCenterById(serviceCenterId))
-                                .claimAttachments(new ArrayList<>())
                                 .repairOrder(null)
                                 .vehicleParts(new HashSet<>())
                                 .serviceCampaign(null)
@@ -294,7 +298,6 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
         // ================= Change Status =================
         @Override
-        @Activity(title = "Warranty Claim Status Updated", status = "UPDATED", detail = "Warranty claim #{claimId} status changed")
         public WarrantyClaimStatusResponse handleChangeStatus(
                         long claimId,
                         WarrantyClaimStatusRequest request,
@@ -304,16 +307,6 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                 .orElseThrow(() -> new NoSuchElementException("Warranty claim doesn't exist"));
 
                 updateClaimStatus(wc, request.getChangeStatus(), request.getReason(), userId);
-
-                if ("APPROVED".equalsIgnoreCase(request.getChangeStatus())
-                                || "REJECTED".equalsIgnoreCase(request.getChangeStatus())) {
-                        try {
-                                saveAttachmentsFromDockerToDB(wc);
-                        } catch (IOException e) {
-                                log.error("Failed to save attachments from Docker to DB", e);
-                                throw new RuntimeException("Cannot save attachments", e);
-                        }
-                }
 
                 warrantyClaimRepository.save(wc);
 
@@ -348,35 +341,10 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                         }
                 }
 
+                applicationEventPublisher.publishEvent(new EntityCreatedEvent<>(this, wc));
                 return WarrantyClaimStatusResponse.builder()
                                 .message("Change Status successfully")
                                 .build();
-        }
-
-        private void saveAttachmentsFromDockerToDB(WarrantyClaim wc) throws IOException {
-                // Chỉ xử lý thư mục của claim này
-                Path dirPath = Paths.get(attachmentBasePath, "claims", String.valueOf(wc.getId()));
-                if (!Files.exists(dirPath) || !Files.isDirectory(dirPath))
-                        return;
-
-                try (var stream = Files.list(dirPath)) {
-                        stream.forEach(p -> {
-                                try {
-                                        byte[] data = Files.readAllBytes(p);
-                                        ClaimAttachment attachment = ClaimAttachment.builder()
-                                                        .name(p.getFileName().toString())
-                                                        .type(Files.probeContentType(p))
-                                                        .imageData(data)
-                                                        .warrantyClaim(wc)
-                                                        .build();
-
-                                        wc.getClaimAttachments().add(attachment);
-                                        Files.deleteIfExists(p); // xoá file sau khi chuyển vào DB
-                                } catch (IOException ex) {
-                                        log.error("Failed to move file {} to DB for claim {}", p, wc.getId(), ex);
-                                }
-                        });
-                }
         }
 
         private void updateClaimStatus(WarrantyClaim wc, String newStatusStr, String reason, long userId) {
@@ -407,7 +375,6 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         }
 
         // ================= Claim Detail =================
-
         @Override
         public ClaimDetailResponse handleGetClaimDetail(long claimId, Long userId) throws IOException {
                 WarrantyClaim wc = warrantyClaimRepository.findById(claimId)
@@ -417,43 +384,39 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
                 List<DecodeImageReponse> attachments = new ArrayList<>();
 
-                if (wc.getClaimAttachments().isEmpty()) {
-                        String uploadDir = attachmentBasePath + "/claims" + wc.getId();
-                        File dir = new File(uploadDir);
-                        if (dir.exists() && dir.isDirectory()) {
-                                for (File file : Objects.requireNonNull(dir.listFiles())) {
-                                        byte[] data = Files.readAllBytes(file.toPath());
-                                        String base64 = Base64.getEncoder().encodeToString(data);
-                                        String imageDataUrl = "data:" + Files.probeContentType(file.toPath())
-                                                        + ";base64," + base64;
-                                        attachments.add(DecodeImageReponse.builder()
-                                                        .image(imageDataUrl)
-                                                        .claimAttachmentId(-1L)
-                                                        .build());
-                                }
+                String uploadDir = attachmentBasePath + "/claims/" + wc.getId();
+                File dir = new File(uploadDir);
+                if (dir.exists() && dir.isDirectory()) {
+                        for (File file : Objects.requireNonNull(dir.listFiles())) {
+                                byte[] data = Files.readAllBytes(file.toPath());
+                                String base64 = Base64.getEncoder().encodeToString(data);
+                                String imageDataUrl = "data:" + Files.probeContentType(file.toPath())
+                                                + ";base64," + base64;
+                                attachments.add(DecodeImageReponse.builder()
+                                                .image(imageDataUrl)
+                                                .claimAttachmentId(-1L)
+                                                .build());
                         }
-                } else {
-                        attachments = wc.getClaimAttachments().stream()
-                                        .map(a -> {
-                                                byte[] decompressed = ClaimAttachmentServiceImpl
-                                                                .decompressImage(a.getImageData());
-                                                String base64 = Base64.getEncoder().encodeToString(decompressed);
-                                                String imageDataUrl = "data:" + a.getType() + ";base64," + base64;
-                                                return DecodeImageReponse.builder()
-                                                                .image(imageDataUrl)
-                                                                .claimAttachmentId(a.getId())
-                                                                .build();
-                                        })
-                                        .collect(Collectors.toList());
                 }
 
                 List<PartQuantityResponse> partQuantity = wc.getPartClaims().stream()
-                                .map(pc -> PartQuantityResponse.builder()
-                                                .name(pc.getPart().getName())
-                                                .quantity(pc.getQuantity())
-                                                .category(pc.getPart().getPartCategory())
-                                                .description(pc.getPart().getDescription())
-                                                .build())
+                                .map(pc -> {
+                                        int remainingStock = pc.getPart().getPartInventories().stream()
+                                                        .filter(pi -> pi.getServiceCenter().getId().equals(
+                                                                        wc.getServiceCenter() != null
+                                                                                        ? wc.getServiceCenter().getId()
+                                                                                        : -1L))
+                                                        .mapToInt(PartInventory::getQuantity)
+                                                        .sum();
+
+                                        return PartQuantityResponse.builder()
+                                                        .name(pc.getPart().getName())
+                                                        .quantity(pc.getQuantity())
+                                                        .category(pc.getPart().getPartCategory())
+                                                        .description(pc.getPart().getDescription())
+                                                        .remainingStock(remainingStock)
+                                                        .build();
+                                })
                                 .collect(Collectors.toList());
 
                 return ClaimDetailResponse.builder()
@@ -474,6 +437,10 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 Model model = modelRepository.findById(vehicle.getModel().getId())
                                 .orElseThrow(() -> new RuntimeException("Model not found"));
 
+                CampaignVehicle cv = campaignVehicleRepository.findByVehicleVinAndServiceCampaignId(
+                                vehicle.getVin(),
+                                wc.getServiceCampaign() != null ? wc.getServiceCampaign().getId() : -1L).orElse(null);
+
                 return FilterClaimResponse.builder()
                                 .claimDate(wc.getClaimDate().toLocalDate())
                                 .description(wc.getDescription())
@@ -493,6 +460,9 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                 .milege(wc.getMileage())
                                 .availableStatuses(handleGetAllStatus(wc, user.getRole()))
                                 .rejectReason(wc.getRejectReason())
+                                .statusRecall((cv != null && wc.getServiceCampaign() == null) ? "NOT_AGREED_RECALL"
+                                                : (cv != null && wc.getServiceCampaign() != null) ? "AGREED_RECALL"
+                                                                : "NO_RECALL")
                                 .build();
         }
 
@@ -634,7 +604,10 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                 .filter(this::hasCompletedRepairOrder) // chỉ claim có ít nhất 1 RepairOrder hoàn tất
                                 .toList();
 
-                double totalCostDouble = calculateEstimatedCost(claims.toArray(new WarrantyClaim[0]));
+                double totalCostDouble = claims.stream()
+                                .mapToDouble(this::calculateEstimatedCost)
+                                .sum();
+
                 return (long) totalCostDouble;
         }
 
@@ -827,4 +800,5 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
                 return map;
         }
+
 }

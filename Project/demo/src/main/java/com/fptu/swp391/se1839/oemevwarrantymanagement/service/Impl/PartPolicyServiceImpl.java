@@ -10,10 +10,12 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePartPolicyRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.TogglePolicyStatusRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartPolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyCodeResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.UpdatePolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Part;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartPolicy;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyPolicy;

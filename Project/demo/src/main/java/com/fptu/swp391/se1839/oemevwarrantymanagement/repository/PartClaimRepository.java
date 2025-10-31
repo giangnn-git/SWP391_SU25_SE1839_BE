@@ -11,7 +11,10 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartClaim;
 
 @Repository
 public interface PartClaimRepository extends JpaRepository<PartClaim, Long> {
+
         Long countByWarrantyClaimServiceCenterId(Long serviceCenterId);
+
+        List<PartClaim> findByWarrantyClaimId(Long claimId);
 
         @Query("SELECT p.partCategory, COUNT(pc) " +
                         "FROM PartClaim pc " +

@@ -16,7 +16,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, String> {
 
     Optional<Vehicle> findByVin(String vin);
 
-    List<Vehicle> findByModelIdInAndProductionDateBetween(List<Long> modelIds, LocalDate from, LocalDate to);
+    List<Vehicle> findByProductionDateBetween(LocalDate from, LocalDate to);
 
     @Query("""
             SELECT v FROM Vehicle v
@@ -33,10 +33,11 @@ public interface VehicleRepository extends JpaRepository<Vehicle, String> {
     @Query("SELECT v FROM Vehicle v WHERE v.customer IS NOT NULL")
     List<Vehicle> findAllRegisteredVehicles();
 
-        @Query("""
-        SELECT DISTINCT v FROM Vehicle v
-        LEFT JOIN FETCH v.campaignVehicles
-        WHERE v.customer.id = :customerId
-        """)
-        List<Vehicle> findAllByCustomerIdWithCampaigns(@Param("customerId") Long customerId);
+    @Query("""
+            SELECT DISTINCT v FROM Vehicle v
+            LEFT JOIN FETCH v.campaignVehicles
+            WHERE v.customer.id = :customerId
+            """)
+    List<Vehicle> findAllByCustomerIdWithCampaigns(@Param("customerId") Long customerId);
+
 }
