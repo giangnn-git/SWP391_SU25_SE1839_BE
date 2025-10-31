@@ -54,6 +54,10 @@ public class Model {
     @Builder.Default
     private Set<ModelPart> modelParts = new HashSet<>();
 
+    @OneToMany(mappedBy = "model", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<ModelPolicy> modelPolicies = new HashSet<>();
+
     @Override
     public boolean equals(Object o) {
         if (this == o)

@@ -31,7 +31,7 @@ public class PartClaimController {
 
         final PartClaimService partClaimService;
 
-        @PutMapping("/claims/partClaims/{id}")
+        @PutMapping("/claims/part-claims/{id}")
         public ResponseEntity<ApiResponse<String>> addPartClaim(@PathVariable("id") long claimId,
                         @RequestBody AllPartClaimRequest request, @AuthenticationPrincipal Jwt jwt) {
                 String partClaim = this.partClaimService.handleCreatePartClaim(request, claimId);
@@ -55,7 +55,7 @@ public class PartClaimController {
                 return ResponseEntity.ok(result);
         }
 
-        @PutMapping("/claimId/part-claims/{partClaimId}/status")
+        @PutMapping("/claim-id/part-claims/{partClaimId}/status")
         public ResponseEntity<ApiResponse<String>> changeStatusPartClaim(@PathVariable("id") long claimId,
                         @RequestBody ChangeStatusPartClaimRequest request,
                         @PathVariable("partClaimId") long partClaimId, @AuthenticationPrincipal Jwt jwt) {

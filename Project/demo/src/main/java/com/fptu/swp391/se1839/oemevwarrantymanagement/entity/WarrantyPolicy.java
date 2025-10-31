@@ -87,6 +87,11 @@ public class WarrantyPolicy {
         PROMOTION // part-time/festival/bonus policies
     }
 
+    @OneToMany(mappedBy = "warrantyPolicy", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<ModelPolicy> modelPolicies = new HashSet<>();
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
