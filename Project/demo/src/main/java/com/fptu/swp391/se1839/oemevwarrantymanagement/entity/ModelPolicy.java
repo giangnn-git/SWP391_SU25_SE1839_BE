@@ -67,13 +67,10 @@ public class ModelPolicy {
         return id != null && id.equals(that.id);
     }
 
-
-
     @Override
     public int hashCode() {
         return Objects.hashCode(id);
     }
-
 
     @Override
     public String toString() {

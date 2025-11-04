@@ -56,6 +56,8 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         final RepairDetailRepository repairDetailRepository;
         final RepairStepRepository repairStepRepository;
         final ApplicationEventPublisher applicationEventPublisher;
+        final RepairOrderRepository repairOrderRepository;
+        final VehiclePartRepository vehiclePartRepository;
 
         // ================= Dashboard & Summary =================
 
@@ -69,27 +71,74 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                 .build();
         }
 
-        long getAllClaims(long serviceCenterId) {
-                return warrantyClaimRepository.countByServiceCenterId(serviceCenterId);
+        long getAllClaims(long serviceCenterId, User user) {
+                if (user.getRole() == User.Role.EVM_STAFF) {
+                        List<WarrantyClaim.ClaimStatus> allowedStatuses = List.of(
+                                        WarrantyClaim.ClaimStatus.PENDING,
+                                        WarrantyClaim.ClaimStatus.COMPLETED,
+                                        WarrantyClaim.ClaimStatus.APPROVED,
+                                        WarrantyClaim.ClaimStatus.REJECTED);
+                        return warrantyClaimRepository.countByServiceCenterIdAndStatusIn(serviceCenterId,
+                                        allowedStatuses);
+                } else {
+                        return warrantyClaimRepository.countByServiceCenterId(serviceCenterId);
+                }
         }
 
         long getClaimsByStatus(long serviceCenterId, WarrantyClaim.ClaimStatus status) {
                 return warrantyClaimRepository.countByServiceCenterIdAndStatus(serviceCenterId, status);
         }
 
-        SummaryClaimResponse handleSummaryClaim(long serviceCenterId, List<WarrantyClaim> warrantyClaims) {
-                long countAll = getAllClaims(serviceCenterId);
+        long priorityHighCount(Long serviceCenterId) {
+                return warrantyClaimRepository.countByServiceCenterIdAndPriority(serviceCenterId,
+                                WarrantyClaim.ClaimPriority.HIGH);
+        }
+
+        long perCentAcceptedClaims(long serviceCenterId, User user) {
+                List<WarrantyClaim> claims = getClaimsByRole(serviceCenterId, user); // chỉ lấy claims user được thấy
+                long totalClaims = claims.size();
+                if (totalClaims == 0)
+                        return 0;
+
+                long acceptedClaims = claims.stream()
+                                .filter(c -> c.getStatus() == WarrantyClaim.ClaimStatus.APPROVED)
+                                .count();
+
+                return (acceptedClaims * 100) / totalClaims;
+        }
+
+        List<WarrantyClaim> getClaimsByRole(long serviceCenterId, User user) {
+                if (user.getRole() == User.Role.EVM_STAFF) {
+                        List<WarrantyClaim.ClaimStatus> allowedStatuses = List.of(
+                                        WarrantyClaim.ClaimStatus.PENDING,
+                                        WarrantyClaim.ClaimStatus.APPROVED,
+                                        WarrantyClaim.ClaimStatus.COMPLETED,
+                                        WarrantyClaim.ClaimStatus.REJECTED);
+                        return warrantyClaimRepository.findByServiceCenterIdAndStatusIn(serviceCenterId,
+                                        allowedStatuses);
+                } else {
+                        return warrantyClaimRepository.findByServiceCenterId(serviceCenterId);
+                }
+        }
+
+        SummaryClaimResponse handleSummaryClaim(long serviceCenterId, List<WarrantyClaim> warrantyClaims, User user) {
+                long countAll = getAllClaims(serviceCenterId, user);
                 long countInProcess = getClaimsByStatus(serviceCenterId, WarrantyClaim.ClaimStatus.PENDING);
                 long countSuccess = getClaimsByStatus(serviceCenterId, WarrantyClaim.ClaimStatus.APPROVED);
                 double totalEstimatedCost = warrantyClaims.stream()
                                 .mapToDouble(this::calculateEstimatedCost)
                                 .sum();
+                long priorityHigh = priorityHighCount(serviceCenterId);
 
                 return SummaryClaimResponse.builder()
                                 .total(new SummaryItemResponse(countAll, "All claims"))
                                 .pending(new SummaryItemResponse(countInProcess, "Pending claims"))
                                 .approved(new SummaryItemResponse(countSuccess, "Approved claims"))
                                 .cost(new SummaryItemResponse(totalEstimatedCost, "Estimated Cost"))
+                                .priorityHighCount(new SummaryItemResponse(priorityHigh, "High Priority Claims"))
+                                .perCentAccaptedClaims(new SummaryItemResponse(
+                                                perCentAcceptedClaims(serviceCenterId, user),
+                                                "Percent of Accepted Claims"))
                                 .status(true)
                                 .build();
         }
@@ -109,7 +158,9 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 switch (claim.getStatus()) {
                         case DRAFT -> {
                                 if (actor == User.Role.SC_STAFF || actor == User.Role.ADMIN) {
-                                        statuses.add("PENDING");
+                                        if (claim.getPartClaims() != null && !claim.getPartClaims().isEmpty()) {
+                                                statuses.add("PENDING");
+                                        }
                                         statuses.add("REJECTED");
                                 }
                         }
@@ -211,8 +262,6 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                         MultipartFile[] attachments, long userId) throws IOException {
                 WarrantyClaim.ClaimPriority priorityEnum = resolvePriority(request.getPriority());
                 WarrantyClaim warrantyClaim = buildWarrantyClaim(request, serviceCenterId, userId, priorityEnum);
-                // handleAttachments(warrantyClaim, attachments);
-                assignRepairOrder(warrantyClaim);
 
                 if (request.isAgreeRecall()) {
                         assignCampaign(warrantyClaim, request.getVin());
@@ -254,14 +303,6 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                 .build();
         }
 
-        private void assignRepairOrder(WarrantyClaim warrantyClaim) {
-                RepairOrder ro = RepairOrder.builder()
-                                .warrantyClaim(warrantyClaim)
-                                .repairDetails(new HashSet<>())
-                                .build();
-                warrantyClaim.setRepairOrder(ro);
-        }
-
         private void assignCampaign(WarrantyClaim warrantyClaim, String vin) {
                 // Lấy toàn bộ campaign của xe này
                 List<CampaignVehicle> campaignVehicles = campaignVehicleRepository.findAllByVehicleVin(vin);
@@ -298,6 +339,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
         // ================= Change Status =================
         @Override
+        @Transactional
         public WarrantyClaimStatusResponse handleChangeStatus(
                         long claimId,
                         WarrantyClaimStatusRequest request,
@@ -306,45 +348,165 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 WarrantyClaim wc = warrantyClaimRepository.findById(claimId)
                                 .orElseThrow(() -> new NoSuchElementException("Warranty claim doesn't exist"));
 
+                // Cập nhật status
                 updateClaimStatus(wc, request.getChangeStatus(), request.getReason(), userId);
-
-                warrantyClaimRepository.save(wc);
 
                 User user = userRepository.findById(userId)
                                 .orElseThrow(() -> new NoSuchElementException("User not found"));
 
                 if (user.getRole() == User.Role.EVM_STAFF || user.getRole() == User.Role.ADMIN) {
 
+                        // APPROVED: tạo RepairOrder + RepairDetail + RepairStep
                         if (wc.getStatus() == WarrantyClaim.ClaimStatus.APPROVED) {
-                                List<RepairDetail> repairDetails = repairDetailRepository.findByRepairOrderId(
-                                                wc.getRepairOrder().getId());
+                                RepairOrder repairOrder = wc.getRepairOrder();
+                                if (repairOrder == null) {
+                                        repairOrder = new RepairOrder();
+                                        repairOrder.setWarrantyClaim(wc);
+                                        repairOrderRepository.save(repairOrder);
+                                        wc.setRepairOrder(repairOrder);
+                                }
 
-                                repairDetails.forEach(rd -> rd.setStatus(RepairDetail.DetailStatus.PENDING));
-                                repairDetailRepository.saveAll(repairDetails);
+                                if (wc.getPartClaims() != null) {
+                                        for (PartClaim partClaim : wc.getPartClaims()) {
+                                                Part part = partClaim.getPart();
+
+                                                boolean exists = !repairDetailRepository
+                                                                .findByRepairOrderIdAndPartId(repairOrder.getId(),
+                                                                                part.getId())
+                                                                .isEmpty();
+
+                                                if (!exists) {
+                                                        PartClaimRequest requestForDetail = new PartClaimRequest();
+                                                        requestForDetail.setQuantity(partClaim.getQuantity());
+                                                        createVehiclePartAndRepairDetail(wc, part, requestForDetail);
+                                                }
+                                        }
+                                }
                         }
 
                         else if (wc.getStatus() == WarrantyClaim.ClaimStatus.REJECTED) {
                                 RepairOrder ro = wc.getRepairOrder();
                                 if (ro != null) {
                                         List<RepairStep> steps = repairStepRepository.findByRepairOrderId(ro.getId());
-                                        if (!steps.isEmpty()) {
+                                        if (!steps.isEmpty())
                                                 repairStepRepository.deleteAll(steps);
-                                        }
 
                                         List<RepairDetail> details = repairDetailRepository
                                                         .findByRepairOrderId(ro.getId());
-                                        if (!details.isEmpty()) {
+                                        if (!details.isEmpty())
                                                 repairDetailRepository.deleteAll(details);
-                                        }
+
                                         wc.setRepairOrder(null);
                                 }
                         }
                 }
 
+                warrantyClaimRepository.save(wc);
                 applicationEventPublisher.publishEvent(new EntityCreatedEvent<>(this, wc));
+
                 return WarrantyClaimStatusResponse.builder()
                                 .message("Change Status successfully")
                                 .build();
+        }
+
+        @Transactional
+        private void createVehiclePartAndRepairDetail(WarrantyClaim warrantyClaim, Part part,
+                        PartClaimRequest request) {
+                RepairOrder repairOrder = warrantyClaim.getRepairOrder();
+                if (repairOrder == null)
+                        return; // Nếu chưa có RepairOrder thì không làm gì
+
+                Vehicle vehicle = warrantyClaim.getVehicle();
+                VehiclePart vehiclePart = null;
+
+                if (vehicle != null) {
+                        // Tìm VehiclePart hiện có
+                        vehiclePart = vehiclePartRepository
+                                        .findByVehicleVinAndPartId(vehicle.getVin(), part.getId())
+                                        .orElse(null);
+
+                        if (vehiclePart == null) {
+                                // Nếu chưa có, tạo mới
+                                vehiclePart = VehiclePart.builder()
+                                                .vehicle(vehicle)
+                                                .part(part)
+                                                .oldSerialNumber("SC-" + vehicle.getVin() + "-" + part.getId() + "-"
+                                                                + System.currentTimeMillis())
+                                                .installationDate(LocalDate.now())
+                                                .warrantyClaim(warrantyClaim)
+                                                .build();
+                                vehiclePartRepository.save(vehiclePart);
+                        } else {
+                                // Nếu đã có, gắn claim mới
+                                vehiclePart.setWarrantyClaim(warrantyClaim);
+                                vehiclePartRepository.save(vehiclePart);
+                        }
+                }
+
+                // --- RepairDetail ---
+                boolean existsDetail = !repairDetailRepository
+                                .findByRepairOrderIdAndPartId(repairOrder.getId(), part.getId())
+                                .isEmpty();
+
+                if (!existsDetail) {
+                        RepairDetail repairDetail = RepairDetail.builder()
+                                        .repairOrder(repairOrder)
+                                        .part(part)
+                                        .vehiclePart(vehiclePart) // 🔹 Gắn VehiclePart vào detail
+                                        .description(part.getName())
+                                        .status(RepairDetail.DetailStatus.PENDING)
+                                        .build();
+                        repairDetailRepository.save(repairDetail);
+                        repairOrder.getRepairDetails().add(repairDetail);
+                }
+
+                // --- RepairSteps ---
+                List<RepairStep> steps = new ArrayList<>();
+                List<String> partSteps = List.of(
+                                "Check part " + part.getName(),
+                                "Remove damaged part " + part.getName(),
+                                "Install new part " + part.getName());
+                List<Double> estimatedHours = List.of(0.3, 0.7, 0.5);
+
+                for (int i = 0; i < partSteps.size(); i++) {
+                        String title = partSteps.get(i);
+                        boolean stepExists = repairOrder.getSteps().stream()
+                                        .anyMatch(s -> s.getTitle().equalsIgnoreCase(title));
+                        if (!stepExists) {
+                                steps.add(RepairStep.builder()
+                                                .title(title)
+                                                .estimatedHours(estimatedHours.get(i))
+                                                .status(RepairStep.StepStatus.PENDING)
+                                                .repairOrder(repairOrder)
+                                                .build());
+                        }
+                }
+
+                // General steps
+                List<String> generalSteps = List.of("Operation Check", "Repair Completion");
+                for (String title : generalSteps) {
+                        boolean exists = repairOrder.getSteps().stream()
+                                        .anyMatch(s -> s.getTitle().equalsIgnoreCase(title));
+                        if (!exists) {
+                                steps.add(RepairStep.builder()
+                                                .title(title)
+                                                .estimatedHours(title.equals("Operation Check") ? 0.4 : 0.2)
+                                                .status(RepairStep.StepStatus.PENDING)
+                                                .repairOrder(repairOrder)
+                                                .build());
+                        }
+                }
+
+                if (!steps.isEmpty()) {
+                        repairStepRepository.saveAll(steps);
+                        repairOrder.getSteps().addAll(steps);
+                        int totalEstimated = repairOrder.getSteps().stream()
+                                        .mapToInt(s -> s.getEstimatedHours() != null ? s.getEstimatedHours().intValue()
+                                                        : 0)
+                                        .sum();
+                        repairOrder.setEstimated(totalEstimated);
+                        repairOrderRepository.save(repairOrder);
+                }
         }
 
         private void updateClaimStatus(WarrantyClaim wc, String newStatusStr, String reason, long userId) {
@@ -377,21 +539,23 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         // ================= Claim Detail =================
         @Override
         public ClaimDetailResponse handleGetClaimDetail(long claimId, Long userId) throws IOException {
+                User user = userRepository.findById(userId)
+                                .orElseThrow(() -> new NoSuchElementException("User not found"));
                 WarrantyClaim wc = warrantyClaimRepository.findById(claimId)
                                 .orElseThrow(() -> new NoSuchElementException("Warranty claim doesn't exist"));
 
                 FilterClaimResponse fcr = handleFilterClaim(wc, userId);
 
+                // 🔹 Lấy danh sách hình ảnh đính kèm
                 List<DecodeImageReponse> attachments = new ArrayList<>();
-
                 String uploadDir = attachmentBasePath + "/claims/" + wc.getId();
                 File dir = new File(uploadDir);
                 if (dir.exists() && dir.isDirectory()) {
                         for (File file : Objects.requireNonNull(dir.listFiles())) {
                                 byte[] data = Files.readAllBytes(file.toPath());
                                 String base64 = Base64.getEncoder().encodeToString(data);
-                                String imageDataUrl = "data:" + Files.probeContentType(file.toPath())
-                                                + ";base64," + base64;
+                                String imageDataUrl = "data:" + Files.probeContentType(file.toPath()) + ";base64,"
+                                                + base64;
                                 attachments.add(DecodeImageReponse.builder()
                                                 .image(imageDataUrl)
                                                 .claimAttachmentId(-1L)
@@ -399,34 +563,163 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                         }
                 }
 
-                List<PartQuantityResponse> partQuantity = wc.getPartClaims().stream()
-                                .map(pc -> {
-                                        int remainingStock = pc.getPart().getPartInventories().stream()
-                                                        .filter(pi -> pi.getServiceCenter().getId().equals(
-                                                                        wc.getServiceCenter() != null
-                                                                                        ? wc.getServiceCenter().getId()
-                                                                                        : -1L))
-                                                        .mapToInt(PartInventory::getQuantity)
-                                                        .sum();
-
-                                        return PartQuantityResponse.builder()
-                                                        .name(pc.getPart().getName())
-                                                        .quantity(pc.getQuantity())
-                                                        .category(pc.getPart().getPartCategory())
-                                                        .description(pc.getPart().getDescription())
-                                                        .remainingStock(remainingStock)
-                                                        .build();
-                                })
-                                .collect(Collectors.toList());
-
-                return ClaimDetailResponse.builder()
+                // 🔹 Chuẩn bị builder cho response
+                ClaimDetailResponse.ClaimDetailResponseBuilder responseBuilder = ClaimDetailResponse.builder()
                                 .fcr(fcr)
-                                .images(attachments)
-                                .partCLiam(partQuantity)
-                                .build();
+                                .images(attachments);
+
+                if ((wc.getStatus() == WarrantyClaim.ClaimStatus.PENDING
+                                || wc.getStatus() == WarrantyClaim.ClaimStatus.COMPLETED
+                                || wc.getStatus() == WarrantyClaim.ClaimStatus.APPROVED
+                                || wc.getStatus() == WarrantyClaim.ClaimStatus.REJECTED)
+                                && user.getRole() == User.Role.EVM_STAFF) {
+                        List<GetPartClaimResponse> partClaimsAndCampaigns = handleGetPartClaim(claimId, userId);
+                        responseBuilder.partClaimsAndCampaigns(partClaimsAndCampaigns);
+                }
+                // 🔹 Ngược lại → hiển thị partCLiam (danh sách linh kiện + số lượng tồn)
+                else {
+                        List<PartQuantityResponse> partQuantity = wc.getPartClaims().stream()
+                                        .map(pc -> {
+                                                int remainingStock = pc.getPart().getPartInventories().stream()
+                                                                .filter(pi -> pi.getServiceCenter().getId().equals(
+                                                                                wc.getServiceCenter() != null
+                                                                                                ? wc.getServiceCenter()
+                                                                                                                .getId()
+                                                                                                : -1L))
+                                                                .mapToInt(PartInventory::getQuantity)
+                                                                .sum();
+
+                                                return PartQuantityResponse.builder()
+                                                                .name(pc.getPart().getName())
+                                                                .quantity(pc.getQuantity())
+                                                                .category(pc.getPart().getPartCategory())
+                                                                .description(pc.getPart().getDescription())
+                                                                .remainingStock(remainingStock)
+                                                                .build();
+                                        })
+                                        .collect(Collectors.toList());
+
+                        responseBuilder.partCLiam(partQuantity);
+                }
+
+                return responseBuilder.build();
+        }
+
+        private List<GetPartClaimResponse> handleGetPartClaim(Long claimId, long userId) {
+                // 🔹 Kiểm tra quyền user
+                User user = userRepository.findById(userId)
+                                .orElseThrow(() -> new NoSuchElementException("User not found"));
+                if (user.getRole() != User.Role.EVM_STAFF) {
+                        throw new SecurityException("Access denied: only EVM_STAFF can view part claims.");
+                }
+
+                List<PartClaim> partClaims = partClaimRepository.findByWarrantyClaimId(claimId);
+                List<GetPartClaimResponse> responses = new ArrayList<>();
+                LocalDate today = LocalDate.now();
+
+                for (PartClaim partClaim : partClaims) {
+                        Part part = partClaim.getPart();
+
+                        // 🔹 Lọc policy hợp lệ (đang ACTIVE và còn hiệu lực)
+                        List<PartPolicy> validPolicies = part.getPartPolicies().stream()
+                                        .filter(p -> p.getStatus() == PartPolicy.Status.ACTIVE)
+                                        .filter(p -> (p.getStartDate() == null || !p.getStartDate().isAfter(today)))
+                                        .filter(p -> (p.getEndDate() == null || !p.getEndDate().isBefore(today)))
+                                        .sorted(Comparator.comparing(
+                                                        PartPolicy::getEndDate,
+                                                        Comparator.nullsLast(Comparator.reverseOrder())))
+                                        .collect(Collectors.toList());
+
+                        PartPolicy partPolicy = validPolicies.isEmpty() ? null : validPolicies.get(0);
+                        WarrantyPolicy policy = (partPolicy != null) ? partPolicy.getWarrantyPolicy() : null;
+
+                        // 🔹 Lấy giá hiện tại của part
+                        Double currentPrice = part.getPartPriceHistories().stream()
+                                        .filter(h -> (h.getStartDate() == null || !h.getStartDate().isAfter(today)))
+                                        .filter(h -> (h.getEndDate() == null || !h.getEndDate().isBefore(today)))
+                                        .sorted(Comparator.comparing(
+                                                        PartPriceHistory::getStartDate,
+                                                        Comparator.nullsLast(Comparator.reverseOrder())))
+                                        .map(PartPriceHistory::getPrice)
+                                        .findFirst()
+                                        .orElse(0.0);
+
+                        String coverage = (policy != null) ? getCoverageDescription(policy)
+                                        : "No warranty coverage information available.";
+                        String conditions = (policy != null) ? getConditionDescription(policy)
+                                        : "No warranty conditions specified.";
+
+                        // 🔹 Tạo response cho từng PartClaim
+                        GetPartClaimResponse response = GetPartClaimResponse.builder()
+                                        .partClaimId(partClaim.getId())
+                                        .partClaimName(part.getName())
+                                        .category(part.getPartCategory())
+                                        .quantity(partClaim.getQuantity())
+                                        .status(partClaim.getStatus().name())
+                                        .estimatedCost(currentPrice)
+                                        .policyName(policy != null ? policy.getName() : "N/A")
+                                        .description(part.getDescription())
+                                        .durationPeriod(policy != null ? policy.getDurationPeriod() : 0)
+                                        .effect(partPolicy != null ? partPolicy.getStartDate() : null)
+                                        .coverage(coverage)
+                                        .conditional(conditions)
+                                        .build();
+
+                        responses.add(response);
+                }
+
+                return responses;
+        }
+
+        private String getCoverageDescription(WarrantyPolicy policy) {
+                if (policy.getType() == WarrantyPolicy.PolicyType.PROMOTION) {
+                        return "Discounted warranty plan valid for " + policy.getDurationPeriod()
+                                        + " months on selected parts.";
+                } else {
+                        return "Covers standard components such as basic battery pack, single motor, and charger.";
+                }
+        }
+
+        private String getConditionDescription(WarrantyPolicy policy) {
+                if (policy.getType() == WarrantyPolicy.PolicyType.PROMOTION) {
+                        return "Warranty void if misuse, modification, or poor maintenance occurs.";
+                } else {
+                        return "Warranty applies only to manufacturer defects; not valid for damage due to impact or overheating.";
+                }
         }
 
         // ================= Filter Claim =================
+
+        String getVehicleWarrantyPolicyStatus(Vehicle vehicle) {
+                // Lấy policy của xe, giả sử Vehicle có liên kết tới WarrantyPolicy thông qua
+                // Model/Part
+                WarrantyPolicy policy = vehicle.getModel().getModelPolicies().stream()
+                                .map(mp -> mp.getWarrantyPolicy())
+                                .filter(p -> p.getStatus() == WarrantyPolicy.Status.ACTIVE)
+                                .findFirst()
+                                .orElse(null);
+
+                if (policy == null) {
+                        return "NO_POLICY"; // Xe chưa có chính sách bảo hành
+                }
+
+                LocalDate today = LocalDate.now();
+
+                // Tính ngày hết hạn bảo hành theo durationPeriod
+                LocalDate warrantyEndDate = vehicle.getPurchaseDate().plusMonths(policy.getDurationPeriod());
+
+                boolean expiredByDate = today.isAfter(warrantyEndDate);
+                boolean expiredByMileage = vehicle.getWarrantyClaims().stream()
+                                .mapToInt(WarrantyClaim::getMileage)
+                                .max()
+                                .orElse(0) > policy.getMileageLimit();
+
+                if (expiredByDate || expiredByMileage) {
+                        return "EXPIRED"; // Hết hạn bảo hành
+                }
+
+                return "ACTIVE"; // Bảo hành còn hiệu lực
+        }
 
         FilterClaimResponse mapToFilterClaimResponse(WarrantyClaim wc, Long userId) {
                 Vehicle vehicle = getVehicleByVin(wc.getVehicle().getVin());
@@ -457,17 +750,40 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                                 .orElseThrow(() -> new NoSuchElementException("User not found"))
                                                 .getName())
                                 .id(wc.getId())
+                                .serviceCenterName(wc.getServiceCenter().getName())
                                 .milege(wc.getMileage())
                                 .availableStatuses(handleGetAllStatus(wc, user.getRole()))
                                 .rejectReason(wc.getRejectReason())
                                 .statusRecall((cv != null && wc.getServiceCampaign() == null) ? "NOT_AGREED_RECALL"
                                                 : (cv != null && wc.getServiceCampaign() != null) ? "AGREED_RECALL"
                                                                 : "NO_RECALL")
+                                .warrantyPolicyStatus(getVehicleWarrantyPolicyStatus(vehicle))
+                                .purchaseDate(vehicle.getPurchaseDate())
                                 .build();
         }
 
-        List<FilterClaimResponse> handleFilterClaimList(List<WarrantyClaim> wcList, Long userId) {
+        List<FilterClaimResponse> handleFilterClaimList(List<WarrantyClaim> wcList, Long userId, Long serviceCenterId) {
+                User user = userRepository.findById(userId)
+                                .orElseThrow(() -> new NoSuchElementException("User not found"));
+
                 return wcList.stream()
+                                .filter(wc -> wc.getServiceCenter().getId().equals(serviceCenterId))
+                                .filter(wc -> {
+                                        if (user.getRole() == User.Role.EVM_STAFF) {
+                                                // Lấy PENDING, APPROVED, hoặc REJECTED mà user là người gửi/reject
+                                                return wc.getStatus() == WarrantyClaim.ClaimStatus.PENDING
+                                                                || wc.getStatus() == WarrantyClaim.ClaimStatus.APPROVED
+                                                                || wc.getStatus() == WarrantyClaim.ClaimStatus.COMPLETED
+                                                                || (wc.getStatus() == WarrantyClaim.ClaimStatus.REJECTED
+                                                                                && wc.getRejectBy().equals(
+                                                                                                user.getRole().name())); // REJECTED
+                                                // do
+                                                // chính
+                                                // EVM_STAFF
+                                                // reject
+                                        }
+                                        return true;
+                                })
                                 .map(wc -> mapToFilterClaimResponse(wc, userId))
                                 .sorted(Comparator.comparing(FilterClaimResponse::getId).reversed())
                                 .collect(Collectors.toList());
@@ -488,8 +804,8 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 WarrantyClaim.ClaimStatus statusEnum = null;
 
                 wcList = fetchClaimsForDashboard(sc.getId(), user, request, statusEnum);
-                fcrList = handleFilterClaimList(wcList, userId);
-                scr = handleSummaryClaim(sc.getId(), wcList);
+                fcrList = handleFilterClaimList(wcList, userId, serviceCenterId);
+                scr = handleSummaryClaim(sc.getId(), wcList, user);
 
                 return ClaimDashboardResponse.builder()
                                 .fcr(fcrList)
@@ -800,5 +1116,4 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
                 return map;
         }
-
 }

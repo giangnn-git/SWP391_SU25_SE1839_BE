@@ -15,7 +15,11 @@ import jakarta.transaction.Transactional;
 
 @Repository
 public interface PartPolicyRepository extends JpaRepository<PartPolicy, Long> {
-        @Query("SELECT p FROM PartPolicy p WHERE p.warrantyPolicy.id = :policyId AND p.endDate > :today")
+        @Query("""
+                            SELECT p FROM PartPolicy p
+                            WHERE p.warrantyPolicy.id = :policyId
+                              AND p.endDate >= :today
+                        """)
         List<PartPolicy> findUnexpiredPartPolicies(@Param("policyId") Long policyId, @Param("today") LocalDate today);
 
         @Query("""

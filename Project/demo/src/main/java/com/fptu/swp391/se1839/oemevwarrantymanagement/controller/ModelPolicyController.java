@@ -22,7 +22,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ModelPolicyController {
 
-    ModelPolicyService modelPolicyService;
+    final ModelPolicyService modelPolicyService;
 
     @GetMapping("/vehicles/policy/{vin}")
     @PreAuthorize("hasAnyAuthority('SC_STAFF', 'EVM_STAFF', 'TECHNICIAN', 'ADMIN')")

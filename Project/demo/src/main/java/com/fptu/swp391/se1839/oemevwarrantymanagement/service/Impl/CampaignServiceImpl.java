@@ -17,6 +17,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampai
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.VehicleCampaignResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.VehicleInCampaignResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.CampaignVehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.CampaignVehicle.CampaignVehicleStatus;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Customer;
@@ -40,7 +41,6 @@ public class CampaignServiceImpl implements CampaignService {
         private final VehicleRepository vehicleRepository;
         private final CampaignVehicleRepository campaignVehicleRepository;
         private final EmailService emailService;
-
         @Override
         public ServiceCampaignResponse handleCreateCampaign(CreateCampaignRequest request) {
 
@@ -69,11 +69,9 @@ public class CampaignServiceImpl implements CampaignService {
                 serviceCampaignRepository.save(campaign);
 
                 List<Vehicle> vehicles = vehicleRepository.findByProductionDateBetween(
-                                                request.getProduceDateFrom(),
-                                                request.getProduceDateTo());
+                                request.getProduceDateFrom(),
+                                request.getProduceDateTo());
 
-
-                // Chỉ thêm xe chưa tồn tại trong campaign
                 List<CampaignVehicle> campaignVehicles = vehicles.stream()
                                 .filter(v -> !campaignVehicleRepository
                                                 .existsByServiceCampaignIdAndVehicleVin(campaign.getId(), v.getVin()))
@@ -127,7 +125,6 @@ public class CampaignServiceImpl implements CampaignService {
                                 .map(cv -> cv.getVehicle().getVin())
                                 .toList();
 
-                
                 return ServiceCampaignDetailResponse.builder()
                                 .id(campaign.getId())
                                 .name(campaign.getName())
@@ -148,29 +145,28 @@ public class CampaignServiceImpl implements CampaignService {
                 if (!campaign.getCampaignVehicles().isEmpty()) {
                         throw new IllegalArgumentException("Cannot delete campaign that has assigned vehicles.");
                 }
-                        if (campaign.getStartDate().isBefore(LocalDate.now())) {
+                if (campaign.getStartDate().isBefore(LocalDate.now())) {
                         throw new IllegalArgumentException("Cannot delete campaign that has already started.");
                 }
-
                 serviceCampaignRepository.deleteById(id);
         }
 
         @Override
         public ServiceCampaignResponse handleUpdateCampaign(UpdateCampaignRequest request, Long id) {
                 ServiceCampaign campaign = serviceCampaignRepository.findById(id)
-                        .orElseThrow(() -> new IllegalArgumentException("Campaign not found"));
-
+                                .orElseThrow(() -> new IllegalArgumentException("Campaign not found"));
                 // ===== Validate logic =====
                 if (request.getEndDate() != null && request.getStartDate() != null
-                        && request.getEndDate().isBefore(request.getStartDate())) {
+                                && request.getEndDate().isBefore(request.getStartDate())) {
                         throw new IllegalArgumentException("End date must be after start date");
                 }
+
                 if (request.getProduceDateFrom() != null && request.getProduceDateTo() != null
-                        && request.getProduceDateFrom().isAfter(request.getProduceDateTo())) {
+                                && request.getProduceDateFrom().isAfter(request.getProduceDateTo())) {
                         throw new IllegalArgumentException("Produce date range is invalid");
                 }
 
-                // ===== Cập nhật thông tin campaign =====
+                // ===== Cập nhật field =====
                 if (request.getName() != null)
                         campaign.setName(request.getName());
                 if (request.getDescription() != null)
@@ -183,33 +179,33 @@ public class CampaignServiceImpl implements CampaignService {
                         campaign.setProduceDateFrom(request.getProduceDateFrom());
                 if (request.getProduceDateTo() != null)
                         campaign.setProduceDateTo(request.getProduceDateTo());
-
                 // ===== Lấy danh sách CampaignVehicle cũ =====
-                List<CampaignVehicle> oldCampaignVehicles = campaignVehicleRepository.findByServiceCampaignId(campaign.getId());
+                List<CampaignVehicle> oldCampaignVehicles = campaignVehicleRepository
+                                .findByServiceCampaignId(campaign.getId());
 
                 // Lưu lại VIN của các xe đã COMPLETED
                 Set<String> completedVins = oldCampaignVehicles.stream()
-                        .filter(cv -> cv.getStatus() == CampaignVehicle.CampaignVehicleStatus.COMPLETED)
-                        .map(cv -> cv.getVehicle().getVin())
-                        .collect(Collectors.toSet());
+                                .filter(cv -> cv.getStatus() == CampaignVehicle.CampaignVehicleStatus.COMPLETED)
+                                .map(cv -> cv.getVehicle().getVin())
+                                .collect(Collectors.toSet());
 
                 // ===== Lấy danh sách xe mới nằm trong khoảng ngày sản xuất =====
                 List<Vehicle> newVehicles = vehicleRepository.findByProductionDateBetween(
-                        campaign.getProduceDateFrom(),
-                        campaign.getProduceDateTo());
+                                campaign.getProduceDateFrom(),
+                                campaign.getProduceDateTo());
 
                 Set<String> newVins = newVehicles.stream()
-                        .map(Vehicle::getVin)
-                        .collect(Collectors.toSet());
+                                .map(Vehicle::getVin)
+                                .collect(Collectors.toSet());
 
                 // Giữ lại VIN completed để không bị xóa
                 newVins.addAll(completedVins);
 
                 // ===== Xóa các xe không còn hợp lệ và chưa completed =====
                 List<CampaignVehicle> toDelete = oldCampaignVehicles.stream()
-                        .filter(cv -> !newVins.contains(cv.getVehicle().getVin())
-                                && cv.getStatus() != CampaignVehicle.CampaignVehicleStatus.COMPLETED)
-                        .toList();
+                                .filter(cv -> !newVins.contains(cv.getVehicle().getVin())
+                                                && cv.getStatus() != CampaignVehicle.CampaignVehicleStatus.COMPLETED)
+                                .toList();
 
                 if (!toDelete.isEmpty()) {
                         campaignVehicleRepository.deleteAllInBatch(toDelete);
@@ -217,17 +213,17 @@ public class CampaignServiceImpl implements CampaignService {
 
                 // ===== Thêm xe mới chưa có trong campaign =====
                 Set<String> existingVins = oldCampaignVehicles.stream()
-                        .map(cv -> cv.getVehicle().getVin())
-                        .collect(Collectors.toSet());
+                                .map(cv -> cv.getVehicle().getVin())
+                                .collect(Collectors.toSet());
 
                 List<CampaignVehicle> vehiclesToAdd = newVehicles.stream()
-                        .filter(v -> !existingVins.contains(v.getVin()))
-                        .map(v -> CampaignVehicle.builder()
-                                .serviceCampaign(campaign)
-                                .vehicle(v)
-                                .status(CampaignVehicle.CampaignVehicleStatus.NOTIFIED)
-                                .build())
-                        .toList();
+                                .filter(v -> !existingVins.contains(v.getVin()))
+                                .map(v -> CampaignVehicle.builder()
+                                                .serviceCampaign(campaign)
+                                                .vehicle(v)
+                                                .status(CampaignVehicle.CampaignVehicleStatus.NOTIFIED)
+                                                .build())
+                                .toList();
 
                 if (!vehiclesToAdd.isEmpty()) {
                         campaignVehicleRepository.saveAll(vehiclesToAdd);
@@ -235,27 +231,22 @@ public class CampaignServiceImpl implements CampaignService {
 
                 // ===== Lưu lại campaign =====
                 serviceCampaignRepository.save(campaign);
-
-                // ===== Tính tổng số xe hiện tại =====
                 long totalVehicles = 0;
-
-                // ===== Trả kết quả =====
                 return ServiceCampaignResponse.builder()
-                        .id(campaign.getId())
-                        .name(campaign.getName())
-                        .description(campaign.getDescription())
-                        .startDate(campaign.getStartDate())
-                        .endDate(campaign.getEndDate())
-                        .produceDateFrom(campaign.getProduceDateFrom())
-                        .produceDateTo(campaign.getProduceDateTo())
-                        .code(campaign.getCode())
-                        .totalVehicles((int) totalVehicles)
-                        .build();
+                                .id(campaign.getId())
+                                .name(campaign.getName())
+                                .description(campaign.getDescription())
+                                .startDate(campaign.getStartDate())
+                                .endDate(campaign.getEndDate())
+                                .produceDateFrom(campaign.getProduceDateFrom())
+                                .produceDateTo(campaign.getProduceDateTo())
+                                .code(campaign.getCode())
+                                .totalVehicles((int) totalVehicles)
+                                .build();
         }
 
-
-                @Override
-                public List<ServiceCampaignSummaryResponse> handleGetCampaignByVin(String vin) {
+        @Override
+        public List<ServiceCampaignSummaryResponse> handleGetCampaignByVin(String vin) {
 
                 List<CampaignVehicle> campaignVehicles = campaignVehicleRepository.findAllByVehicleVin(vin);
 
@@ -264,24 +255,23 @@ public class CampaignServiceImpl implements CampaignService {
                 }
 
                 return campaignVehicles.stream()
-                        .filter(cv -> cv.getStatus() != CampaignVehicle.CampaignVehicleStatus.COMPLETED)
-                        .map(cv -> {
-                                ServiceCampaign c = cv.getServiceCampaign();
-                                return ServiceCampaignSummaryResponse.builder()
-                                        .campaignId(c.getId())
-                                        .campaignCode(c.getCode())
-                                        .campaignName(c.getName())
-                                        .description(c.getDescription())
-                                        .startDate(c.getStartDate())
-                                        .endDate(c.getEndDate())
-                                        .produceDateFrom(c.getProduceDateFrom())
-                                        .produceDateTo(c.getProduceDateTo())
-                                        .status(cv.getStatus().name())
-                                        .build();
-                        })
-                        .toList();
+                                .filter(cv -> cv.getStatus() != CampaignVehicle.CampaignVehicleStatus.COMPLETED)
+                                .map(cv -> {
+                                        ServiceCampaign c = cv.getServiceCampaign();
+                                        return ServiceCampaignSummaryResponse.builder()
+                                                        .campaignId(c.getId())
+                                                        .campaignCode(c.getCode())
+                                                        .campaignName(c.getName())
+                                                        .description(c.getDescription())
+                                                        .startDate(c.getStartDate())
+                                                        .endDate(c.getEndDate())
+                                                        .produceDateFrom(c.getProduceDateFrom())
+                                                        .produceDateTo(c.getProduceDateTo())
+                                                        .status(cv.getStatus().name())
+                                                        .build();
+                                })
+                                .toList();
         }
-
 
         @Override
         public GetAllVehicleCampaignResponse handleGetAllVehiclesWithCampaigns() {
@@ -379,5 +369,41 @@ public class CampaignServiceImpl implements CampaignService {
                 return "Recall notification sent (BCC) to " + customerEmails.size() +
                                 " customers in campaign: " + campaign.getName();
         }
+
+        @Override
+        public List<VehicleInCampaignResponse> handleGetVehiclesInCampaignByServiceCenter(Long scId) {
+        // Lấy danh sách CampaignVehicle theo ServiceCenter
+        List<CampaignVehicle> campaignVehicles = campaignVehicleRepository.findByServiceCenterId(scId);
+
+        // Kiểm tra rỗng
+        if (campaignVehicles.isEmpty()) {
+                throw new IllegalArgumentException("No vehicles found for service center ID: " + scId);
+        }
+
+        //Map sang DTO VehicleInCampaignResponse
+        List<VehicleInCampaignResponse> responses = campaignVehicles.stream()
+                .map(cv -> {
+                var vehicle = cv.getVehicle();
+                var campaign = cv.getServiceCampaign();
+                var customer = vehicle.getCustomer();
+
+                return VehicleInCampaignResponse.builder()
+                        .campaignName(campaign.getName())
+                        .vin(vehicle.getVin())
+                        .customerName(customer != null ? customer.getName() : "")
+                        .email(customer != null ? customer.getEmail() : "")
+                        .phoneNumber(customer != null ? customer.getPhoneNumber() : "")
+                        .address(customer != null ? customer.getAddress() : "")
+                        .startDate(campaign.getStartDate())
+                        .endDate(campaign.getEndDate())
+                        .status(cv.getStatus())
+                        .build();
+                })
+                .toList();
+
+        // Trả kết quả về
+        return responses;
+        }
+
 
 }

@@ -11,10 +11,10 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ModelPolicy;
 public interface ModelPolicyRepository extends JpaRepository<ModelPolicy, Long> {
 
     @Query("""
-        SELECT mp FROM ModelPolicy mp
-        WHERE mp.model.id = :modelId
-          AND mp.status = 'ACTIVE'
-          AND :purchaseDate BETWEEN mp.effectiveDate AND COALESCE(mp.expiryDate, CURRENT_DATE)
-        """)
+            SELECT mp FROM ModelPolicy mp
+            WHERE mp.model.id = :modelId
+              AND mp.status = 'ACTIVE'
+              AND :purchaseDate BETWEEN mp.effectiveDate AND COALESCE(mp.expiryDate, CURRENT_DATE)
+            """)
     Optional<ModelPolicy> findActivePolicyByModelAndDate(Long modelId, LocalDate purchaseDate);
 }

@@ -14,30 +14,30 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
 @Repository
 public interface VehicleRepository extends JpaRepository<Vehicle, String> {
 
-    Optional<Vehicle> findByVin(String vin);
+        Optional<Vehicle> findByVin(String vin);
 
-    List<Vehicle> findByProductionDateBetween(LocalDate from, LocalDate to);
+        List<Vehicle> findByProductionDateBetween(LocalDate from, LocalDate to);
 
-    @Query("""
-            SELECT v FROM Vehicle v
-            Where v.customer.phoneNumber = :phone
-            """)
-    List<Vehicle> findByCustomerPhone(@Param("phone") String phone);
+        @Query("""
+                        SELECT v FROM Vehicle v
+                        Where v.customer.phoneNumber = :phone
+                        """)
+        List<Vehicle> findByCustomerPhone(@Param("phone") String phone);
 
-    Optional<Vehicle> findByLicensePlate(String licensePlate);
+        Optional<Vehicle> findByLicensePlate(String licensePlate);
 
-    boolean existsByLicensePlate(String licensePlate);
+        boolean existsByLicensePlate(String licensePlate);
 
-    Optional<Vehicle> findByCustomerId(Long customerId);
+        Optional<Vehicle> findByCustomerId(Long customerId);
 
-    @Query("SELECT v FROM Vehicle v WHERE v.customer IS NOT NULL")
-    List<Vehicle> findAllRegisteredVehicles();
+        @Query("SELECT v FROM Vehicle v WHERE v.customer IS NOT NULL")
+        List<Vehicle> findAllRegisteredVehicles();
 
-    @Query("""
-            SELECT DISTINCT v FROM Vehicle v
-            LEFT JOIN FETCH v.campaignVehicles
-            WHERE v.customer.id = :customerId
-            """)
-    List<Vehicle> findAllByCustomerIdWithCampaigns(@Param("customerId") Long customerId);
+        @Query("""
+                        SELECT DISTINCT v FROM Vehicle v
+                        LEFT JOIN FETCH v.campaignVehicles
+                        WHERE v.customer.id = :customerId
+                        """)
+        List<Vehicle> findAllByCustomerIdWithCampaigns(@Param("customerId") Long customerId);
 
 }

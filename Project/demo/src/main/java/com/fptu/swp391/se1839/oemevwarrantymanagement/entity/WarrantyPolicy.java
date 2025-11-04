@@ -77,6 +77,10 @@ public class WarrantyPolicy {
     @Column(nullable = false, length = 10)
     private Status status = Status.INACTIVE;
 
+    @OneToMany(mappedBy = "warrantyPolicy", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<ModelPolicy> modelPolicies = new HashSet<>();
+
     public enum Status {
         ACTIVE,
         INACTIVE
@@ -86,11 +90,6 @@ public class WarrantyPolicy {
         NORMAL, // normmal policies
         PROMOTION // part-time/festival/bonus policies
     }
-
-    @OneToMany(mappedBy = "warrantyPolicy", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private Set<ModelPolicy> modelPolicies = new HashSet<>();
-
 
     @Override
     public boolean equals(Object o) {

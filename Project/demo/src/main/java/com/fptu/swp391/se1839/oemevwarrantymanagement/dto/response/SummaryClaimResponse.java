@@ -17,5 +17,7 @@ public class SummaryClaimResponse {
     SummaryItemResponse pending;
     SummaryItemResponse approved;
     SummaryItemResponse cost;
+    SummaryItemResponse priorityHighCount;
+    SummaryItemResponse perCentAccaptedClaims;
     boolean status;
 }

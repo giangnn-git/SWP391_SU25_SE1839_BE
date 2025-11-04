@@ -1,16 +1,14 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
-
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
@@ -57,6 +55,14 @@ public class Customer {
     @OneToMany(mappedBy = "customer")
     @Builder.Default
     Set<Vehicle> vehicles = new HashSet<>();
+
+    @ManyToOne
+    @JoinColumn(name = "created_by", nullable = false)
+    private User createdBy;
+
+    @ManyToOne
+    @JoinColumn(name = "service_center_id", nullable = false)
+    private ServiceCenter serviceCenter;
 
     @Override
     public boolean equals(Object o) {

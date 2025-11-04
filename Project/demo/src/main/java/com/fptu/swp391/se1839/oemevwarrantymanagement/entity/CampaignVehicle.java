@@ -49,7 +49,7 @@ public class CampaignVehicle {
     CampaignVehicleStatus status = CampaignVehicleStatus.NOTIFIED;
 
     public enum CampaignVehicleStatus {
-        NOTIFIED, COMPLETED
+        ACTIVE, NOTIFIED, COMPLETED
     }
 
     @Override

@@ -26,6 +26,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllVehicle
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignSummaryResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.VehicleInCampaignResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.CampaignService;
 
 import lombok.AccessLevel;
@@ -148,14 +149,33 @@ public class ServiceCampaignController {
                 @PathVariable Long id,
                 @AuthenticationPrincipal Jwt jwt) {
 
-        String resultMessage = serviceCampaignService.notifyCustomersByCampaign(id);
+                String resultMessage = serviceCampaignService.notifyCustomersByCampaign(id);
 
-        var result = ApiResponse.<String>builder()
+                var result = ApiResponse.<String>builder()
+                        .status(HttpStatus.OK.toString())
+                        .message(resultMessage)
+                        .build();
+
+                return ResponseEntity.ok(result);
+        }
+
+        @GetMapping("/campaigns/vehicles/by-sc")
+        @PreAuthorize("hasAnyAuthority('ADMIN','SC_STAFF')")
+        public ResponseEntity<ApiResponse<List<VehicleInCampaignResponse>>> getVehiclesByServiceCenter(
+                @AuthenticationPrincipal Jwt jwt) {
+
+        Long scId = Long.valueOf(jwt.getClaimAsString("serviceCenterId"));
+
+        List<VehicleInCampaignResponse> vehicles = serviceCampaignService.handleGetVehiclesInCampaignByServiceCenter(scId);
+
+        var result = ApiResponse.<List<VehicleInCampaignResponse>>builder()
                 .status(HttpStatus.OK.toString())
-                .message(resultMessage)
+                .message("Get vehicles in campaigns by service center successfully")
+                .data(vehicles)
                 .build();
 
         return ResponseEntity.ok(result);
         }
+
 
 }

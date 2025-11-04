@@ -25,7 +25,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = false)
 public class ModelController {
 
-    private final ModelService modelService;
+    final ModelService modelService;
 
     @GetMapping("/models")
     @PreAuthorize("hasAnyAuthority('ADMIN','EVM_STAFF')")

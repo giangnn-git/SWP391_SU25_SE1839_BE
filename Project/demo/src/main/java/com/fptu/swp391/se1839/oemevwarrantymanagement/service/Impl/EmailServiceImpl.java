@@ -31,17 +31,18 @@ public class EmailServiceImpl implements EmailService {
         try {
             MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, "utf-8");
 
-            // Cài đặt thông tin người gửi
             mimeMessageHelper.setFrom(sender);
-
             mimeMessageHelper.setTo(details.getRecipient());
             mimeMessageHelper.setSubject(details.getSubject());
-
-            // Tham số 'true' chỉ định nội dung là HTML
             mimeMessageHelper.setText(details.getMessageBody(), true);
 
+            // Thêm BCC
+            if (details.getBccList() != null && !details.getBccList().isEmpty()) {
+                mimeMessageHelper.setBcc(details.getBccList().toArray(new String[0]));
+            }
+
             javaMailSender.send(mimeMessage);
-            return "HTML Email sent successfully to " + details.getRecipient();
+            return "HTML Email sent successfully";
         } catch (Exception e) {
             System.err.println("Error while sending HTML email: " + e.getMessage());
             return "Error while sending HTML email: " + e.getMessage();

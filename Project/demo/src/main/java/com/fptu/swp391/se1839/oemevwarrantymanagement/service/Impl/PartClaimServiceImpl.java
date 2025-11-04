@@ -22,22 +22,19 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartPriceHistory;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairDetail;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairStep;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.VehiclePart;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.User;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyClaim;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyPolicy;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.event.EntityCreatedEvent;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.event.EntityUpdatedEvent;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartClaimRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairDetailRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairStepRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehiclePartRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.WarrantyClaimRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PartClaimService;
 
-import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -50,12 +47,12 @@ import lombok.extern.slf4j.Slf4j;
 public class PartClaimServiceImpl implements PartClaimService {
     final PartClaimRepository partClaimRepository;
     final WarrantyClaimRepository warrantyClaimRepository;
-    final VehiclePartRepository vehiclePartRepository;
     final RepairDetailRepository repairDetailRepository;
     final PartRepository partRepository;
     final RepairStepRepository repairStepRepository;
     final RepairOrderRepository repairOrderRepository;
     final ApplicationEventPublisher eventPublisher;
+    final UserRepository userRepository;
 
     public List<claimsByCategoryResponse> calculateClaimsByCategory(Long serviceCenterId) {
         Long totalClaims = partClaimRepository.countByWarrantyClaimServiceCenterId(serviceCenterId);
@@ -79,104 +76,8 @@ public class PartClaimServiceImpl implements PartClaimService {
         return claimsByCategory;
     }
 
-    @Transactional
-    private void createVehiclePartAndRepairDetail(WarrantyClaim warrantyClaim, Part part, PartClaimRequest request) {
-        String vin = warrantyClaim.getVehicle().getVin();
-        Long serviceCenterId = warrantyClaim.getServiceCenter().getId();
-        Long partId = part.getId();
-
-        List<WarrantyClaim> activeClaims = warrantyClaimRepository.findActiveClaimsForPart(vin, serviceCenterId,
-                partId);
-
-        activeClaims = activeClaims.stream()
-                .filter(c -> !c.getId().equals(warrantyClaim.getId()))
-                .toList();
-
-        if (!activeClaims.isEmpty()) {
-            String claimCodes = activeClaims.stream()
-                    .map(c -> String.valueOf(c.getId()))
-                    .collect(Collectors.joining(", "));
-
-            throw new RuntimeException("Part '" + part.getName()
-                    + "' already exists in active claim(s): [" + claimCodes + "]");
-        }
-
-        // --- PartClaim ---
-        PartClaim partClaim = PartClaim.builder()
-                .warrantyClaim(warrantyClaim)
-                .part(part)
-                .quantity(request.getQuantity())
-                .status(PartClaim.ClaimStatus.PENDING)
-                .build();
-        partClaimRepository.save(partClaim);
-        eventPublisher.publishEvent(new EntityCreatedEvent<>(this, partClaim));
-
-        // --- RepairDetail và Steps ---
-        RepairOrder repairOrder = warrantyClaim.getRepairOrder();
-        if (repairOrder != null) {
-            Vehicle vehicle = warrantyClaim.getVehicle();
-            VehiclePart vehiclePart = null;
-
-            if (vehicle != null) {
-                vehiclePart = vehiclePartRepository
-                        .findByVehicleVinAndPartIdAndWarrantyClaimId(
-                                vehicle.getVin(), part.getId(), warrantyClaim.getId())
-                        .orElse(null);
-            }
-
-            RepairDetail repairDetail = RepairDetail.builder()
-                    .repairOrder(repairOrder)
-                    .part(part)
-                    .vehiclePart(vehiclePart)
-                    .description(part.getName())
-                    .status(RepairDetail.DetailStatus.PENDING)
-                    .build();
-
-            repairDetailRepository.save(repairDetail);
-            repairOrder.getRepairDetails().add(repairDetail);
-
-            List<RepairStep> steps = new ArrayList<>();
-
-            if (request.getQuantity() > 0) {
-                List<String> partSteps = List.of(
-                        "Check part " + part.getName(),
-                        "Remove damaged part " + part.getName(),
-                        "Install new part " + part.getName());
-                List<Double> estimatedHours = List.of(0.3, 0.7, 0.5);
-
-                for (int i = 0; i < partSteps.size(); i++) {
-                    steps.add(RepairStep.builder()
-                            .title(partSteps.get(i))
-                            .estimatedHours(estimatedHours.get(i))
-                            .status(RepairStep.StepStatus.PENDING)
-                            .repairOrder(repairOrder)
-                            .build());
-                }
-            }
-
-            List<String> generalSteps = List.of("Operation Check", "Repair Completion");
-            List<String> existingTitles = repairOrder.getSteps().stream()
-                    .map(RepairStep::getTitle)
-                    .toList();
-
-            for (String title : generalSteps) {
-                if (!existingTitles.contains(title)) {
-                    steps.add(RepairStep.builder()
-                            .title(title)
-                            .estimatedHours(title.equals("Operation Check") ? 0.4 : 0.2)
-                            .status(RepairStep.StepStatus.PENDING)
-                            .repairOrder(repairOrder)
-                            .build());
-                }
-            }
-
-            repairStepRepository.saveAll(steps);
-            repairOrder.getSteps().addAll(steps);
-        }
-    }
-
-    private boolean isPartDuplicated(Vehicle vehicle, Part part) {
-        return vehiclePartRepository.findByVehicleVinAndPartId(vehicle.getVin(), part.getId()).isPresent();
+    private boolean isPartDuplicated(WarrantyClaim wc, Part part) {
+        return partClaimRepository.existsByWarrantyClaimIdAndPartId(wc.getId(), part.getId());
     }
 
     public String handleCreatePartClaim(AllPartClaimRequest request, long claimId) {
@@ -184,19 +85,32 @@ public class PartClaimServiceImpl implements PartClaimService {
                 .orElseThrow(() -> new NoSuchElementException("Warranty claim doesn't exist"));
 
         List<String> duplicatedParts = new ArrayList<>();
+        List<PartClaim> partClaimsToSave = new ArrayList<>();
 
         for (PartClaimRequest pcr : request.getParts()) {
             Part part = partRepository.findById(pcr.getId())
                     .orElseThrow(() -> new NoSuchElementException("Part not found with id " + pcr.getId()));
 
             // Check duplicate
-            if (isPartDuplicated(wc.getVehicle(), part)) {
+            if (isPartDuplicated(wc, part)) {
                 duplicatedParts.add(part.getName());
                 continue;
             }
 
-            // Create VehiclePart, PartClaim, RepairDetail
-            createVehiclePartAndRepairDetail(wc, part, pcr);
+            // Nếu không trùng, tạo PartClaim mới
+            PartClaim newPartClaim = PartClaim.builder()
+                    .part(part)
+                    .warrantyClaim(wc)
+                    .quantity(pcr.getQuantity()) // nếu có số lượng
+                    .status(PartClaim.ClaimStatus.PENDING)
+                    .build();
+
+            partClaimsToSave.add(newPartClaim);
+        }
+
+        // Lưu tất cả các PartClaim mới
+        if (!partClaimsToSave.isEmpty()) {
+            partClaimRepository.saveAll(partClaimsToSave);
         }
 
         if (!duplicatedParts.isEmpty()) {
@@ -289,9 +203,9 @@ public class PartClaimServiceImpl implements PartClaimService {
                     .partClaimName(part.getName())
                     .status(partClaim.getStatus().name())
                     .estimatedCost(currentPrice)
-                    .campaignName(policy != null ? policy.getName() : "N/A")
+                    .policyName(policy != null ? policy.getName() : "N/A")
                     .description(part.getDescription())
-                    .durationPeriord(policy != null ? policy.getDurationPeriod() : 0)
+                    .durationPeriod(policy != null ? policy.getDurationPeriod() : 0)
                     .effect(partPolicy != null ? partPolicy.getStartDate() : null)
                     .coverage(coverage)
                     .conditional(conditions)
@@ -303,7 +217,14 @@ public class PartClaimServiceImpl implements PartClaimService {
         return responses;
     }
 
-    public String handleChangeStatusPartClaim(ChangeStatusPartClaimRequest request, long claimId, long partClaimId) {
+    public String handleChangeStatusPartClaim(ChangeStatusPartClaimRequest request, long claimId, long partClaimId,
+            long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+        if (user.getRole() != User.Role.EVM_STAFF) {
+            return "Access denied: only EVM_STAFF can change part claim status.";
+        }
+
         try {
             if (request == null || request.getStatus() == null) {
                 return "Invalid request: status is missing.";
@@ -395,7 +316,7 @@ public class PartClaimServiceImpl implements PartClaimService {
 
             // 5️⃣ Return message
             return String.format(
-                    "✅ Part claim status updated successfully!\n" +
+                    "Part claim status updated successfully!\n" +
                             "Part: %s\n" +
                             "New Status: %s\n" +
                             "Warranty Policy: %s\n" +
@@ -408,8 +329,7 @@ public class PartClaimServiceImpl implements PartClaimService {
                     partClaimId);
 
         } catch (Exception e) {
-            return "❌ Failed to update part claim status: " + e.getMessage();
+            return "Failed to update part claim status: " + e.getMessage();
         }
     }
-
 }

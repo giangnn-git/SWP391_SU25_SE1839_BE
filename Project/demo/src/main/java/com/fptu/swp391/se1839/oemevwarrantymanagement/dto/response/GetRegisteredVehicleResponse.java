@@ -24,6 +24,6 @@ public class GetRegisteredVehicleResponse {
     CampaignVehicleStatus status;
 
     public enum CampaignVehicleStatus {
-        NOTIFIED, COMPLETED
+        ACTIVE, NOTIFIED, COMPLETED
     }
 }

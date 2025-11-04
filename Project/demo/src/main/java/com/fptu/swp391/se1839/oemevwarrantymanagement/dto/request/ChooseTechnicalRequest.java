@@ -16,7 +16,4 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ChooseTechnicalRequest {
      String technicalName;
-     int estimated;
-     LocalDateTime startDate;
-     LocalDateTime endDate;
 }

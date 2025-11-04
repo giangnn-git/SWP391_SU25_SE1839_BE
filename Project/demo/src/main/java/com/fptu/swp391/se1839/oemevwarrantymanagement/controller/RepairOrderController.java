@@ -75,7 +75,7 @@ public class RepairOrderController {
 
     @GetMapping("/{id}/send-complete-email")
     public ResponseEntity<ApiResponse<String>> sendRepairCompletedEmail(@PathVariable Long id) {
-        String success= repairOrderService.sendRepairCompletedEmail(id);
+        String success = repairOrderService.sendRepairCompletedEmail(id);
         var result = ApiResponse.<String>builder()
                 .status(HttpStatus.OK.toString())
                 .message("Choose techinician successfully")

@@ -23,7 +23,7 @@ import lombok.experimental.FieldDefaults;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = false)
 public class PartController {
-    private final PartService partService;
+    final PartService partService;
 
     @GetMapping("/categories")
     public ResponseEntity<ApiResponse<PartCategoryResponse>> category() {

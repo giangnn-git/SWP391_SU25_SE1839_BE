@@ -261,22 +261,20 @@ public class RepairOrderServiceImpl implements RepairOrderService {
             Model model = modelRepository.findById(vehicle.getModel().getId())
                     .orElseThrow(() -> new RuntimeException("Model not found"));
 
-            if (claim.getStatus() == WarrantyClaim.ClaimStatus.APPROVED) {
-                FilterOrderResponse response = FilterOrderResponse.builder()
-                        .repairOrderId(ro.getId())
-                        .claimId(claim.getId())
-                        .claimStatus(claim.getStatus().toString())
-                        .percentInProcess(progress)
-                        .techinal(technicalName)
-                        .prodcutYear(vehicle.getProductYear())
-                        .vin(vehicle.getVin())
-                        .licensePlate(vehicle.getLicensePlate())
-                        .modelName(model.getName())
-                        .orderDate(ro.getStartDate()) // sử dụng startDate để sắp xếp
-                        .build();
+            FilterOrderResponse response = FilterOrderResponse.builder()
+                    .repairOrderId(ro.getId())
+                    .claimId(claim.getId())
+                    .claimStatus(claim.getStatus().toString())
+                    .percentInProcess(progress)
+                    .techinal(technicalName)
+                    .prodcutYear(vehicle.getProductYear())
+                    .vin(vehicle.getVin())
+                    .licensePlate(vehicle.getLicensePlate())
+                    .modelName(model.getName())
+                    .orderDate(ro.getStartDate()) // sử dụng startDate để sắp xếp
+                    .build();
 
-                forList.add(response);
-            }
+            forList.add(response);
         }
 
         forList.sort(Comparator.comparing(FilterOrderResponse::getRepairOrderId).reversed());
@@ -378,9 +376,6 @@ public class RepairOrderServiceImpl implements RepairOrderService {
 
         // Gán thông tin kỹ thuật và các trường khác
         repairOrder.setTechnical(technical);
-        repairOrder.setEstimated(request.getEstimated());
-        repairOrder.setStartDate(request.getStartDate());
-        repairOrder.setEndDate(request.getEndDate());
         repairOrder.setStatus(RepairOrder.OrderStatus.PENDING);
 
         repairOrder.getSteps().forEach(step -> {
@@ -396,7 +391,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
 
         // Trả về phản hồi
         return ChooseTechnicalResponse.builder()
-                .message("Phân công kỹ thuật viên thành công.")
+                .message("Technician " + technical.getName() + " assigned to repair order " + repairOrderId)
                 .status(true)
                 .build();
     }
@@ -422,7 +417,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
 
     GetTechnicalsResponse handleTechnicalStatus(long serviceCenterId, long orderId) {
         RepairOrder order = repairOrderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order không tồn tại"));
+                .orElseThrow(() -> new IllegalArgumentException("Order is not found: " + orderId));
 
         if (order.getTechnical() != null) {
             long countJobs = repairOrderRepository.countByTechnicalIdAndStatusIn(
@@ -431,7 +426,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                             RepairOrder.OrderStatus.IN_PROGRESS));
 
             String message = countJobs > 0
-                    ? "Busy, hiện có " + countJobs + " công việc đang xử lý"
+                    ? "Busy, having " + countJobs + " task(s) processing"
                     : "Available";
 
             TechnicalsResponse technicians = TechnicalsResponse.builder()

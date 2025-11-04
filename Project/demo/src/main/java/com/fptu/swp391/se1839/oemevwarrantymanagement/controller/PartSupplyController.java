@@ -31,77 +31,78 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PartSupplyController {
 
-    PartSupplyService partSupplyService;
+        final PartSupplyService partSupplyService;
 
-    @PostMapping("/part-supply")
-    @PreAuthorize("hasAuthority('SC_STAFF')")
-    public ResponseEntity<ApiResponse<CreatePartSupplyResponse>> createPartSupply(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestBody CreatePartSupplyRequest request) {
+        @PostMapping("/part-supply")
+        @PreAuthorize("hasAuthority('SC_STAFF')")
+        public ResponseEntity<ApiResponse<CreatePartSupplyResponse>> createPartSupply(
+                        @AuthenticationPrincipal Jwt jwt,
+                        @RequestBody CreatePartSupplyRequest request) {
 
-        Long userId = Long.valueOf(jwt.getClaim("userId").toString());
-        Long serviceCenterId = Long.valueOf(jwt.getClaim("serviceCenterId").toString());
+                Long userId = Long.valueOf(jwt.getClaim("userId").toString());
+                Long serviceCenterId = Long.valueOf(jwt.getClaim("serviceCenterId").toString());
 
-        CreatePartSupplyResponse response = partSupplyService.handleCreatePartSupply(request, userId, serviceCenterId);
+                CreatePartSupplyResponse response = partSupplyService.handleCreatePartSupply(request, userId,
+                                serviceCenterId);
 
-        var result = ApiResponse.<CreatePartSupplyResponse>builder()
-                .status(HttpStatus.CREATED.toString())
-                .message(response.getMessage())
-                .data(response)
-                .build();
+                var result = ApiResponse.<CreatePartSupplyResponse>builder()
+                                .status(HttpStatus.CREATED.toString())
+                                .message(response.getMessage())
+                                .data(response)
+                                .build();
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(result);
-    }
+                return ResponseEntity.status(HttpStatus.CREATED).body(result);
+        }
 
-    @GetMapping("/part-supplies")
-    @PreAuthorize("hasAnyAuthority('EVM_STAFF', 'ADMIN')")
-    public ResponseEntity<ApiResponse<GetAllPartSupplyResponse>> getAllPartSupplies(
-            @AuthenticationPrincipal Jwt jwt) {
+        @GetMapping("/part-supplies")
+        @PreAuthorize("hasAnyAuthority('EVM_STAFF', 'ADMIN')")
+        public ResponseEntity<ApiResponse<GetAllPartSupplyResponse>> getAllPartSupplies(
+                        @AuthenticationPrincipal Jwt jwt) {
 
-        GetAllPartSupplyResponse response = partSupplyService.handleGetAllPartSupplies();
+                GetAllPartSupplyResponse response = partSupplyService.handleGetAllPartSupplies();
 
-        ApiResponse<GetAllPartSupplyResponse> result = ApiResponse.<GetAllPartSupplyResponse>builder()
-                .status(HttpStatus.OK.toString())
-                .message("Get all part supplies successfully")
-                .data(response)
-                .build();
+                ApiResponse<GetAllPartSupplyResponse> result = ApiResponse.<GetAllPartSupplyResponse>builder()
+                                .status(HttpStatus.OK.toString())
+                                .message("Get all part supplies successfully")
+                                .data(response)
+                                .build();
 
-        return ResponseEntity.ok(result);
-    }
+                return ResponseEntity.ok(result);
+        }
 
-    @GetMapping("/part-supply/{id}")
-    @PreAuthorize("hasAnyAuthority('EVM_STAFF', 'ADMIN', 'SC_STAFF')")
-    public ResponseEntity<ApiResponse<PartSupplyDetailResponse>> getPartSupplyDetail(
-            @PathVariable Long id,
-            @AuthenticationPrincipal Jwt jwt) {
+        @GetMapping("/part-supply/{id}")
+        @PreAuthorize("hasAnyAuthority('EVM_STAFF', 'ADMIN', 'SC_STAFF')")
+        public ResponseEntity<ApiResponse<PartSupplyDetailResponse>> getPartSupplyDetail(
+                        @PathVariable Long id,
+                        @AuthenticationPrincipal Jwt jwt) {
 
-        PartSupplyDetailResponse response = partSupplyService.handleGetPartSupplyDetail(id);
+                PartSupplyDetailResponse response = partSupplyService.handleGetPartSupplyDetail(id);
 
-        ApiResponse<PartSupplyDetailResponse> result = ApiResponse.<PartSupplyDetailResponse>builder()
-                .status(HttpStatus.OK.toString())
-                .message("Get part supply detail successfully")
-                .data(response)
-                .build();
+                ApiResponse<PartSupplyDetailResponse> result = ApiResponse.<PartSupplyDetailResponse>builder()
+                                .status(HttpStatus.OK.toString())
+                                .message("Get part supply detail successfully")
+                                .data(response)
+                                .build();
 
-        return ResponseEntity.ok(result);
-    }
+                return ResponseEntity.ok(result);
+        }
 
-    @PutMapping("/part-supply/review")
-    @PreAuthorize("hasAnyAuthority('EVM_STAFF', 'ADMIN')")
-    public ResponseEntity<ApiResponse<PartSupplyDetailResponse>> reviewPartSupply(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestBody ApproveOrRejectPartRequest request) {
+        @PutMapping("/part-supply/review")
+        @PreAuthorize("hasAnyAuthority('EVM_STAFF', 'ADMIN')")
+        public ResponseEntity<ApiResponse<PartSupplyDetailResponse>> reviewPartSupply(
+                        @AuthenticationPrincipal Jwt jwt,
+                        @RequestBody ApproveOrRejectPartRequest request) {
 
-        Long staffId = Long.valueOf(jwt.getClaim("userId").toString());
+                Long staffId = Long.valueOf(jwt.getClaim("userId").toString());
 
-        PartSupplyDetailResponse response = partSupplyService.handleReviewPartSupply(request, staffId);
+                PartSupplyDetailResponse response = partSupplyService.handleReviewPartSupply(request, staffId);
 
-        ApiResponse<PartSupplyDetailResponse> result = ApiResponse.<PartSupplyDetailResponse>builder()
-                .status(HttpStatus.OK.toString())
-                .message("Part supply request reviewed successfully")
-                .data(response)
-                .build();
+                ApiResponse<PartSupplyDetailResponse> result = ApiResponse.<PartSupplyDetailResponse>builder()
+                                .status(HttpStatus.OK.toString())
+                                .message("Part supply request reviewed successfully")
+                                .data(response)
+                                .build();
 
-        return ResponseEntity.ok(result);
-    }
+                return ResponseEntity.ok(result);
+        }
 }

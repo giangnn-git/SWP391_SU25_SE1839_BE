@@ -150,6 +150,18 @@ public class RepairStepServiceImpl implements RepairStepService {
         rs.setStatus(newStatus);
         repairStepRepository.save(rs);
 
+        if (newStatus == RepairStep.StepStatus.IN_PROGRESS && order.getStartDate() == null) {
+            List<RepairStep> steps = repairStepRepository.findByRepairOrderId(order.getId())
+                    .stream()
+                    .sorted(Comparator.comparing(RepairStep::getId))
+                    .toList();
+            if (!steps.isEmpty() && steps.get(0).getId() == rs.getId()) {
+                order.setStartDate(rs.getStartTime());
+                repairOrderReposity.save(order);
+                applicationEventPublisher.publishEvent(new EntityUpdatedEvent<>(this, order));
+            }
+        }
+
         applicationEventPublisher.publishEvent(new EntityUpdatedEvent<>(this, rs));
 
         syncRepairOrderStatus(order, now);
@@ -188,10 +200,15 @@ public class RepairStepServiceImpl implements RepairStepService {
     private void handleStepTime(RepairStep rs, RepairStep.StepStatus newStatus, LocalDateTime now) {
         if (newStatus == RepairStep.StepStatus.IN_PROGRESS && rs.getStartTime() == null) {
             rs.setStartTime(now);
-        } else if ((newStatus == RepairStep.StepStatus.COMPLETED || newStatus == RepairStep.StepStatus.CANCELLED)
-                && rs.getStartTime() == null) {
-            rs.setStartTime(now);
+        } else if (newStatus == RepairStep.StepStatus.COMPLETED || newStatus == RepairStep.StepStatus.CANCELLED) {
+            // Nếu chưa có startTime thì set
+            if (rs.getStartTime() == null) {
+                rs.setStartTime(now);
+            }
+            // Luôn set endTime
             rs.setEndTime(now);
+
+            // Tính actualHours
             LocalDateTime start = rs.getStartTime();
             LocalDateTime end = rs.getEndTime();
             if (start != null && end != null) {
@@ -320,7 +337,6 @@ public class RepairStepServiceImpl implements RepairStepService {
                 claim.setStatus(WarrantyClaim.ClaimStatus.COMPLETED);
                 warrantyClaimRepository.save(claim);
                 applicationEventPublisher.publishEvent(new EntityUpdatedEvent<>(this, claim));
-
             }
         }
     }

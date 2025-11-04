@@ -2,6 +2,8 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,8 +16,10 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ClaimDetailResponse {
     FilterClaimResponse fcr;
     List<PartQuantityResponse> partCLiam;
     List<DecodeImageReponse> images;
+    List<GetPartClaimResponse> partClaimsAndCampaigns;
 }

@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class RepairDetailController {
         final RepairDetailService repairDetailService;
 
-        @GetMapping("/repairDetails/{id}")
+        @GetMapping("/repair-details/{id}")
         public ResponseEntity<ApiResponse<GetAllRepairDetailResponse>> getRepairDetail(
                         @PathVariable("id") Long repairOrderId,
                         @AuthenticationPrincipal Jwt jwt) {

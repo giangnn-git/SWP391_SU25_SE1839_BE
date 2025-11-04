@@ -10,9 +10,10 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-                .info(new Info()
-                        .title("RESTful API Documentation")
-                        .version("1.0")
-                        .description("API documents for Spring Boot RESTful"));
+            .info(new Info()
+                .title("OEM EV Warranty Management API")
+                .version("1.0.0")
+                .description("API documentation for OEM EV Warranty Management project"));
     }
+
 }

@@ -39,4 +39,6 @@ public interface PartClaimRepository extends JpaRepository<PartClaim, Long> {
                         "AND p.partCategory = :component")
         List<PartClaim> findByServiceCenterAndComponent(@Param("serviceCenterId") Long serviceCenterId,
                         @Param("component") String component);
+
+        boolean existsByWarrantyClaimIdAndPartId(Long warrantyClaimId, Long partId);
 }

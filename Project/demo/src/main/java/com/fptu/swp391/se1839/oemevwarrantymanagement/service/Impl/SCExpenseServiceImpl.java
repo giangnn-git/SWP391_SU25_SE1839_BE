@@ -18,7 +18,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SCExpenseServiceImpl implements SCExpenseService {
         final SCExpenseReposiotry scExpenseReposiotry;
-
+        @Override
         public double handleCalculateRevenueOfWeek(Long serviceCenterId) {
                 LocalDate startOfWeek = LocalDate.now().with(DayOfWeek.MONDAY);
                 LocalDate endOfWeek = LocalDate.now().with(DayOfWeek.SUNDAY);
@@ -30,7 +30,8 @@ public class SCExpenseServiceImpl implements SCExpenseService {
                                 .mapToDouble(se -> se.getAmount() != null ? se.getAmount() : 0)
                                 .sum();
         }
-
+        
+        @Override
         public SCExpenseResponse handleWarrantyCostComparison(Long serviceCenterId) {
                 LocalDate startOfThisMonth = LocalDate.now().withDayOfMonth(1);
                 LocalDate endOfThisMonth = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());

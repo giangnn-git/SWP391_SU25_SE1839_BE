@@ -63,7 +63,7 @@ public class VehicleServiceImpl implements VehicleService {
                 for (Vehicle vehicle : vehicles) {
                         Set<CampaignVehicle> campaignVehicles = vehicle.getCampaignVehicles();
 
-                        // ✅ Xe không có campaign nào
+                        // Xe không có campaign nào
                         if (campaignVehicles.isEmpty()) {
                                 responses.add(GetRegisteredVehicleResponse.builder()
                                                 .vehicle(toGetVehicleResponse(vehicle))
@@ -71,7 +71,7 @@ public class VehicleServiceImpl implements VehicleService {
                                 continue;
                         }
 
-                        // ✅ Có campaign -> kiểm tra thời gian
+                        // Có campaign -> kiểm tra thời gian
                         boolean matched = false;
                         for (CampaignVehicle cv : campaignVehicles) {
                                 ServiceCampaign campaign = cv.getServiceCampaign();
@@ -95,7 +95,7 @@ public class VehicleServiceImpl implements VehicleService {
                                 }
                         }
 
-                        // ✅ Nếu không có campaign nào trong khoảng thời gian → hiển thị xe, các trường
+                        // Nếu không có campaign nào trong khoảng thời gian → hiển thị xe, các trường
                         // campaign = null
                         if (!matched) {
                                 responses.add(GetRegisteredVehicleResponse.builder()

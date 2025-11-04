@@ -35,7 +35,8 @@ public class ModelPolicyServiceImpl implements ModelPolicyService {
         // Tìm chính sách áp dụng cho model tại thời điểm mua xe
         ModelPolicy modelPolicy = modelPolicyRepository
                 .findActivePolicyByModelAndDate(modelId, purchaseDate)
-                .orElseThrow(() -> new EntityNotFoundException("No valid warranty policy found for this model and purchase date"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "No valid warranty policy found for this model and purchase date"));
 
         // Tính ngày hết hạn bảo hành
         LocalDate warrantyEndDate = purchaseDate.plusMonths(modelPolicy.getWarrantyPolicy().getDurationPeriod());

@@ -24,6 +24,7 @@ public class FilterClaimResponse {
     String vin;
     String licensePlate;
     String userName;
+    String serviceCenterName;
     String description;
     LocalDate claimDate;
     String senderName;
@@ -33,4 +34,6 @@ public class FilterClaimResponse {
     Set<String> availableStatuses;
     String rejectReason;
     String statusRecall;
+    String warrantyPolicyStatus;
+    LocalDate purchaseDate;
 }

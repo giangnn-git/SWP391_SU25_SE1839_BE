@@ -10,12 +10,10 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePartPolicyRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.TogglePolicyStatusRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartPolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyCodeResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.UpdatePolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Part;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartPolicy;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyPolicy;
@@ -77,6 +75,10 @@ public class PartPolicyServiceImpl implements PartPolicyService {
                                 .durationPeriod(warranty != null ? warranty.getDurationPeriod() : null)
                                 .mileageLimit(warranty != null ? warranty.getMileageLimit() : null)
                                 .description(warranty != null ? warranty.getDescription() : null)
+                                .startDate(partPolicy.getStartDate() != null ? partPolicy.getStartDate().format(formatter)
+                                                : null)
+                                .endDate(partPolicy.getEndDate() != null ? partPolicy.getEndDate().format(formatter)
+                                                : null)
                                 .build();
         }
 
@@ -164,21 +166,29 @@ public class PartPolicyServiceImpl implements PartPolicyService {
         @Override
         public PartPolicyResponse handleUpdateStatusPartPolicy(Long partPolicyId) {
                 PartPolicy partPolicy = partPolicyRepository.findById(partPolicyId)
-                                .orElseThrow(() -> new NoSuchElementException("ID not found"));
+                        .orElseThrow(() -> new NoSuchElementException("ID not found"));
+
                 if (partPolicy.getStatus() == PartPolicy.Status.INACTIVE) {
+                        // Nếu đang INACTIVE thì bật lại ACTIVE
                         partPolicy.setStatus(PartPolicy.Status.ACTIVE);
                 } else {
+                        // Nếu đang ACTIVE thì chuyển sang INACTIVE
                         partPolicy.setStatus(PartPolicy.Status.INACTIVE);
+                        // Cập nhật lại = ngày hiện tại
+                        partPolicy.setEndDate(LocalDate.now());
                 }
+
                 PartPolicy saved = partPolicyRepository.save(partPolicy);
+
                 return PartPolicyResponse.builder()
-                                .id(saved.getId())
-                                .partName(saved.getPart().getName())
-                                .partCode(saved.getPart().getCode())
-                                .policyCode(saved.getWarrantyPolicy().getCode())
-                                .startDate(formatter.format(saved.getStartDate()))
-                                .endDate(formatter.format(saved.getEndDate()))
-                                .status(PartPolicyResponse.Status.valueOf(saved.getStatus().name()))
-                                .build();
+                        .id(saved.getId())
+                        .partName(saved.getPart().getName())
+                        .partCode(saved.getPart().getCode())
+                        .policyCode(saved.getWarrantyPolicy().getCode())
+                        .startDate(formatter.format(saved.getStartDate()))
+                        .endDate(saved.getEndDate() != null ? formatter.format(saved.getEndDate()) : null)
+                        .status(PartPolicyResponse.Status.valueOf(saved.getStatus().name()))
+                        .build();
         }
+
 }

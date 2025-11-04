@@ -21,11 +21,13 @@ import lombok.experimental.FieldDefaults;
 public class GetPartClaimResponse {
     long partClaimId;
     String partClaimName;
+    String category;
+    long quantity;
     String status;
     double estimatedCost;
-    String campaignName;
+    String policyName;
     String description;
-    long durationPeriord;
+    long durationPeriod;
     LocalDate effect;
     String coverage;
     String conditional;
