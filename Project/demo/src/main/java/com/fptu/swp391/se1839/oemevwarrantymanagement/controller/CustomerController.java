@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,14 +41,17 @@ public class CustomerController {
         @PostMapping("/customers")
         @PreAuthorize("hasAnyAuthority('SC_STAFF')")
         public ResponseEntity<ApiResponse<CustomerRegisterResponse>> registerCustomer(
-                        @Valid @RequestBody CustomerRegisterRequest req) {
-                CustomerRegisterResponse customer = customerService.registerCustomer(req);
+                        @Valid @RequestBody CustomerRegisterRequest req,
+                        @AuthenticationPrincipal Jwt jwt) {
+                Long id = Long.valueOf(jwt.getClaim("userId").toString());
+                Long scId = Long.valueOf(jwt.getClaim("serviceCenterId").toString());
+                CustomerRegisterResponse customer = customerService.registerCustomer(req, id, scId);
                 var result = ApiResponse.<CustomerRegisterResponse>builder()
                                 .status(HttpStatus.CREATED.toString())
                                 .message("Create customer successfully")
                                 .data(customer)
                                 .build();
-                return ResponseEntity.ok(result);
+                return ResponseEntity.status(HttpStatus.CREATED).body(result);
         }
 
         @GetMapping("/customer")

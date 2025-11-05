@@ -16,44 +16,51 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.VehiclePart;
 @Repository
 public interface VehiclePartRepository extends JpaRepository<VehiclePart, String> {
 
-        /**
-         * 🔹 Tìm bộ phận (part) đang gắn trên xe (vehicle) — chưa bị tháo (removalDate
-         * IS NULL).
-         */
-        @Query("""
-                        SELECT vp
-                        FROM VehiclePart vp
-                        WHERE vp.vehicle = :vehicle
-                          AND vp.part = :part
-                          AND vp.removalDate IS NULL
-                        """)
-        Optional<VehiclePart> findActiveVehiclePart(@Param("vehicle") Vehicle vehicle, @Param("part") Part part);
+  /**
+   * Tìm bộ phận (part) đang gắn trên xe (vehicle) — chưa bị tháo (removalDate
+   * IS NULL).
+   */
+  @Query("""
+      SELECT vp
+      FROM VehiclePart vp
+      WHERE vp.vehicle = :vehicle
+        AND vp.part = :part
+        AND vp.removalDate IS NULL
+      """)
+  Optional<VehiclePart> findActiveVehiclePart(@Param("vehicle") Vehicle vehicle, @Param("part") Part part);
 
-        /**
-         * 🔹 Tìm VehiclePart theo VIN, PartId và ClaimId.
-         */
-        Optional<VehiclePart> findByVehicleVinAndPartIdAndWarrantyClaimId(String vin, Long partId, Long claimId);
+  /**
+   * 🔹 Tìm VehiclePart theo VIN, PartId và ClaimId.
+   */
+  Optional<VehiclePart> findByVehicleVinAndPartIdAndWarrantyClaimId(String vin, Long partId, Long claimId);
 
-        /**
-         * 🔹 Tìm VehiclePart theo VIN và PartId (bất kể có claim hay chưa).
-         */
-        Optional<VehiclePart> findByVehicleVinAndPartId(String vin, Long partId);
+  /**
+   * 🔹 Tìm VehiclePart theo VIN và PartId (bất kể có claim hay chưa).
+   */
+  Optional<VehiclePart> findByVehicleVinAndPartId(String vin, Long partId);
 
-        /**
-         * 🔹 Lấy danh sách các part đang gắn trên xe theo VIN và danh sách partId.
-         * Chỉ lấy các part chưa bị tháo (removalDate IS NULL).
-         */
-        @Query("""
-                        SELECT vp
-                        FROM VehiclePart vp
-                        WHERE vp.vehicle.vin = :vin
-                          AND vp.part.id IN :partIds
-                          AND vp.removalDate IS NULL
-                        """)
-        List<VehiclePart> findActiveByVehicleVinAndPartIdIn(
-                        @Param("vin") String vin,
-                        @Param("partIds") Collection<Long> partIds);
+  /**
+   * 🔹 Lấy danh sách các part đang gắn trên xe theo VIN và danh sách partId.
+   * Chỉ lấy các part chưa bị tháo (removalDate IS NULL).
+   */
+  @Query("""
+      SELECT vp
+      FROM VehiclePart vp
+      WHERE vp.vehicle.vin = :vin
+        AND vp.part.id IN :partIds
+        AND vp.removalDate IS NULL
+      """)
+  List<VehiclePart> findActiveByVehicleVinAndPartIdIn(
+      @Param("vin") String vin,
+      @Param("partIds") Collection<Long> partIds);
 
-        @Query("SELECT vp FROM VehiclePart vp WHERE vp.part.id = :partId AND vp.vehicle.vin = :vin AND vp.removalDate IS NULL")
-        Optional<VehiclePart> findActivePart(@Param("partId") Long partId, @Param("vin") String vin);
+  @Query("SELECT vp FROM VehiclePart vp WHERE vp.part.id = :partId AND vp.vehicle.vin = :vin AND vp.removalDate IS NULL")
+  Optional<VehiclePart> findActivePart(@Param("partId") Long partId, @Param("vin") String vin);
+
+  @Query("""
+          SELECT vp FROM VehiclePart vp
+          WHERE vp.oldSerialNumber = :serial
+             OR vp.newSerialNumber = :serial
+      """)
+  Optional<VehiclePart> findBySerialNumber(@Param("serial") String serialNumber);
 }

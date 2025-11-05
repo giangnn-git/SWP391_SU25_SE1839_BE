@@ -1,7 +1,5 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -12,13 +10,10 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangeStatusRe
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllRepairDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartClaim;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartInventory;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairDetail;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrderVerification;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairStep;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.VehiclePart;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartInventoryRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairDetailRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderVerificationRepository;

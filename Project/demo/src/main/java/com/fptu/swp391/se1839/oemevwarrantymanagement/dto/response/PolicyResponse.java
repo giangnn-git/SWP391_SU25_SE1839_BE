@@ -25,4 +25,12 @@ public class PolicyResponse {
         NORMAL,
         PROMOTION
     }
+
+    Status status;
+
+    public enum Status {
+        ACTIVE,
+        INACTIVE
+    }
+
 }

@@ -1,8 +1,5 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
 
-import java.util.List;
-
-import org.springframework.web.multipart.MultipartFile;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

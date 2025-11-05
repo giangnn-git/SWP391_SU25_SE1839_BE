@@ -35,6 +35,7 @@ public class PartServiceImpl implements PartService {
     final VehicleRepository vehicleRepository;
     final ModelPartRepository modelPartRepository;
 
+    @Override
     public PartCategoryResponse handleListCategory() {
         boolean status = true;
         List<Part> partList = this.partRepository.findAll();
@@ -51,6 +52,7 @@ public class PartServiceImpl implements PartService {
                 .build();
     }
 
+    @Override
     public PartListResponse handlePartList(String category, String vin) {
         // 1. Lấy xe theo VIN
         Vehicle vehicle = vehicleRepository.findByVin(vin)
@@ -76,6 +78,7 @@ public class PartServiceImpl implements PartService {
                 .build();
     }
 
+    @Override
     public GetAllPartResponse handleGetPartList() {
         List<Part> partList = this.partRepository.findAll();
         List<PartResponse> responseList = new ArrayList<>();
@@ -93,4 +96,5 @@ public class PartServiceImpl implements PartService {
                 .partList(responseList)
                 .build();
     }
+
 }

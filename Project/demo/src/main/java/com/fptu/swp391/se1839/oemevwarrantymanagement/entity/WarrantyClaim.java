@@ -44,7 +44,9 @@ public class WarrantyClaim {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    @Column(columnDefinition = "BIGINT UNSIGNED")
+    private Long id;
+
 
     @ManyToOne(optional = false)
     @JsonIgnore

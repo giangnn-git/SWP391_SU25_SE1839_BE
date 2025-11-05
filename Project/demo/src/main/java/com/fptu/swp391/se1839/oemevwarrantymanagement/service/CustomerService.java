@@ -10,7 +10,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RegisteredVeh
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.VehicleInfoResponse;
 
 public interface CustomerService {
-    CustomerRegisterResponse registerCustomer(CustomerRegisterRequest req);
+    CustomerRegisterResponse registerCustomer(CustomerRegisterRequest req, Long createdBy, Long scId);
 
     CustomerRegisterResponse handleFindCustomerByVin(String vin);
 

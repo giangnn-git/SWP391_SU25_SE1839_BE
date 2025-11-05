@@ -9,6 +9,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllVehicle
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignSummaryResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.VehicleInCampaignResponse;
 
 public interface CampaignService {
     ServiceCampaignResponse handleCreateCampaign(CreateCampaignRequest request);
@@ -27,4 +28,6 @@ public interface CampaignService {
     GetAllVehicleCampaignResponse handleGetAllVehiclesWithCampaigns();
 
     String notifyCustomersByCampaign(Long campaignId);
+
+	List<VehicleInCampaignResponse> handleGetVehiclesInCampaignByServiceCenter(Long scId);
 }

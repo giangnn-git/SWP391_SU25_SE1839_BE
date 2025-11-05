@@ -18,4 +18,6 @@ public class PartPolicyDetailResponse {
     Integer durationPeriod;
     Integer mileageLimit;
     String description;
+    String startDate;
+    String endDate;
 }
