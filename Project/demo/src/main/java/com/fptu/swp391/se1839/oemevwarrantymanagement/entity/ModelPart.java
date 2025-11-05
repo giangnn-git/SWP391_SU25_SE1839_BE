@@ -2,6 +2,8 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -32,10 +34,12 @@ public class ModelPart {
     private Long id;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "modelId", nullable = false)
     private Model model;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "partId", nullable = false)
     private Part part;
 

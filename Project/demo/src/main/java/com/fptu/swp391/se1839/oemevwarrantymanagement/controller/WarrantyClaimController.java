@@ -48,7 +48,9 @@ public class WarrantyClaimController {
                         @RequestPart(value = "attachments", required = false) MultipartFile[] attachments,
                         @AuthenticationPrincipal Jwt jwt) throws IOException {
 
-                Long serviceCenterId = Long.parseLong(jwt.getClaim("serviceCenterId").toString());
+                Object scClaim = jwt.getClaim("serviceCenterId");
+                Long serviceCenterId = (scClaim != null) ? Long.parseLong(scClaim.toString()) : 0L;
+
                 Long userId = Long.parseLong(jwt.getClaim("userId").toString());
                 CreateClaimResponse response = warrantyClaimService.handleCreateClaim(request, serviceCenterId,
                                 attachments, userId);
@@ -66,7 +68,9 @@ public class WarrantyClaimController {
         public ResponseEntity<ApiResponse<ClaimDashboardResponse>> claimSummary(
                         @AuthenticationPrincipal Jwt jwt,
                         @RequestBody(required = false) FilterRequest request) {
-                Long serviceCenterId = Long.parseLong(jwt.getClaim("serviceCenterId").toString());
+
+                Object scClaim = jwt.getClaim("serviceCenterId");
+                Long serviceCenterId = (scClaim != null) ? Long.parseLong(scClaim.toString()) : 0L;
 
                 if (request == null) {
                         request = new FilterRequest();
@@ -86,11 +90,14 @@ public class WarrantyClaimController {
         }
 
         @PatchMapping("/claims/{id}")
-        public ResponseEntity<ApiResponse<WarrantyClaimStatusResponse>> changeStatus(@PathVariable("id") long claimId,
-                        @RequestBody WarrantyClaimStatusRequest request, @AuthenticationPrincipal Jwt jwt) {
+        public ResponseEntity<ApiResponse<WarrantyClaimStatusResponse>> changeStatus(
+                        @PathVariable("id") long claimId,
+                        @RequestBody WarrantyClaimStatusRequest request,
+                        @AuthenticationPrincipal Jwt jwt) {
                 Long userId = Long.parseLong(jwt.getClaim("userId").toString());
                 WarrantyClaimStatusResponse warrantyClaimAfter = this.warrantyClaimService.handleChangeStatus(claimId,
-                                request, userId);
+                                request,
+                                userId);
                 var result = ApiResponse.<WarrantyClaimStatusResponse>builder()
                                 .status(HttpStatus.OK.toString())
                                 .message("Change status claim successfully")
@@ -100,7 +107,8 @@ public class WarrantyClaimController {
         }
 
         @GetMapping("/claims/{id}")
-        public ResponseEntity<ApiResponse<ClaimDetailResponse>> getClaimDetail(@PathVariable("id") long claimId,
+        public ResponseEntity<ApiResponse<ClaimDetailResponse>> getClaimDetail(
+                        @PathVariable("id") long claimId,
                         @AuthenticationPrincipal Jwt jwt) throws IOException {
                 Long userId = Long.parseLong(jwt.getClaim("userId").toString());
                 ClaimDetailResponse detail = this.warrantyClaimService.handleGetClaimDetail(claimId, userId);
@@ -113,10 +121,10 @@ public class WarrantyClaimController {
         }
 
         @PutMapping("/claims/{id}")
-        public ResponseEntity<ApiResponse<String>> changeStatus(@PathVariable("id") long claimId,
+        public ResponseEntity<ApiResponse<String>> changeStatus(
+                        @PathVariable("id") long claimId,
                         @RequestBody CreateClaimRequest request) {
-                String updateClaim = this.warrantyClaimService.handleUpdateClaim(claimId,
-                                request);
+                String updateClaim = this.warrantyClaimService.handleUpdateClaim(claimId, request);
                 var result = ApiResponse.<String>builder()
                                 .status(HttpStatus.OK.toString())
                                 .message("Update claim successfully")
@@ -124,4 +132,5 @@ public class WarrantyClaimController {
                                 .build();
                 return ResponseEntity.ok(result);
         }
+
 }

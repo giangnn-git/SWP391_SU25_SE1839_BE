@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -37,10 +39,12 @@ public class SCExpense {
     Long id;
 
     @ManyToOne(optional = false)
+    @JsonIgnore
     @JoinColumn(name = "serviceCenterId", nullable = false)
     ServiceCenter serviceCenter;
 
     @ManyToOne(optional = false)
+    @JsonIgnore
     @JoinColumn(name = "repairOrderId", nullable = false)
     RepairOrder repairOrder;
 

@@ -2,6 +2,8 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -35,10 +37,12 @@ public class RepairDetail {
     Long id;
 
     @ManyToOne(optional = false)
+    @JsonIgnore
     @JoinColumn(name = "repairOrderId", nullable = false)
     RepairOrder repairOrder;
 
     @ManyToOne(optional = false)
+    @JsonIgnore
     @JoinColumn(name = "partID", nullable = false)
     Part part;
 
@@ -48,6 +52,7 @@ public class RepairDetail {
     DetailStatus status = DetailStatus.PENDING;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "vehiclePartId")
     VehiclePart vehiclePart;
 

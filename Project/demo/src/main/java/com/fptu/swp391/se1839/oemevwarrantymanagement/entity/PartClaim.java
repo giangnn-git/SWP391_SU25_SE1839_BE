@@ -2,6 +2,8 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -37,16 +39,18 @@ public class PartClaim {
     Long id;
 
     @ManyToOne(optional = false)
+    @JsonIgnore
     @JoinColumn(name = "partId", nullable = false)
     Part part;
 
     @ManyToOne(optional = false)
+    @JsonIgnore
     @JoinColumn(name = "warrantyClaimId", nullable = false)
     WarrantyClaim warrantyClaim;
 
-    @Min(value = 1, message = "Quantity must be at least 1")
+    @Min(value = 0, message = "Quantity must be at least ")
     @Builder.Default
-    long quantity = 1;
+    long quantity = 0;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

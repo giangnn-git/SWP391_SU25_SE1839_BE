@@ -40,7 +40,9 @@ public class PartSupplyController {
                         @RequestBody CreatePartSupplyRequest request) {
 
                 Long userId = Long.valueOf(jwt.getClaim("userId").toString());
-                Long serviceCenterId = Long.valueOf(jwt.getClaim("serviceCenterId").toString());
+
+                Object scClaim = jwt.getClaim("serviceCenterId");
+                Long serviceCenterId = (scClaim != null) ? Long.parseLong(scClaim.toString()) : 0L;
 
                 CreatePartSupplyResponse response = partSupplyService.handleCreatePartSupply(request, userId,
                                 serviceCenterId);

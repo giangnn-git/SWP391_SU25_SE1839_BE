@@ -14,11 +14,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePolicyRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.TogglePolicyStatusRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UpdatePolicyRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CreatePolicyResponse;
@@ -113,8 +111,8 @@ public class PolicyController {
 
                 return ResponseEntity.ok(result);
         }
-
-        @PatchMapping("/policy/status/{policyId}")
+	
+	@PatchMapping("/policy/status/{policyId}")
         @PreAuthorize("hasAuthority('ADMIN')")
         public ResponseEntity<ApiResponse<String>> updateStatusPolicy(
                         @AuthenticationPrincipal Jwt jwt,

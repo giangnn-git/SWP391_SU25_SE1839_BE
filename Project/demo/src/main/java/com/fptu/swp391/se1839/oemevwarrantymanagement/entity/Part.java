@@ -4,6 +4,8 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -49,30 +51,37 @@ public class Part {
     private String description;
 
     @OneToMany(mappedBy = "part", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private Set<PartPolicy> partPolicies = new HashSet<>();
 
     @OneToMany(mappedBy = "part", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private Set<PartPriceHistory> partPriceHistories = new HashSet<>();
 
     @OneToMany(mappedBy = "part", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private Set<PartInventory> partInventories = new HashSet<>();
 
     @OneToMany(mappedBy = "part", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private Set<PartClaim> partClaims = new HashSet<>();
 
     @OneToMany(mappedBy = "part", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private Set<RepairDetail> repairDetails = new HashSet<>();
 
     @OneToMany(mappedBy = "part", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private Set<VehiclePart> vehicleParts = new HashSet<>();
 
     @OneToMany(mappedBy = "part", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private Set<ModelPart> modelParts = new HashSet<>();
 

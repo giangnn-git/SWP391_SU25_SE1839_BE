@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.VehicleInCampaignResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.CampaignVehicle;
 
 @Repository
@@ -26,7 +25,7 @@ public interface CampaignVehicleRepository extends JpaRepository<CampaignVehicle
 
     boolean existsByServiceCampaignIdAndVehicleVin(Long campaignId, String vin);
 
-    @Query("""
+	@Query("""
         SELECT cv
         FROM CampaignVehicle cv
         JOIN cv.vehicle v

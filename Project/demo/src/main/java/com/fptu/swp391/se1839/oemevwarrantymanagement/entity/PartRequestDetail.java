@@ -1,5 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -31,10 +33,12 @@ public class PartRequestDetail {
     Long id;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "partSupplyId", nullable = false)
     PartSupply partRequest;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "partId", nullable = false)
     Part part; // Phụ tùng cần xin
 

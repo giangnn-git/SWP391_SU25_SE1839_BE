@@ -20,6 +20,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartPol
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyCodeResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartWarrantyInfoResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PartPolicyService;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PolicyService;
 
@@ -68,23 +69,6 @@ public class PartPolicyController {
                 return ResponseEntity.ok(result);
         }
 
-        // @GetMapping("/parts/part-policies/{id}")
-        // @PreAuthorize("hasAnyAuthority('ADMIN','EVM_STAFF')")
-        // public ResponseEntity<ApiResponse<PartPolicyDetailResponse>> getPartPolicyDetailByPartID(
-        //                 @PathVariable Long id,
-        //                 @AuthenticationPrincipal Jwt jwt) {
-
-        //         PartPolicyDetailResponse detail = partPolicyService.handleGetPartPolicyByPartId(id);
-
-        //         var result = ApiResponse.<PartPolicyDetailResponse>builder()
-        //                         .status(HttpStatus.OK.toString())
-        //                         .message("Get part policy detail successfully")
-        //                         .data(detail)
-        //                         .build();
-
-        //         return ResponseEntity.ok(result);
-        // }
-
         @PostMapping("/part-policy")
         @PreAuthorize("hasAuthority('ADMIN')")
         public ResponseEntity<ApiResponse<PartPolicyResponse>> createPartPolicy(
@@ -131,5 +115,21 @@ public class PartPolicyController {
                                 .build();
 
                 return ResponseEntity.ok(result);
+        }
+
+        @GetMapping("/part-policy/check/{serialNumber}")
+        @PreAuthorize("hasAnyAuthority('ADMIN','EVM_STAFF','SC_STAFF')")
+        public ResponseEntity<ApiResponse<PartWarrantyInfoResponse>> checkPartWarranty(
+                @PathVariable String serialNumber) {
+
+        PartWarrantyInfoResponse response = partPolicyService.getWarrantyInfoBySerial(serialNumber);
+
+        var result = ApiResponse.<PartWarrantyInfoResponse>builder()
+                .status(HttpStatus.OK.toString())
+                .message("Warranty info retrieved successfully")
+                .data(response)
+                .build();
+
+        return ResponseEntity.ok(result);
         }
 }

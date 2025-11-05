@@ -3,7 +3,9 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -12,8 +14,12 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartRes
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartCategoryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartListResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ModelPart;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Part;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ModelPartRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehicleRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PartService;
 
 import lombok.AccessLevel;
@@ -27,6 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PartServiceImpl implements PartService {
     final PartRepository partRepository;
+    final VehicleRepository vehicleRepository;
+    final ModelPartRepository modelPartRepository;
 
     public PartCategoryResponse handleListCategory() {
         boolean status = true;
@@ -45,17 +53,25 @@ public class PartServiceImpl implements PartService {
     }
 
     public PartListResponse handlePartList(PartListRequest request) {
-        List<Part> partList = this.partRepository.findByPartCategory(request.getName());
-        Set<PartResponse> responseList = new HashSet<>();
-        for (Part p : partList) {
-            PartResponse pr = PartResponse.builder()
-                    .id(p.getId())
-                    .description(p.getDescription())
-                    .name(p.getName())
-                    .partCategory(p.getPartCategory())
-                    .build();
-            responseList.add(pr);
-        }
+        // 1. Lấy xe theo VIN
+        Vehicle vehicle = vehicleRepository.findByVin(request.getVin())
+                .orElseThrow(() -> new NoSuchElementException("Vehicle not found with VIN: " + request.getVin()));
+
+        // 2. Lấy danh sách Part liên quan đến model và category từ ModelPart
+        List<ModelPart> modelParts = modelPartRepository
+                .findByModelIdAndPartPartCategoryIgnoreCase(vehicle.getModel().getId(), request.getName());
+
+        // 3. Chuyển sang response
+        Set<PartResponse> responseList = modelParts.stream()
+                .map(ModelPart::getPart)
+                .map(p -> PartResponse.builder()
+                        .id(p.getId())
+                        .name(p.getName())
+                        .description(p.getDescription())
+                        .partCategory(p.getPartCategory())
+                        .build())
+                .collect(Collectors.toSet());
+
         return PartListResponse.builder()
                 .partList(responseList)
                 .build();

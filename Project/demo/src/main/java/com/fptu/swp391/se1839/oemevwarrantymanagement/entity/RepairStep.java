@@ -3,6 +3,8 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -30,26 +32,21 @@ public class RepairStep {
 
     String title;
     Double estimatedHours;
-    Double actualHours;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    StepStatus status = StepStatus.IN_PROGRESS;
+    StepStatus status = StepStatus.PENDING;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "repairOrder")
     RepairOrder repairOrder;
 
     String assignedTechnician;
 
-    LocalDateTime startTime;
-    LocalDateTime endTime;
-
-    // Enum nội bộ
     public enum StepStatus {
         WAITING,
         PENDING,
-        IN_PROGRESS, // Đang thực hiện
         COMPLETED, // Đã hoàn thành
         CANCELLED, // Bị hủy
         REJECTED // Bị từ chối
@@ -76,7 +73,6 @@ public class RepairStep {
                 "id=" + id +
                 ", title='" + title + '\'' +
                 ", estimatedHours=" + estimatedHours +
-                ", actualHours=" + actualHours +
                 ", status=" + status +
                 ", assignedTechnician='" + assignedTechnician + '\'' +
                 ", repairOrderId=" + (repairOrder != null ? repairOrder.getId() : null) +

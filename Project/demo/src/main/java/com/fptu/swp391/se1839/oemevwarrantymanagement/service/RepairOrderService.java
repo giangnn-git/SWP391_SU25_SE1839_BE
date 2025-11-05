@@ -9,7 +9,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDetailRe
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderSummaryResponse;
 
 public interface RepairOrderService {
-    DashboardOrderSummaryResponse findSunSummaryOrder(long serviceCenterId);
+    DashboardOrderSummaryResponse findSunSummaryOrder(Long serviceCenterId);
 
     OrderDashboardResponse handleOrderDashboard(long serviceCenterId,
             FilterRequest request, Long userId);
@@ -18,19 +18,19 @@ public interface RepairOrderService {
 
     OrderDetailResponse handleGetDetailOrder(long serviceCenterId, long orderId);
 
-    int handleCalculateResponseScore(long serviceCenterId);
+    int handleCalculateResponseScore(Long serviceCenterId);
 
-    int handleCalculatePerformanceMetrics(long serviceCenterId);
+    int handleCalculatePerformanceMetrics(Long serviceCenterId);
 
-    int handleCalculateOverdueRepairs(long serviceCenterId);
+    int handleCalculateOverdueRepairs(Long serviceCenterId);
 
     int hanldeCalculateCompleteToday(long serviceCenterId);
 
     double handleCalculateAvgDays(long serviceCenterId);
 
-    int handleCalculateResolutionRate(long serviceCenterId);
+    int handleCalculateResolutionRate(Long serviceCenterId);
 
-    OrderSummaryResponse handleCalculateResolutionRateDifferent(long serviceCenterId);
+    OrderSummaryResponse handleCalculateResolutionRateDifferent(Long serviceCenterId);
 
     String sendRepairCompletedEmail(Long repairOrderId);
 }

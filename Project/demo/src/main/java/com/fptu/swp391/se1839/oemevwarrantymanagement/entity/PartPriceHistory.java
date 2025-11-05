@@ -3,6 +3,8 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 import java.time.LocalDate;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -34,6 +36,7 @@ public class PartPriceHistory {
     Long id;
 
     @ManyToOne(optional = false) // rõ nghĩa hơn
+    @JsonIgnore
     @JoinColumn(name = "partID", nullable = false)
     Part part;
 

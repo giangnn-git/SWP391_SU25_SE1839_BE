@@ -41,6 +41,7 @@ public class CampaignServiceImpl implements CampaignService {
         private final VehicleRepository vehicleRepository;
         private final CampaignVehicleRepository campaignVehicleRepository;
         private final EmailService emailService;
+
         @Override
         public ServiceCampaignResponse handleCreateCampaign(CreateCampaignRequest request) {
 
@@ -370,7 +371,7 @@ public class CampaignServiceImpl implements CampaignService {
                                 " customers in campaign: " + campaign.getName();
         }
 
-        @Override
+	@Override
         public List<VehicleInCampaignResponse> handleGetVehiclesInCampaignByServiceCenter(Long scId) {
         // Lấy danh sách CampaignVehicle theo ServiceCenter
         List<CampaignVehicle> campaignVehicles = campaignVehicleRepository.findByServiceCenterId(scId);
@@ -404,6 +405,4 @@ public class CampaignServiceImpl implements CampaignService {
         // Trả kết quả về
         return responses;
         }
-
-
 }

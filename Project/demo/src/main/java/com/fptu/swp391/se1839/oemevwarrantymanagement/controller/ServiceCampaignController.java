@@ -149,17 +149,17 @@ public class ServiceCampaignController {
                 @PathVariable Long id,
                 @AuthenticationPrincipal Jwt jwt) {
 
-                String resultMessage = serviceCampaignService.notifyCustomersByCampaign(id);
+        String resultMessage = serviceCampaignService.notifyCustomersByCampaign(id);
 
-                var result = ApiResponse.<String>builder()
-                        .status(HttpStatus.OK.toString())
-                        .message(resultMessage)
-                        .build();
+        var result = ApiResponse.<String>builder()
+                .status(HttpStatus.OK.toString())
+                .message(resultMessage)
+                .build();
 
-                return ResponseEntity.ok(result);
+        return ResponseEntity.ok(result);
         }
 
-        @GetMapping("/campaigns/vehicles/by-sc")
+	@GetMapping("/campaigns/vehicles/by-sc")
         @PreAuthorize("hasAnyAuthority('ADMIN','SC_STAFF')")
         public ResponseEntity<ApiResponse<List<VehicleInCampaignResponse>>> getVehiclesByServiceCenter(
                 @AuthenticationPrincipal Jwt jwt) {
@@ -176,6 +176,5 @@ public class ServiceCampaignController {
 
         return ResponseEntity.ok(result);
         }
-
 
 }

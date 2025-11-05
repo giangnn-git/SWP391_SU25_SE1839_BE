@@ -12,25 +12,28 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairDetail;
 
 @Repository
 public interface RepairDetailRepository extends JpaRepository<RepairDetail, Long> {
+
         @Query("""
-                        SELECT count(rd) From RepairDetail rd
-                        Join rd.repairOrder ro
-                        join ro.warrantyClaim wc
-                        where wc.claimDate between :startDate and :endDate
-                        And wc.serviceCenter.id = :serviceCenterId
-                        And rd.part.id = :partId
+                            SELECT COUNT(rd)
+                            FROM RepairDetail rd
+                            JOIN rd.repairOrder ro
+                            JOIN ro.warrantyClaim wc
+                            WHERE wc.claimDate BETWEEN :startDate AND :endDate
+                            AND (:serviceCenterId IS NULL OR wc.serviceCenter.id = :serviceCenterId)
+                            AND rd.part.id = :partId
                         """)
-        Long countByDateAndPartIdAndServiceCenterId(@Param("startDate") LocalDate startDate,
-                        @Param("endDate") LocalDate endDate, @Param("serviceCenterId") long serviceCenterId,
+        Long countByDateAndPartIdAndServiceCenterId(
+                        @Param("startDate") LocalDate startDate,
+                        @Param("endDate") LocalDate endDate,
+                        @Param("serviceCenterId") Long serviceCenterId,
                         @Param("partId") long partId);
 
         @Query("""
-                        SELECT rd FROM RepairDetail rd
-                        JOIN rd.repairOrder ro
-                        WHERE ro.id = :repairOrderId
+                            SELECT rd FROM RepairDetail rd
+                            JOIN rd.repairOrder ro
+                            WHERE ro.id = :repairOrderId
                         """)
         List<RepairDetail> findByRepairOrderId(@Param("repairOrderId") Long repairOrderId);
 
         List<RepairDetail> findByRepairOrderIdAndPartId(Long repairOrderId, Long partId);
-
 }

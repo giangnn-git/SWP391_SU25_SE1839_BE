@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -42,16 +44,14 @@ public class RepairOrder {
     Long id;
 
     @OneToOne
+    @JsonIgnore
     @JoinColumn(name = "claimid", referencedColumnName = "id")
     WarrantyClaim warrantyClaim;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "userId")
     User technical;
-
-    @Column(nullable = false)
-    @Min(0)
-    int estimated;
 
     @Column(nullable = false)
     @Min(0)
@@ -66,20 +66,27 @@ public class RepairOrder {
     OrderStatus status = OrderStatus.WAITING;
 
     @OneToMany(mappedBy = "repairOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     Set<RepairDetail> repairDetails = new HashSet<>();
 
     @OneToMany(mappedBy = "repairOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     Set<RepairStep> steps = new HashSet<>();
 
     @OneToMany(mappedBy = "repairOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     Set<SCExpense> scExpenses = new HashSet<>();
 
     public enum OrderStatus {
-        WAITING, PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+        WAITING, PENDING, IN_PROGRESS, COMPLETED, CANCELLED, PENDING_SUPERVISOR
     }
+
+    @Column(name = "supervisor_approved")
+    @Builder.Default
+    Boolean supervisorApproved = false;
 
     @Override
     public boolean equals(Object o) {

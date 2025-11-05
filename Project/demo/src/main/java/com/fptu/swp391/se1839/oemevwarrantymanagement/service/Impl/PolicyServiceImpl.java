@@ -1,10 +1,8 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 
@@ -49,7 +47,7 @@ public class PolicyServiceImpl implements PolicyService {
                                                 .mileageLimit(policy.getMileageLimit())
                                                 .code(policy.getCode())
                                                 .policyType(PolicyResponse.PolicyType.valueOf(policy.getType().name()))
-                                                .status(PolicyResponse.Status.valueOf(policy.getStatus().name()))
+						.status(PolicyResponse.Status.valueOf(policy.getStatus().name()))
                                                 .build())
                                 .toList();
 
@@ -204,5 +202,4 @@ public class PolicyServiceImpl implements PolicyService {
                 // Trường hợp không hợp lệ (phòng ngừa enum sai)
                 throw new IllegalStateException("Unsupported policy status: " + policy.getStatus());
         }
-
 }

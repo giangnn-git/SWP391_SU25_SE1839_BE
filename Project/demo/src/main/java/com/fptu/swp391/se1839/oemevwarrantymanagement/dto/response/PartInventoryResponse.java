@@ -21,6 +21,6 @@ public class PartInventoryResponse {
     Long serviceCenterId;
     String serviceCenterName;
     String serviceCenterAddress;
-    int quantity;
+    long quantity;
     String unit;
 }

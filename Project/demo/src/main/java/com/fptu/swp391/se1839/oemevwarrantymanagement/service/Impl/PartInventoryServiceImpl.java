@@ -31,7 +31,7 @@ public class PartInventoryServiceImpl implements PartInventoryService {
 
     @Override
     public List<PartInventoryResponse> getPartInventoriesByServiceCenter(Long serviceCenterId) {
-        return partInventoryRepository.findByServiceCenter_Id(serviceCenterId)
+        return partInventoryRepository.findByServiceCenterId(serviceCenterId)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -53,16 +53,30 @@ public class PartInventoryServiceImpl implements PartInventoryService {
     }
 
     public int handleCalculatePartAvailability(long serviceCenterId) {
-        long totalPartsRequested = partInventoryRepository.countByServiceCenterId(serviceCenterId);
-        long availableParts = partInventoryRepository.countByServiceCenterIdAndQuantityGreaterThan(serviceCenterId, 0);
-        return totalPartsRequested == 0 ? 100 : (int) Math.round((availableParts * 100.0) / totalPartsRequested);
+        boolean hasSpecificCenter = serviceCenterId > 0;
+
+        long totalPartsRequested = hasSpecificCenter
+                ? partInventoryRepository.countByServiceCenterId(serviceCenterId)
+                : partInventoryRepository.countAllParts(); // method tổng cho tất cả trung tâm
+
+        long availableParts = hasSpecificCenter
+                ? partInventoryRepository.countByServiceCenterIdAndQuantityGreaterThan(serviceCenterId, 0)
+                : partInventoryRepository.countAllPartsWithQuantityGreaterThan(0); // method tổng cho tất cả trung tâm
+
+        return totalPartsRequested == 0
+                ? 100
+                : (int) Math.round((availableParts * 100.0) / totalPartsRequested);
     }
 
     public int countLowStockParts(long serviceCenterId) {
-        List<PartInventory> parts = partInventoryRepository.findByServiceCenter_Id(serviceCenterId);
+        boolean hasSpecificCenter = serviceCenterId > 0;
+
+        List<PartInventory> parts = hasSpecificCenter
+                ? partInventoryRepository.findByServiceCenterId(serviceCenterId)
+                : partInventoryRepository.findAll();
 
         double avgQuantity = parts.stream()
-                .mapToInt(PartInventory::getQuantity)
+                .mapToLong(PartInventory::getQuantity)
                 .average()
                 .orElse(0);
 
@@ -72,7 +86,7 @@ public class PartInventoryServiceImpl implements PartInventoryService {
                 .filter(pi -> pi.getQuantity() <= lowStockThreshold)
                 .count();
 
-        return (int) count; // cast long → int
+        return (int) count;
     }
 
 }

@@ -14,5 +14,6 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PartClaimRequest {
     long id;
-    long quantity;
+    @Builder.Default
+    long quantity = 0;
 }

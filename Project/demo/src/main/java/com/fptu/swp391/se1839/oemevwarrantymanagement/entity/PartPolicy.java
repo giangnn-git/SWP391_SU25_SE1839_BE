@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -39,10 +40,11 @@ public class PartPolicy {
 
     @ManyToOne
     @JoinColumn(name = "warrantyPolicyId")
-    @JsonBackReference
+    @JsonIgnore
     WarrantyPolicy warrantyPolicy;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "partId")
     Part part;
 

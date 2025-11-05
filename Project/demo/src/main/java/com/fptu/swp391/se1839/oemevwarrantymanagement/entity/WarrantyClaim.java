@@ -6,11 +6,14 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -41,13 +44,17 @@ public class WarrantyClaim {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    @Column(columnDefinition = "BIGINT UNSIGNED")
+    private Long id;
+
 
     @ManyToOne(optional = false)
+    @JsonIgnore
     @JoinColumn(name = "vin", nullable = false)
     Vehicle vehicle;
 
     @ManyToOne(optional = true)
+    @JsonIgnore
     @JoinColumn(name = "serviceCenterId", nullable = true)
     ServiceCenter serviceCenter;
 
@@ -64,6 +71,9 @@ public class WarrantyClaim {
     @Column(columnDefinition = "TEXT", nullable = false)
     @Builder.Default
     String description = null;
+
+    @Column(length = 1000)
+    private String diagnosis;
 
     @Column(nullable = true)
     LocalDate decisionDate;
@@ -97,18 +107,21 @@ public class WarrantyClaim {
     @Builder.Default
     ClaimPriority priority = ClaimPriority.NORMAL;
 
-    @OneToOne(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
     RepairOrder repairOrder;
 
-    @OneToMany(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
     @Builder.Default
     Set<VehiclePart> vehicleParts = new HashSet<>();
 
-    @OneToMany(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "warrantyClaim", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
     @Builder.Default
     Set<PartClaim> partClaims = new HashSet<>();
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "serviceCampaignId")
     ServiceCampaign serviceCampaign;
 

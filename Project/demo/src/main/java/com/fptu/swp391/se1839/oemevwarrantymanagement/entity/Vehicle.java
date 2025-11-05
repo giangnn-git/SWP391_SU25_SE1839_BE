@@ -5,9 +5,12 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -41,7 +44,8 @@ public class Vehicle {
     @Column(length = 17, nullable = false, unique = true)
     String vin;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JsonIgnore
     @JoinColumn(name = "modelId", nullable = false)
     Model model;
 
@@ -50,7 +54,6 @@ public class Vehicle {
     int productYear;
 
     @Column(nullable = true, unique = true)
-    @NotNull
     @Pattern(regexp = "^[0-9]{2}[A-Z]-[0-9]{3}.[0-9]{2}$", message = "Invalid license plate format (e.g., 30A-123.45)")
     private String licensePlate;
 
@@ -58,19 +61,23 @@ public class Vehicle {
     @Default
     LocalDate purchaseDate = LocalDate.now();
 
-    @ManyToOne(optional = true)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JsonIgnore
     @JoinColumn(name = "customerId")
     Customer customer;
 
-    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
     @Builder.Default
     Set<CampaignVehicle> campaignVehicles = new HashSet<>();
 
-    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
     @Builder.Default
     Set<VehiclePart> vehicleParts = new HashSet<>();
 
-    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
     @Builder.Default
     Set<WarrantyClaim> warrantyClaims = new HashSet<>();
 

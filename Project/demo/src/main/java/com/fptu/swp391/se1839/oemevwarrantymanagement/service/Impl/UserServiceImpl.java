@@ -76,6 +76,10 @@ public class UserServiceImpl implements UserService {
     @Value("${app.frontend.login-url}")
     String loginUrl;
 
+    private Long getServiceCenterIdSafe(User user) {
+        return user.getServiceCenter() != null ? user.getServiceCenter().getId() : null;
+    }
+
     @Override
     public User handleFindByEmailOrPhone(String input) {
         return this.userRepository.findByEmailOrPhoneNumber(input, input)
@@ -103,7 +107,7 @@ public class UserServiceImpl implements UserService {
         // return LoginResponse.builder()
         // .message("OTP sent to your email/phone. Please verify.")
         // .build();
-        String token = generaToken(user);
+        String token = generateToken(user);
         return LoginResponse.builder()
                 .token(token)
                 .status(true)
@@ -117,7 +121,7 @@ public class UserServiceImpl implements UserService {
                     .orElseGet(() -> userRepository.findByPhoneNumber(request.getEmailOrPhoneNumber())
                             .get());
 
-            String token = generaToken(user);
+            String token = generateToken(user);
             return OTPResponse.builder()
                     .token(token)
                     .message("Verify OTP successfully")
@@ -162,7 +166,7 @@ public class UserServiceImpl implements UserService {
 
         invalidTokenRepository.save(invalidToken);
 
-        String token = generaToken(user);
+        String token = generateToken(user);
 
         return OTPResponse.builder()
                 .token(token)
@@ -170,22 +174,31 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
-    public String generaToken(User user) {
+    public String generateToken(User user) {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
-        JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
+
+        JWTClaimsSet.Builder claimsBuilder = new JWTClaimsSet.Builder()
                 .subject(user.getEmail() != null ? user.getEmail() : user.getPhoneNumber())
                 .issuer("devteria.com")
                 .issueTime(new Date())
                 .expirationTime(Date.from(Instant.now().plus(8, ChronoUnit.HOURS)))
-                .claim("serviceCenterId", user.getServiceCenter().getId())
                 .claim("name", user.getName())
                 .claim("userId", user.getId())
                 .claim("phone", user.getPhoneNumber())
+                .claim("role", user.getRole())
                 .claim("requiresPasswordChange", user.isRequiresPasswordChange())
-                .jwtID(UUID.randomUUID().toString())
-                .build();
+                .jwtID(UUID.randomUUID().toString());
+
+        if (user.getServiceCenter() != null) {
+            claimsBuilder.claim("serviceCenterId", user.getServiceCenter().getId());
+        } else {
+            claimsBuilder.claim("serviceCenterId", null);
+        }
+
+        JWTClaimsSet jwtClaimsSet = claimsBuilder.build();
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
         JWSObject jwsObject = new JWSObject(jwsHeader, payload);
+
         try {
             jwsObject.sign(new MACSigner(SIGN_KEY.getBytes()));
             return jwsObject.serialize();
@@ -227,15 +240,20 @@ public class UserServiceImpl implements UserService {
         user.setName(request.getName());
         user.setRole(User.Role.valueOf(request.getRole().toUpperCase()));
         user.setStatus(User.Status.ACTIVE);
-        ServiceCenter sc = serviceCenterRepository.findById(request.getServiceCenterId())
-                .orElseThrow(() -> new NoSuchElementException("ServiceCenter not found"));
+
+        ServiceCenter sc = null;
+        if (request.getServiceCenterId() != null) {
+            sc = serviceCenterRepository.findById(request.getServiceCenterId())
+                    .orElseThrow(() -> new NoSuchElementException("ServiceCenter not found"));
+        }
         user.setServiceCenter(sc);
+
         String temporaryPassword = passwordGeneration.generateSimplePassword();
         user.setRequiresPasswordChange(true);
-        // encoder
         user.setPassword(passwordEncoder.encode(temporaryPassword));
         user.setRequiresPasswordChange(true);
         User saved = userRepository.save(user);
+
         sendAccountCreationEmail(
                 saved.getName(),
                 saved.getEmail(),
@@ -250,12 +268,9 @@ public class UserServiceImpl implements UserService {
                 saved.getPhoneNumber(),
                 saved.getRole(),
                 saved.getStatus(),
-                saved.getServiceCenter().getId()
-
-        );
+                getServiceCenterIdSafe(saved));
     }
 
-    @Override
     public UserResponse deleteUser(Long id, Long ownId) {
         if (id.equals(ownId)) {
             throw new IllegalArgumentException("You cannot deactivate your own account.");
@@ -271,7 +286,7 @@ public class UserServiceImpl implements UserService {
                 saved.getPhoneNumber(),
                 saved.getRole(),
                 saved.getStatus(),
-                saved.getServiceCenter().getId());
+                getServiceCenterIdSafe(saved));
     }
 
     @Override
@@ -291,7 +306,7 @@ public class UserServiceImpl implements UserService {
                 saved.getPhoneNumber(),
                 saved.getRole(),
                 saved.getStatus(),
-                saved.getServiceCenter().getId());
+                getServiceCenterIdSafe(saved));
     }
 
     @Override
@@ -304,7 +319,6 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Email is already in use by another user");
         }
         user.setEmail(request.getEmail());
-
         user.setName(request.getName());
 
         if (request.getRole() != null && !request.getRole().isEmpty()) {
@@ -313,11 +327,14 @@ public class UserServiceImpl implements UserService {
         if (request.getStatus() != null) {
             user.setStatus(User.Status.valueOf(request.getStatus().name().toUpperCase()));
         }
-        ServiceCenter sc = serviceCenterRepository.findById(request.getServiceCenterId())
-                .orElseThrow(() -> new NoSuchElementException("ServiceCenter not found"));
+
+        ServiceCenter sc = null;
+        if (request.getServiceCenterId() != null) {
+            sc = serviceCenterRepository.findById(request.getServiceCenterId())
+                    .orElseThrow(() -> new NoSuchElementException("ServiceCenter not found"));
+        }
         user.setServiceCenter(sc);
 
-        // Update phone number if provided
         if (userRepository.findByPhoneNumber(request.getPhoneNumber()).isPresent()
                 && !user.getPhoneNumber().equals(request.getPhoneNumber())) {
             throw new IllegalArgumentException("Phone number is already in use by another user");
@@ -331,7 +348,7 @@ public class UserServiceImpl implements UserService {
                 saved.getPhoneNumber(),
                 saved.getRole(),
                 saved.getStatus(),
-                saved.getServiceCenter().getId());
+                getServiceCenterIdSafe(saved));
     }
 
     @Override
@@ -346,7 +363,7 @@ public class UserServiceImpl implements UserService {
                     user.getPhoneNumber(),
                     user.getRole(),
                     user.getStatus(),
-                    user.getServiceCenter().getId()));
+                    getServiceCenterIdSafe(user)));
         }
         return userRes;
     }
@@ -363,7 +380,7 @@ public class UserServiceImpl implements UserService {
         userResponse.setPhoneNumber(user.getPhoneNumber());
         userResponse.setRole(user.getRole());
         userResponse.setStatus(user.getStatus());
-        userResponse.setServiceCenterId(user.getServiceCenter().getId());
+        userResponse.setServiceCenterId(getServiceCenterIdSafe(user));
         return userResponse;
     }
 
@@ -382,7 +399,7 @@ public class UserServiceImpl implements UserService {
                     user.getPhoneNumber(),
                     user.getRole(),
                     user.getStatus(),
-                    user.getServiceCenter().getId()));
+                    getServiceCenterIdSafe(user)));
         }
         return userRes;
     }
@@ -448,7 +465,7 @@ public class UserServiceImpl implements UserService {
                 user.getPhoneNumber(),
                 user.getRole(),
                 user.getStatus(),
-                user.getServiceCenter().getId());
+                getServiceCenterIdSafe(user));
     }
 
     @Override
@@ -495,30 +512,50 @@ public class UserServiceImpl implements UserService {
     }
 
     public TechnicianPerformanceResponse calculateTechnicianPerformanceWithComparison(Long serviceCenterId) {
+        boolean hasSpecificCenter = serviceCenterId != null && serviceCenterId > 0;
+
         LocalDate startOfThisMonth = LocalDate.now().withDayOfMonth(1);
         LocalDate endOfThisMonth = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
         LocalDate startOfLastMonth = startOfThisMonth.minusMonths(1);
         LocalDate endOfLastMonth = startOfThisMonth.minusDays(1);
 
-        long totalThisMonth = repairOrderRepository.countByServiceCenterIdAndStartDateBetween(
-                serviceCenterId, startOfThisMonth.atStartOfDay(), endOfThisMonth.plusDays(1).atStartOfDay());
+        // Tháng này
+        long totalThisMonth = hasSpecificCenter
+                ? repairOrderRepository.countByServiceCenterIdAndStartDateBetween(
+                        serviceCenterId, startOfThisMonth.atStartOfDay(), endOfThisMonth.plusDays(1).atStartOfDay())
+                : repairOrderRepository.countAllOrdersBetween(startOfThisMonth.atStartOfDay(),
+                        endOfThisMonth.plusDays(1).atStartOfDay());
 
-        long completedThisMonth = repairOrderRepository.countByServiceCenterIdAndStatusAndStartDateBetween(
-                serviceCenterId, RepairOrder.OrderStatus.COMPLETED,
-                startOfThisMonth.atStartOfDay(), endOfThisMonth.plusDays(1).atStartOfDay());
+        long completedThisMonth = hasSpecificCenter
+                ? repairOrderRepository.countByServiceCenterIdAndStatusAndStartDateBetween(
+                        serviceCenterId, RepairOrder.OrderStatus.COMPLETED,
+                        startOfThisMonth.atStartOfDay(), endOfThisMonth.plusDays(1).atStartOfDay())
+                : repairOrderRepository.countAllOrdersByStatusBetween(
+                        RepairOrder.OrderStatus.COMPLETED, startOfThisMonth.atStartOfDay(),
+                        endOfThisMonth.plusDays(1).atStartOfDay());
 
         double rateThisMonth = totalThisMonth == 0 ? 0 : (completedThisMonth * 100.0) / totalThisMonth;
 
-        long totalLastMonth = repairOrderRepository.countByServiceCenterIdAndStartDateBetween(
-                serviceCenterId, startOfLastMonth.atStartOfDay(), endOfLastMonth.plusDays(1).atStartOfDay());
+        // Tháng trước
+        long totalLastMonth = hasSpecificCenter
+                ? repairOrderRepository.countByServiceCenterIdAndStartDateBetween(
+                        serviceCenterId, startOfLastMonth.atStartOfDay(), endOfLastMonth.plusDays(1).atStartOfDay())
+                : repairOrderRepository.countAllOrdersBetween(startOfLastMonth.atStartOfDay(),
+                        endOfLastMonth.plusDays(1).atStartOfDay());
 
-        long completedLastMonth = repairOrderRepository.countByServiceCenterIdAndStatusAndStartDateBetween(
-                serviceCenterId, RepairOrder.OrderStatus.COMPLETED,
-                startOfLastMonth.atStartOfDay(), endOfLastMonth.plusDays(1).atStartOfDay());
+        long completedLastMonth = hasSpecificCenter
+                ? repairOrderRepository.countByServiceCenterIdAndStatusAndStartDateBetween(
+                        serviceCenterId, RepairOrder.OrderStatus.COMPLETED,
+                        startOfLastMonth.atStartOfDay(), endOfLastMonth.plusDays(1).atStartOfDay())
+                : repairOrderRepository.countAllOrdersByStatusBetween(
+                        RepairOrder.OrderStatus.COMPLETED, startOfLastMonth.atStartOfDay(),
+                        endOfLastMonth.plusDays(1).atStartOfDay());
 
         double rateLastMonth = totalLastMonth == 0 ? 0 : (completedLastMonth * 100.0) / totalLastMonth;
 
-        double changePercent = rateLastMonth == 0 ? 0 : ((rateThisMonth - rateLastMonth) / rateLastMonth) * 100;
+        double changePercent = rateLastMonth == 0
+                ? (rateThisMonth > 0 ? 100 : 0)
+                : ((rateThisMonth - rateLastMonth) / rateLastMonth) * 100;
 
         return TechnicianPerformanceResponse.builder()
                 .currentRate(rateThisMonth)

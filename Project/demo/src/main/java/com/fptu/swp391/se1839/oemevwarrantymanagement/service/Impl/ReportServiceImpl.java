@@ -24,8 +24,10 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public List<ServiceCenterPerformanceResponse> getServiceCenterPerformance() {
 
+        // Lấy dữ liệu raw từ DB
         List<Object[]> rawResults = repairOrderRepository.getCompletedOrderReport();
 
+        // Map sang DTO sử dụng builder pattern
         return rawResults.stream()
                 .map(r -> ServiceCenterPerformanceResponse.builder()
                         .scId((Long) r[0])

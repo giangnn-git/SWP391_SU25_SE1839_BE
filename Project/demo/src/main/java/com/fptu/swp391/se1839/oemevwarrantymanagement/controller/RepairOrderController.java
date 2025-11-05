@@ -31,19 +31,26 @@ public class RepairOrderController {
     final RepairOrderService repairOrderService;
 
     @GetMapping("/repair-orders")
-    public ResponseEntity<ApiResponse<OrderDashboardResponse>> getRepairOrder(@AuthenticationPrincipal Jwt jwt,
+    public ResponseEntity<ApiResponse<OrderDashboardResponse>> getRepairOrder(
+            @AuthenticationPrincipal Jwt jwt,
             @RequestBody(required = false) FilterRequest request) {
-        Long serviceCenterId = Long.parseLong(jwt.getClaim("serviceCenterId").toString());
+
+        Object scClaim = jwt.getClaim("serviceCenterId");
+        Long serviceCenterId = (scClaim != null) ? Long.parseLong(scClaim.toString()) : 0L;
+
         if (request == null) {
             request = new FilterRequest();
         }
+
         Long userId = Long.parseLong(jwt.getClaim("userId").toString());
         OrderDashboardResponse odr = this.repairOrderService.handleOrderDashboard(serviceCenterId, request, userId);
+
         var result = ApiResponse.<OrderDashboardResponse>builder()
                 .status(HttpStatus.OK.toString())
                 .message("Get inf dashboard successfully")
                 .data(odr)
                 .build();
+
         return ResponseEntity.ok(result);
     }
 
@@ -51,7 +58,9 @@ public class RepairOrderController {
     public ResponseEntity<ApiResponse<OrderDetailResponse>> getRepairOrderDetail(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable("id") long orderId) {
-        Long serviceCenterId = Long.parseLong(jwt.getClaim("serviceCenterId").toString());
+        Object scClaim = jwt.getClaim("serviceCenterId");
+        Long serviceCenterId = (scClaim != null) ? Long.parseLong(scClaim.toString()) : 0L;
+
         OrderDetailResponse orderDetail = this.repairOrderService.handleGetDetailOrder(serviceCenterId, orderId);
         var result = ApiResponse.<OrderDetailResponse>builder()
                 .status(HttpStatus.OK.toString())

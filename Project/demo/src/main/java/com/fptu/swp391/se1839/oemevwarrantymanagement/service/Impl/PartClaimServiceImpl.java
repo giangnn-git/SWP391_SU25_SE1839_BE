@@ -3,13 +3,14 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.AllPartClaimRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangeStatusPartClaimRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.PartClaimRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ClaimsByComponentResponse;
@@ -27,7 +28,6 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyClaim;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyPolicy;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.event.EntityUpdatedEvent;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartClaimRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairDetailRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairStepRepository;
@@ -35,6 +35,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.WarrantyClaimRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PartClaimService;
 
+import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -48,18 +49,25 @@ public class PartClaimServiceImpl implements PartClaimService {
     final PartClaimRepository partClaimRepository;
     final WarrantyClaimRepository warrantyClaimRepository;
     final RepairDetailRepository repairDetailRepository;
-    final PartRepository partRepository;
     final RepairStepRepository repairStepRepository;
     final RepairOrderRepository repairOrderRepository;
     final ApplicationEventPublisher eventPublisher;
     final UserRepository userRepository;
 
     public List<claimsByCategoryResponse> calculateClaimsByCategory(Long serviceCenterId) {
-        Long totalClaims = partClaimRepository.countByWarrantyClaimServiceCenterId(serviceCenterId);
-        if (totalClaims == 0)
-            totalClaims = 1L;
+        boolean hasSpecificCenter = serviceCenterId != null && serviceCenterId > 0;
 
-        List<Object[]> categoryData = partClaimRepository.countFailuresByCategory(serviceCenterId);
+        // Tổng số claim
+        Long totalClaims = hasSpecificCenter
+                ? partClaimRepository.countByWarrantyClaimServiceCenterId(serviceCenterId)
+                : partClaimRepository.count(); // tổng cho tất cả trung tâm
+        if (totalClaims == 0)
+            totalClaims = 1L; // tránh chia cho 0
+
+        // Lấy dữ liệu theo category
+        List<Object[]> categoryData = hasSpecificCenter
+                ? partClaimRepository.countFailuresByCategory(serviceCenterId)
+                : partClaimRepository.countAllFailuresByCategory(); // cần implement query tổng cho tất cả trung tâm
 
         List<claimsByCategoryResponse> claimsByCategory = new ArrayList<>();
         for (Object[] row : categoryData) {
@@ -76,54 +84,11 @@ public class PartClaimServiceImpl implements PartClaimService {
         return claimsByCategory;
     }
 
-    private boolean isPartDuplicated(WarrantyClaim wc, Part part) {
-        return partClaimRepository.existsByWarrantyClaimIdAndPartId(wc.getId(), part.getId());
-    }
-
-    public String handleCreatePartClaim(AllPartClaimRequest request, long claimId) {
-        WarrantyClaim wc = warrantyClaimRepository.findById(claimId)
-                .orElseThrow(() -> new NoSuchElementException("Warranty claim doesn't exist"));
-
-        List<String> duplicatedParts = new ArrayList<>();
-        List<PartClaim> partClaimsToSave = new ArrayList<>();
-
-        for (PartClaimRequest pcr : request.getParts()) {
-            Part part = partRepository.findById(pcr.getId())
-                    .orElseThrow(() -> new NoSuchElementException("Part not found with id " + pcr.getId()));
-
-            // Check duplicate
-            if (isPartDuplicated(wc, part)) {
-                duplicatedParts.add(part.getName());
-                continue;
-            }
-
-            // Nếu không trùng, tạo PartClaim mới
-            PartClaim newPartClaim = PartClaim.builder()
-                    .part(part)
-                    .warrantyClaim(wc)
-                    .quantity(pcr.getQuantity()) // nếu có số lượng
-                    .status(PartClaim.ClaimStatus.PENDING)
-                    .build();
-
-            partClaimsToSave.add(newPartClaim);
-        }
-
-        // Lưu tất cả các PartClaim mới
-        if (!partClaimsToSave.isEmpty()) {
-            partClaimRepository.saveAll(partClaimsToSave);
-        }
-
-        if (!duplicatedParts.isEmpty()) {
-            return "Some parts already exist: " + String.join(", ", duplicatedParts);
-        }
-
-        return "Part claim created successfully";
-    }
-
     public List<ClaimsByComponentResponse> calculateClaimsByComponent(Long serviceCenterId) {
-        Long totalClaims = partClaimRepository.countByWarrantyClaimServiceCenterId(serviceCenterId);
+        Long totalClaims = partClaimRepository.countByWarrantyClaimServiceCenterId(
+                serviceCenterId != null && serviceCenterId > 0 ? serviceCenterId : null);
         if (totalClaims == 0)
-            totalClaims = 1L; // tránh chia 0
+            totalClaims = 1L;
 
         List<Object[]> componentData = partClaimRepository.countFailuresByComponent(serviceCenterId);
 
@@ -222,7 +187,7 @@ public class PartClaimServiceImpl implements PartClaimService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
         if (user.getRole() != User.Role.EVM_STAFF) {
-            return "Access denied: only EVM_STAFF can change part claim status.";
+            return "❌ Access denied: only EVM_STAFF can change part claim status.";
         }
 
         try {
@@ -316,7 +281,7 @@ public class PartClaimServiceImpl implements PartClaimService {
 
             // 5️⃣ Return message
             return String.format(
-                    "Part claim status updated successfully!\n" +
+                    "✅ Part claim status updated successfully!\n" +
                             "Part: %s\n" +
                             "New Status: %s\n" +
                             "Warranty Policy: %s\n" +
@@ -329,7 +294,37 @@ public class PartClaimServiceImpl implements PartClaimService {
                     partClaimId);
 
         } catch (Exception e) {
-            return "Failed to update part claim status: " + e.getMessage();
+            return "❌ Failed to update part claim status: " + e.getMessage();
         }
     }
+
+    @Override
+    @Transactional
+    public String handleUpdatePartQuantities(long claimId, List<PartClaimRequest> updates, long userId) {
+        // 1. Lấy claim
+        WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
+                .orElseThrow(() -> new NoSuchElementException("Warranty claim not found: " + claimId));
+
+        // 2. Lấy tất cả PartClaim thuộc claim này
+        List<PartClaim> partClaims = partClaimRepository.findByWarrantyClaimId(claimId);
+
+        // 3. Tạo map để dễ update
+        Map<Long, PartClaimRequest> updateMap = updates.stream()
+                .collect(Collectors.toMap(PartClaimRequest::getId, Function.identity()));
+
+        for (PartClaim pc : partClaims) {
+            PartClaimRequest update = updateMap.get(pc.getPart().getId());
+            if (update != null) {
+                // Cập nhật quantity, đảm bảo > 0 theo constraint nếu cần
+                long newQty = Math.max(update.getQuantity(), 1);
+                pc.setQuantity(newQty);
+            }
+        }
+
+        // 4. Lưu tất cả
+        partClaimRepository.saveAll(partClaims);
+
+        return "Part quantities updated successfully";
+    }
+
 }

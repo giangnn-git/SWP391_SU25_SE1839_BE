@@ -3,6 +3,8 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 import java.time.LocalDate;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -36,10 +38,12 @@ public class ModelPolicy {
     Long id;
 
     @ManyToOne(optional = false)
+    @JsonIgnore
     @JoinColumn(name = "modelId", nullable = false)
     Model model;
 
     @ManyToOne(optional = false)
+    @JsonIgnore
     @JoinColumn(name = "warrantyPolicyId", nullable = false)
     WarrantyPolicy warrantyPolicy;
 

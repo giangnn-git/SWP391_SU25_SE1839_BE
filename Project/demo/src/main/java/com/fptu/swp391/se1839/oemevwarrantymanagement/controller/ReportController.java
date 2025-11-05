@@ -52,8 +52,9 @@ public class ReportController {
 
         @GetMapping("/report/summary")
         public ResponseEntity<ApiResponse<Map<String, Object>>> getSummary(@AuthenticationPrincipal Jwt jwt) {
-                Long serviceCenterId = Long.parseLong(jwt.getClaim("serviceCenterId").toString());
 
+                Object scClaim = jwt.getClaim("serviceCenterId");
+                Long serviceCenterId = (scClaim != null) ? Long.parseLong(scClaim.toString()) : 0L;
                 // Tính toán summary
                 OrderSummaryResponse orderSummary = repairOrderService
                                 .handleCalculateResolutionRateDifferent(serviceCenterId);
@@ -81,7 +82,9 @@ public class ReportController {
         @GetMapping("/report/failure-analysis")
         public ResponseEntity<ApiResponse<FailureAnalysisResponse>> getFailureAnalysis(
                         @AuthenticationPrincipal Jwt jwt) {
-                Long serviceCenterId = Long.parseLong(jwt.getClaim("serviceCenterId").toString());
+
+                Object scClaim = jwt.getClaim("serviceCenterId");
+                Long serviceCenterId = (scClaim != null) ? Long.parseLong(scClaim.toString()) : 0L;
 
                 List<ModelFailureResponse> modelFailure = warrantyClaimService
                                 .calculateFailureAnalysisByModel(serviceCenterId);
@@ -110,7 +113,9 @@ public class ReportController {
 
         @GetMapping("/report/cost-analysis")
         public ResponseEntity<ApiResponse<CostAnalysisResponse>> getCostAnalysis(@AuthenticationPrincipal Jwt jwt) {
-                Long serviceCenterId = Long.parseLong(jwt.getClaim("serviceCenterId").toString());
+
+                Object scClaim = jwt.getClaim("serviceCenterId");
+                Long serviceCenterId = (scClaim != null) ? Long.parseLong(scClaim.toString()) : 0L;
 
                 CostAnalysisResponse costAnalysis = warrantyClaimService
                                 .handleCalculateClaimCostByMonth(serviceCenterId);

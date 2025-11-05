@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
@@ -70,6 +71,7 @@ public class WarrantyPolicy {
 
     @JsonManagedReference
     @OneToMany(mappedBy = "warrantyPolicy", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private Set<PartPolicy> partPolicies = new HashSet<>();
 
@@ -78,6 +80,7 @@ public class WarrantyPolicy {
     private Status status = Status.INACTIVE;
 
     @OneToMany(mappedBy = "warrantyPolicy", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private Set<ModelPolicy> modelPolicies = new HashSet<>();
 

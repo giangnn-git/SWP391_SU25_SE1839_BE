@@ -3,6 +3,8 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 import java.time.LocalDateTime;
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -34,6 +36,7 @@ public class InvalidToken {
     LocalDateTime logoutAt;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "userId", nullable = false)
     User user;
 }

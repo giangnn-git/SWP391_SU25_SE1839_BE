@@ -2,6 +2,8 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -38,18 +40,22 @@ public class ActivityLog {
     private String meta;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "vehicleId")
     Vehicle vehicle;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "claimId")
     WarrantyClaim claim;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "repairOrderId")
     RepairOrder repairOrder;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "partClaimId")
     PartClaim partClaim;
 }

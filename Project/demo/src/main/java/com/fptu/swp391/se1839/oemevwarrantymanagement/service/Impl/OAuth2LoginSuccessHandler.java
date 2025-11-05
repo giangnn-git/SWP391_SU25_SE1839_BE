@@ -39,7 +39,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 User user = userRepository.findByEmail(email)
                                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-                String token = this.userService.generaToken(user);
+                String token = this.userService.generateToken(user);
 
                 String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/auth/callback")
                                 .queryParam("token", token)

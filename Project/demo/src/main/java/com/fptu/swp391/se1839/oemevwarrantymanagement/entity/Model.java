@@ -3,9 +3,12 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -46,15 +49,18 @@ public class Model {
     @Builder.Default
     private Boolean isInProduction = true;
 
-    @OneToMany(mappedBy = "model", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "model", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     @Builder.Default
     private Set<Vehicle> vehicles = new HashSet<>();
 
-    @OneToMany(mappedBy = "model", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "model", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
     @Builder.Default
     private Set<ModelPolicy> modelPolicies = new HashSet<>();
 
-    @OneToMany(mappedBy = "model", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "model", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     @Builder.Default
     private Set<ModelPart> modelParts = new HashSet<>();
 

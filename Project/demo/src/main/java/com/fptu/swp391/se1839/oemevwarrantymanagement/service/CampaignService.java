@@ -29,6 +29,5 @@ public interface CampaignService {
 
     String notifyCustomersByCampaign(Long campaignId);
 
-    List<VehicleInCampaignResponse> handleGetVehiclesInCampaignByServiceCenter(Long scId);
-
+	List<VehicleInCampaignResponse> handleGetVehiclesInCampaignByServiceCenter(Long scId);
 }

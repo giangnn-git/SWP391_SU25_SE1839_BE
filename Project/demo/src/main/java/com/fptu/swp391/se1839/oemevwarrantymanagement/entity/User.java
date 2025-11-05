@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -90,7 +92,7 @@ public class User {
     String avatar = null;
 
     public enum Role {
-        ADMIN, TECHNICIAN, SC_STAFF, EVM_STAFF;
+        ADMIN, TECHNICIAN, SC_STAFF, EVM_STAFF, SUPERVISOR;
     }
 
     @Enumerated(EnumType.STRING)
@@ -106,14 +108,17 @@ public class User {
     Status status;
 
     @ManyToOne
-    @JoinColumn(name = "serviceCenterId", nullable = false)
+    @JsonIgnore
+    @JoinColumn(name = "serviceCenterId", nullable = true)
     ServiceCenter serviceCenter;
 
     @OneToMany(mappedBy = "technical")
+    @JsonIgnore
     @Builder.Default
     Set<RepairOrder> repairOrders = new HashSet<>();
 
     @OneToMany(mappedBy = "user")
+    @JsonIgnore
     @Builder.Default
     Set<InvalidToken> invalidTokens = new HashSet<>();
 

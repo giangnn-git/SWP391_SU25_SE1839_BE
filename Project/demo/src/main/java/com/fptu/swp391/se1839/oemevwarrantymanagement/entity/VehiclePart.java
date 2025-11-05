@@ -3,8 +3,11 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 import java.time.LocalDate;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -31,22 +34,25 @@ public class VehiclePart {
     @Column(name = "serial_number")
     String oldSerialNumber;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JsonIgnore
     @JoinColumn(name = "vehicleVin", nullable = false)
     Vehicle vehicle;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JsonIgnore
     @JoinColumn(name = "partId", nullable = false)
     Part part;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "claimId", nullable = false)
+    @JsonIgnore
+    @JoinColumn(name = "claimId", nullable = true)
     WarrantyClaim warrantyClaim;
     LocalDate installationDate;
 
     LocalDate removalDate;
 
-    @Column(name = "old_serial_number")
+    @Column(name = "new_serial_number")
     String newSerialNumber;
 
     @Override

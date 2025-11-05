@@ -2,6 +2,8 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -36,10 +38,12 @@ public class CampaignVehicle {
     Long id;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "campaignId", nullable = false)
     ServiceCampaign serviceCampaign;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "vin", nullable = false)
     Vehicle vehicle;
 

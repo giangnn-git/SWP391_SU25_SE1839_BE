@@ -13,10 +13,11 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PartQuantityResponse {
+    long partId;
     String name;
-    long quantity;
     String category;
-    String description;
-
+    long quantity;
+    long recommendedQuantity;
     long remainingStock;
+    String serialNumber;
 }

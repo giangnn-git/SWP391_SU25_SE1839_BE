@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -59,10 +61,12 @@ public class ServiceCampaign {
     private String code;
 
     @OneToMany(mappedBy = "serviceCampaign", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private Set<CampaignVehicle> campaignVehicles = new HashSet<>();
 
     @OneToMany(mappedBy = "serviceCampaign", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private Set<WarrantyClaim> warrantyClaims = new HashSet<>();
 

@@ -14,12 +14,15 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartPol
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyCodeResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartWarrantyInfoResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Part;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartPolicy;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.VehiclePart;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyPolicy;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartPolicyRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PolicyRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehiclePartRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PartPolicyService;
 
 import lombok.AccessLevel;
@@ -33,6 +36,7 @@ public class PartPolicyServiceImpl implements PartPolicyService {
         PartPolicyRepository partPolicyRepository;
         PartRepository partRepository;
         PolicyRepository policyRepository;
+        VehiclePartRepository vehiclePartRepository;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         @Override
@@ -74,11 +78,12 @@ public class PartPolicyServiceImpl implements PartPolicyService {
                                                 : null)
                                 .durationPeriod(warranty != null ? warranty.getDurationPeriod() : null)
                                 .mileageLimit(warranty != null ? warranty.getMileageLimit() : null)
-                                .description(warranty != null ? warranty.getDescription() : null)
-                                .startDate(partPolicy.getStartDate() != null ? partPolicy.getStartDate().format(formatter)
+                                .startDate(partPolicy.getStartDate() != null
+                                                ? partPolicy.getStartDate().format(formatter)
                                                 : null)
                                 .endDate(partPolicy.getEndDate() != null ? partPolicy.getEndDate().format(formatter)
                                                 : null)
+                                .description(warranty != null ? warranty.getDescription() : null)
                                 .build();
         }
 
@@ -166,29 +171,45 @@ public class PartPolicyServiceImpl implements PartPolicyService {
         @Override
         public PartPolicyResponse handleUpdateStatusPartPolicy(Long partPolicyId) {
                 PartPolicy partPolicy = partPolicyRepository.findById(partPolicyId)
-                        .orElseThrow(() -> new NoSuchElementException("ID not found"));
-
+                                .orElseThrow(() -> new NoSuchElementException("ID not found"));
                 if (partPolicy.getStatus() == PartPolicy.Status.INACTIVE) {
-                        // Nếu đang INACTIVE thì bật lại ACTIVE
                         partPolicy.setStatus(PartPolicy.Status.ACTIVE);
                 } else {
-                        // Nếu đang ACTIVE thì chuyển sang INACTIVE
                         partPolicy.setStatus(PartPolicy.Status.INACTIVE);
-                        // Cập nhật lại = ngày hiện tại
-                        partPolicy.setEndDate(LocalDate.now());
                 }
-
                 PartPolicy saved = partPolicyRepository.save(partPolicy);
-
                 return PartPolicyResponse.builder()
-                        .id(saved.getId())
-                        .partName(saved.getPart().getName())
-                        .partCode(saved.getPart().getCode())
-                        .policyCode(saved.getWarrantyPolicy().getCode())
-                        .startDate(formatter.format(saved.getStartDate()))
-                        .endDate(saved.getEndDate() != null ? formatter.format(saved.getEndDate()) : null)
-                        .status(PartPolicyResponse.Status.valueOf(saved.getStatus().name()))
-                        .build();
+                                .id(saved.getId())
+                                .partName(saved.getPart().getName())
+                                .partCode(saved.getPart().getCode())
+                                .policyCode(saved.getWarrantyPolicy().getCode())
+                                .startDate(formatter.format(saved.getStartDate()))
+                                .endDate(formatter.format(saved.getEndDate()))
+                                .status(PartPolicyResponse.Status.valueOf(saved.getStatus().name()))
+                                .build();
         }
 
+        public PartWarrantyInfoResponse getWarrantyInfoBySerial(String serialNumber) {
+                VehiclePart vp = vehiclePartRepository.findBySerialNumber(serialNumber)
+                                .orElseThrow(() -> new IllegalArgumentException("Serial number not found"));
+
+                var vehicle = vp.getVehicle();
+                var part = vp.getPart();
+
+                PartPolicy latestPolicy = partPolicyRepository
+                                .findLatestValidPolicy(part.getId(), LocalDate.now())
+                                .orElseThrow(() -> new IllegalStateException("No active policy found for this part"));
+
+                var warranty = latestPolicy.getWarrantyPolicy();
+
+                LocalDate start = vehicle.getProductionDate();
+                LocalDate end = start.plusMonths(warranty.getDurationPeriod());
+
+                return PartWarrantyInfoResponse.builder()
+                                .policyName(warranty.getName())
+                                .startDate(start.format(formatter))
+                                .endDate(end.format(formatter))
+                                .mileageLimit(warranty.getMileageLimit())
+                                .build();
+        }
 }

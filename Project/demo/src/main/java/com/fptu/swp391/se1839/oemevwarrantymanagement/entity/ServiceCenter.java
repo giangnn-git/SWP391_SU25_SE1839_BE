@@ -49,6 +49,7 @@ public class ServiceCenter {
     String phoneNumber;
 
     @OneToMany(mappedBy = "serviceCenter", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     Set<WarrantyClaim> warrantyClaims = new HashSet<>();
 
@@ -58,10 +59,12 @@ public class ServiceCenter {
     Set<User> users = new HashSet<>();
 
     @OneToMany(mappedBy = "serviceCenter", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     Set<SCExpense> scExpenses = new HashSet<>();
 
     @OneToMany(mappedBy = "serviceCenter", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     Set<PartInventory> partInventories = new HashSet<>();
 

@@ -26,6 +26,7 @@ public class FilterClaimResponse {
     String userName;
     String serviceCenterName;
     String description;
+    String diagnosis;
     LocalDate claimDate;
     String senderName;
     double price;

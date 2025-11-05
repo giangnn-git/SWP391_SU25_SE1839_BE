@@ -13,5 +13,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PartListRequest {
+    String vin;
     String name;
 }

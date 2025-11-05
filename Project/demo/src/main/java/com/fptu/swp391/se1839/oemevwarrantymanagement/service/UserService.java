@@ -32,7 +32,7 @@ public interface UserService {
 
     OTPResponse handleRefeshToken(RefeshTokenRequest request) throws JOSEException, ParseException;
 
-    String generaToken(User user);
+    String generateToken(User user);
 
     User handleFindByEmailOrPhone(String iuput);
 

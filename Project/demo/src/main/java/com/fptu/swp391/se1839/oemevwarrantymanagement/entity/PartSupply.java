@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -39,10 +41,12 @@ public class PartSupply {
     Long id;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "serviceCenterId", nullable = false)
     ServiceCenter serviceCenter; // SC gửi yêu cầu
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "createdBy", nullable = false)
     User createdBy; // SC Staff tạo yêu cầu
 
@@ -61,6 +65,7 @@ public class PartSupply {
     String note; // ghi chú thêm, lý do xin thêm phụ tùng
 
     @OneToMany(mappedBy = "partRequest", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     Set<PartRequestDetail> details = new HashSet<>();
 }

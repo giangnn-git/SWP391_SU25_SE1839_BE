@@ -13,10 +13,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.MonthlyCostSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RecentActivityResponse;
 
 import static com.fptu.swp391.se1839.oemevwarrantymanagement.Utilities.TimeUtil.formatTimeAgo;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CostAnalysisResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardClaimSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardOrderSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.ActivityLogService;
@@ -43,17 +45,19 @@ public class DashboardController {
         @GetMapping("/summary")
         public ResponseEntity<ApiResponse<DashboardResponse>> getDashboardSummary(@AuthenticationPrincipal Jwt jwt) {
 
-                Long serviceCenterId = Long.parseLong(jwt.getClaim("serviceCenterId").toString());
+                Object scClaim = jwt.getClaim("serviceCenterId");
+                Long serviceCenterId = (scClaim != null) ? Long.parseLong(scClaim.toString()) : 0L;
 
                 DashboardOrderSummaryResponse orderSummary = repairOrderService.findSunSummaryOrder(serviceCenterId);
                 DashboardClaimSummaryResponse claimSummary = warrantyClaimService.handleSummaryClaims(serviceCenterId);
-                java.util.Map<String, Long> claimBreakdown = warrantyClaimService.getClaimCountsBreakdown(serviceCenterId);
+                java.util.Map<String, Long> claimBreakdown = warrantyClaimService
+                                .getClaimCountsBreakdown(serviceCenterId);
 
                 // Reuse existing cost analysis for monthly summaries and total warranty cost
-                com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CostAnalysisResponse costAnalysis =
-                                warrantyClaimService.handleCalculateClaimCostByMonth(serviceCenterId);
-                java.util.List<com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.MonthlyCostSummaryResponse> monthlySummaries =
-                                costAnalysis.getMonthlySummaries();
+                CostAnalysisResponse costAnalysis = warrantyClaimService
+                                .handleCalculateClaimCostByMonth(serviceCenterId);
+                List<MonthlyCostSummaryResponse> monthlySummaries = costAnalysis
+                                .getMonthlySummaries();
                 long totalWarrantyCost = costAnalysis.getTotalWarrantyCost();
 
                 List<RecentActivityResponse> recentActivities = activityLogService.findRecentActivities()

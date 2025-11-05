@@ -29,7 +29,8 @@ public class PolicyResponse {
     Status status;
 
     public enum Status {
-        ACTIVE, INACTIVE
+        ACTIVE,
+        INACTIVE
     }
 
 }

@@ -1,5 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -10,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.AllPartClaimRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangeStatusPartClaimRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.PartClaimRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PartClaimService;
 
@@ -27,15 +29,21 @@ public class PartClaimController {
 
         final PartClaimService partClaimService;
 
-        @PutMapping("/claims/part-claims/{id}")
-        public ResponseEntity<ApiResponse<String>> addPartClaim(@PathVariable("id") long claimId,
-                        @RequestBody AllPartClaimRequest request, @AuthenticationPrincipal Jwt jwt) {
-                String partClaim = this.partClaimService.handleCreatePartClaim(request, claimId);
+        @PutMapping("/{claimId}/parts/quantity")
+        public ResponseEntity<ApiResponse<String>> updatePartQuantities(
+                        @PathVariable("claimId") long claimId,
+                        @RequestBody List<PartClaimRequest> updates,
+                        @AuthenticationPrincipal Jwt jwt) {
+
+                Long userId = Long.parseLong(jwt.getClaim("userId").toString());
+                partClaimService.handleUpdatePartQuantities(claimId, updates, userId);
+
                 var result = ApiResponse.<String>builder()
                                 .status(HttpStatus.OK.toString())
-                                .message("Add part claim successfully")
-                                .data(partClaim)
+                                .message("Updated part quantities successfully")
+                                .data("success")
                                 .build();
+
                 return ResponseEntity.ok(result);
         }
 
