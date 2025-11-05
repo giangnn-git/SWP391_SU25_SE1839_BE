@@ -6,7 +6,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -23,26 +24,21 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-@Table(name = "repair_order_evidence")
-public class RepairOrderEvidence {
-
+@Table(name = "repair_order_verification")
+public class RepairOrderVerification {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
-    @ManyToOne
-    private RepairOrder repairOrder;
+    @OneToOne
+    @JoinColumn(name = "repair_order_id")
+    RepairOrder repairOrder;
 
-    private String evidenceType; // SIGNATURE, NOTE
+    String signature; // tên người xác nhận
+    String notes;
 
-    private String signature; // chữ ký online (Base64)
+    boolean acceptedResponsibility; // checkbox
+    LocalDateTime createdAt;
 
-    private String otpCode;
-
-    private String notes;
-
-    @ManyToOne
-    private User createdBy;
-
-    LocalDateTime createdAt = LocalDateTime.now();
+    Long createdBy; // id của tech
 }

@@ -19,5 +19,4 @@ public class CustomerSummaryResponse {
     String email;
     String address;
     int vehicleCount;
-    Long scId;
 }

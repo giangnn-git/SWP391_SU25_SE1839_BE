@@ -54,6 +54,7 @@ public class Vehicle {
     int productYear;
 
     @Column(nullable = true, unique = true)
+    @NotNull
     @Pattern(regexp = "^[0-9]{2}[A-Z]-[0-9]{3}.[0-9]{2}$", message = "Invalid license plate format (e.g., 30A-123.45)")
     private String licensePlate;
 

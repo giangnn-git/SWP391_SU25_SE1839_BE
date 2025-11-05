@@ -1,8 +1,7 @@
-package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
+package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
+import java.time.LocalDateTime;
 import java.util.List;
-
-import org.springframework.web.multipart.MultipartFile;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -16,9 +15,12 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AllEvidenceRequest {
+public class RepairOrderVerificationResponse {
+    Long repairOrderId;
     String signature;
-    String otpCode;
     String notes;
-    List<MultipartFile> files;
+    List<String> attachmentPaths;
+    boolean acceptedResponsibility;
+    LocalDateTime verifiedAt;
+    String verifiedBy;
 }

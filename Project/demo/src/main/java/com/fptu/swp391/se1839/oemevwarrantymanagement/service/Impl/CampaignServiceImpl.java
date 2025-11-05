@@ -17,7 +17,6 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampai
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.VehicleCampaignResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.VehicleInCampaignResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.CampaignVehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.CampaignVehicle.CampaignVehicleStatus;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Customer;
@@ -371,38 +370,4 @@ public class CampaignServiceImpl implements CampaignService {
                                 " customers in campaign: " + campaign.getName();
         }
 
-	@Override
-        public List<VehicleInCampaignResponse> handleGetVehiclesInCampaignByServiceCenter(Long scId) {
-        // Lấy danh sách CampaignVehicle theo ServiceCenter
-        List<CampaignVehicle> campaignVehicles = campaignVehicleRepository.findByServiceCenterId(scId);
-
-        // Kiểm tra rỗng
-        if (campaignVehicles.isEmpty()) {
-                throw new IllegalArgumentException("No vehicles found for service center ID: " + scId);
-        }
-
-        //Map sang DTO VehicleInCampaignResponse
-        List<VehicleInCampaignResponse> responses = campaignVehicles.stream()
-                .map(cv -> {
-                var vehicle = cv.getVehicle();
-                var campaign = cv.getServiceCampaign();
-                var customer = vehicle.getCustomer();
-
-                return VehicleInCampaignResponse.builder()
-                        .campaignName(campaign.getName())
-                        .vin(vehicle.getVin())
-                        .customerName(customer != null ? customer.getName() : "")
-                        .email(customer != null ? customer.getEmail() : "")
-                        .phoneNumber(customer != null ? customer.getPhoneNumber() : "")
-                        .address(customer != null ? customer.getAddress() : "")
-                        .startDate(campaign.getStartDate())
-                        .endDate(campaign.getEndDate())
-                        .status(cv.getStatus())
-                        .build();
-                })
-                .toList();
-
-        // Trả kết quả về
-        return responses;
-        }
 }

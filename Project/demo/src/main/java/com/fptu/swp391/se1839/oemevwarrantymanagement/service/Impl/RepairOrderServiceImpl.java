@@ -1,32 +1,46 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChooseTechnicalRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.EmailDetailsRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.FilterRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.RepairOrderVerificationRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChooseTechnicalResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardOrderSummaryResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DecodeImageReponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.FilterOrderResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetTechnicalsResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDashboardResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderSummaryResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairOrderVerificationResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryItemResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryOrderResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.TechnicalsResponse;
@@ -35,6 +49,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Model;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartPriceHistory;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairDetail;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrderVerification;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairStep;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.SCExpense;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ServiceCenter;
@@ -45,6 +60,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.event.EntityUpdatedEvent;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ModelRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairDetailRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderVerificationRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairStepRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.SCExpenseRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCenterRepository;
@@ -55,6 +71,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.service.EmailService;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairOrderService;
 
 import jakarta.persistence.PersistenceException;
+import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -77,6 +94,10 @@ public class RepairOrderServiceImpl implements RepairOrderService {
         final SCExpenseRepository scExpenseReposiotry;
         final EmailService emailService;
         final ApplicationEventPublisher applicationEventPublisher;
+        final RepairOrderVerificationRepository repairOrderVerificationRepository;
+
+        @Value("${attachment.base-path}")
+        String attachmentBasePath;
 
         Vehicle getVehicleByVin(String vin) {
                 Vehicle vehicle = this.vehicleRepository.findByVin(vin)
@@ -584,10 +605,37 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                                 .build();
         }
 
-        public OrderDetailResponse handleGetDetailOrder(long serviceCenterId, long orderId) {
+        public OrderDetailResponse handleGetDetailOrder(long serviceCenterId, long orderId) throws IOException {
+                List<DecodeImageReponse> attachments = new ArrayList<>();
+                String uploadDir = attachmentBasePath + "/claims/" + orderId;
+                File dir = new File(uploadDir);
+                if (dir.exists() && dir.isDirectory()) {
+                        for (File file : Objects.requireNonNull(dir.listFiles())) {
+                                byte[] data = Files.readAllBytes(file.toPath());
+                                String base64 = Base64.getEncoder().encodeToString(data);
+                                String imageDataUrl = "data:" + Files.probeContentType(file.toPath()) + ";base64,"
+                                                + base64;
+                                attachments.add(DecodeImageReponse.builder()
+                                                .image(imageDataUrl)
+                                                .claimAttachmentId(-1L)
+                                                .build());
+                        }
+                }
+
+                RepairOrderVerification verify = repairOrderVerificationRepository.findByRepairOrderId(orderId)
+                                .orElseThrow(() -> new NoSuchElementException("Repair order not found"));
                 return OrderDetailResponse.builder()
                                 .filterOrderResponse(handleFilterOrder(orderId))
                                 .getTechnicalsResponse(handleTechnicalStatus(serviceCenterId, orderId))
+                                .repairOrderId(verify.getRepairOrder().getId())
+                                .signature(verify.getSignature())
+                                .notes(verify.getNotes())
+                                .attachmentPaths(attachments)
+                                .acceptedResponsibility(verify.isAcceptedResponsibility())
+                                .verifiedAt(verify.getCreatedAt())
+                                .verifiedBy(userRepository.findById(verify.getCreatedBy())
+                                                .orElseThrow(() -> new NoSuchElementException("user not found"))
+                                                .getName())
                                 .build();
         }
 
@@ -868,4 +916,124 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 applicationEventPublisher.publishEvent(new EntityUpdatedEvent<>(this, repairOrder));
                 return "Repair completion email sent to " + customerEmail;
         }
+
+        @Transactional
+        public RepairOrderVerificationResponse verifyRepairOrder(long repairOrderId,
+                        RepairOrderVerificationRequest request,
+                        long userId, MultipartFile[] attachments) throws IOException {
+
+                RepairOrder ro = repairOrderRepository.findById(repairOrderId)
+                                .orElseThrow(() -> new NoSuchElementException("Repair order not found"));
+
+                WarrantyClaim wc = warrantyClaimRepository.findById(ro.getWarrantyClaim().getId())
+                                .orElseThrow(() -> new NoSuchElementException("Claim not found"));
+
+                if (!request.isAcceptedResponsibility()) {
+                        throw new RuntimeException("You must accept responsibility to complete verification.");
+                }
+
+                RepairOrderVerification verification = new RepairOrderVerification();
+                verification.setRepairOrder(ro);
+                verification.setSignature(request.getSignature());
+                verification.setNotes(request.getNotes());
+                verification.setAcceptedResponsibility(request.isAcceptedResponsibility());
+                verification.setCreatedAt(LocalDateTime.now());
+                verification.setCreatedBy(userId);
+
+                List<String> attachmentPaths = saveVerificationAttachmentsToDocker(ro.getId(), attachments);
+
+                repairOrderVerificationRepository.save(verification);
+
+                // Cập nhật repair order completed
+                ro.setStatus(RepairOrder.OrderStatus.COMPLETED);
+                repairOrderRepository.save(ro);
+
+                wc.setStatus(WarrantyClaim.ClaimStatus.COMPLETED);
+                warrantyClaimRepository.save(wc);
+
+                sendRepairOrderCompletedEmail(wc.getVehicle().getCustomer().getName(),
+                                wc.getVehicle().getCustomer().getEmail(), ro);
+
+                // Response
+                User tech = userRepository.findById(userId).orElseThrow();
+                RepairOrderVerificationResponse response = new RepairOrderVerificationResponse();
+                response.setRepairOrderId(ro.getId());
+                response.setSignature(verification.getSignature());
+                response.setNotes(verification.getNotes());
+                response.setAttachmentPaths(attachmentPaths);
+                response.setAcceptedResponsibility(verification.isAcceptedResponsibility());
+                response.setVerifiedAt(verification.getCreatedAt());
+                response.setVerifiedBy(tech.getName());
+
+                return response;
+        }
+
+        List<String> saveVerificationAttachmentsToDocker(Long repairOrderId, MultipartFile[] files)
+                        throws IOException {
+                List<String> attachmentBase64 = new ArrayList<>();
+                if (files == null || files.length == 0)
+                        return attachmentBase64;
+
+                Path uploadDir = Paths.get(attachmentBasePath, "repair_orders",
+                                String.valueOf(repairOrderId));
+                Files.createDirectories(uploadDir);
+
+                for (MultipartFile file : files) {
+                        if (file == null || file.isEmpty())
+                                continue;
+
+                        byte[] bytes = file.getBytes(); // đọc 1 lần
+                        // sanitize filename
+                        String original = file.getOriginalFilename() == null ? "file"
+                                        : Paths.get(file.getOriginalFilename()).getFileName().toString();
+                        String filename = System.currentTimeMillis() + "_" + UUID.randomUUID() + "_" + original;
+                        Path filePath = uploadDir.resolve(filename);
+                        Files.write(filePath, bytes);
+
+                        // chuyển sang base64 (dùng bytes đã đọc)
+                        String base64 = Base64.getEncoder().encodeToString(bytes);
+                        String base64WithPrefix = "data:"
+                                        + Optional.ofNullable(file.getContentType()).orElse("application/octet-stream")
+                                        + ";base64," + base64;
+                        attachmentBase64.add(base64WithPrefix);
+                }
+
+                return attachmentBase64;
+        }
+
+        void sendRepairOrderCompletedEmail(String ownerName, String ownerEmail, RepairOrder repairOrder) {
+
+                String subject = "Your Repair Order Has Been Completed";
+
+                String htmlBody = String.format(
+                                "<html>" +
+                                                "<body style='font-family: Arial, sans-serif; line-height: 1.6;'>" +
+                                                "<p>Dear %s,</p>" +
+                                                "<p>We are pleased to inform you that your repair order with ID <strong>%s</strong> has been completed successfully.</p>"
+                                                +
+                                                "<p>You can find the details below:</p>" +
+                                                "<hr/>" +
+                                                "<p><strong>Repair Order ID:</strong> %s</p>" +
+                                                "<p><strong>Vehicle VIN:</strong> %s</p>" +
+                                                "<p><strong>Status:</strong> %s</p>" +
+                                                "<hr/>" +
+                                                "<p>Thank you for trusting our service center. If you have any questions, please contact us.</p>"
+                                                +
+                                                "<p>Best regards,<br/>OEM EV Warranty Service Team</p>" +
+                                                "</body>" +
+                                                "</html>",
+                                ownerName,
+                                repairOrder.getId(),
+                                repairOrder.getId(),
+                                repairOrder.getWarrantyClaim().getVehicle().getVin(),
+                                repairOrder.getStatus().toString());
+
+                EmailDetailsRequest details = new EmailDetailsRequest();
+                details.setRecipient(ownerEmail);
+                details.setSubject(subject);
+                details.setMessageBody(htmlBody);
+
+                emailService.sendHtmlMail(details);
+        }
+
 }

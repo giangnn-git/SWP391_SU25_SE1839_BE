@@ -47,7 +47,6 @@ public class PolicyServiceImpl implements PolicyService {
                                                 .mileageLimit(policy.getMileageLimit())
                                                 .code(policy.getCode())
                                                 .policyType(PolicyResponse.PolicyType.valueOf(policy.getType().name()))
-						.status(PolicyResponse.Status.valueOf(policy.getStatus().name()))
                                                 .build())
                                 .toList();
 
@@ -131,18 +130,27 @@ public class PolicyServiceImpl implements PolicyService {
 
         @Override
         public DeletePolicyResponse handleDeletePolicy(Long policyId) {
-                WarrantyPolicy policy = policyRepository.findById(policyId)
-                                .orElseThrow(() -> new NoSuchElementException("Policy not found with ID " + policyId));
+                policyRepository.findById(policyId)
+                                .orElseThrow(() -> new NoSuchElementException(
+                                                "Policy with ID " + policyId + " not found"));
+
+                boolean hasEverBeenUsed = partPolicyRepository.existsByWarrantyPolicyId(policyId);
+                if (hasEverBeenUsed) {
+                        throw new IllegalArgumentException(
+                                        "Cannot delete policy: it has been used in at least one PartPolicy record (even if expired).");
+                }
 
                 LocalDate today = LocalDate.now();
                 List<PartPolicy> unexpiredParts = partPolicyRepository.findUnexpiredPartPolicies(policyId, today);
+
                 if (!unexpiredParts.isEmpty()) {
                         throw new IllegalArgumentException(
-                                        "Cannot delete policy: there are still active part policies.");
+                                        "Cannot delete policy: there are still part policies that have not expired.");
                 }
 
-                policyRepository.delete(policy);
+                policyRepository.deleteById(policyId);
                 log.info("Deleted WarrantyPolicy with id: {}", policyId);
+
                 return DeletePolicyResponse.builder()
                                 .success(true)
                                 .message("Warranty policy deleted successfully.")
@@ -151,55 +159,45 @@ public class PolicyServiceImpl implements PolicyService {
 
         @Override
         @Transactional
-        public String updatePolicyStatus(Long policyId) {
-
-                // Lấy policy theo ID
+        public UpdatePolicyResponse handleInactivatePolicyWithReplacement(Long policyId,
+                        TogglePolicyStatusRequest request) {
                 WarrantyPolicy policy = policyRepository.findById(policyId)
-                                .orElseThrow(() -> new NoSuchElementException("Policy not found with id: " + policyId));
+                                .orElseThrow(() -> new NoSuchElementException("Policy not found with ID: " + policyId));
 
-                // Nếu policy đang ACTIVE → chuyển sang INACTIVE
-                if (policy.getStatus() == WarrantyPolicy.Status.ACTIVE) {
-                        LocalDate today = LocalDate.now();
+                if (policy.getStatus() == WarrantyPolicy.Status.INACTIVE) {
+                        throw new IllegalArgumentException("Policy is already INACTIVE");
+                }
 
-                        // Lấy tất cả PartPolicy còn hạn (tức là chưa hết hạn và đang ACTIVE)
-                        List<PartPolicy> validPartPolicies = partPolicyRepository
-                                        .findUnexpiredPartPolicies(policyId, today)
-                                        .stream()
-                                        .filter(p -> p.getStatus() == PartPolicy.Status.ACTIVE)
-                                        .toList();
+                // Lấy tất cả PartPolicy ACTIVE liên quan
+                List<PartPolicy> activePartPolicies = partPolicyRepository.findActivePartPoliciesByPolicyId(policyId);
 
-                        if (!validPartPolicies.isEmpty()) {
-                                // Cập nhật status và endDate cho từng partpolicy
-                                for (PartPolicy partPolicy : validPartPolicies) {
-                                        partPolicy.setStatus(PartPolicy.Status.INACTIVE);
-                                        partPolicy.setEndDate(today);
-                                }
+                if (!activePartPolicies.isEmpty() && request.getReplacementPolicyId() != null) {
+                        WarrantyPolicy replacement = policyRepository.findById(request.getReplacementPolicyId())
+                                        .orElseThrow(() -> new NoSuchElementException(
+                                                        "Replacement policy not found with ID: "
+                                                                        + request.getReplacementPolicyId()));
 
-                                partPolicyRepository.saveAll(validPartPolicies);
-                                log.info("Inactivated {} active PartPolicies for policy {}.", validPartPolicies.size(),
-                                                policy.getCode());
-                        } else {
-                                log.info("No active PartPolicies found for policy {} to deactivate.", policy.getCode());
+                        if (!replacement.getType().equals(policy.getType())) {
+                                throw new IllegalArgumentException(
+                                                "Replacement policy type must match the original policy type");
                         }
 
-                        // Cập nhật trạng thái policy
-                        policy.setStatus(WarrantyPolicy.Status.INACTIVE);
-                        policyRepository.save(policy);
+                        // Gán PartPolicy ACTIVE sang replacement
+                        activePartPolicies.forEach(pp -> pp.setWarrantyPolicy(replacement));
+                        partPolicyRepository.saveAll(activePartPolicies);
 
-                        return String.format(
-                                        "Policy %s set to INACTIVE. %d PartPolicies were deactivated.",
-                                        policy.getCode(), validPartPolicies.size());
+                } else if (!activePartPolicies.isEmpty()) {
+                        // Không có replacement, inactivate tất cả
+                        List<Long> ids = activePartPolicies.stream().map(PartPolicy::getId).toList();
+                        partPolicyRepository.updateStatusByIds(ids, PartPolicy.Status.INACTIVE);
                 }
 
-                // Nếu policy đang INACTIVE → chuyển sang ACTIVE
-                else if (policy.getStatus() == WarrantyPolicy.Status.INACTIVE) {
-                        policy.setStatus(WarrantyPolicy.Status.ACTIVE);
-                        policyRepository.save(policy);
-                        log.info("Activated WarrantyPolicy {}", policy.getCode());
-                        return String.format("Policy %s has been reactivated.", policy.getCode());
-                }
+                // Inactivate chính WarrantyPolicy
+                policy.setStatus(WarrantyPolicy.Status.INACTIVE);
+                WarrantyPolicy updated = policyRepository.save(policy);
 
-                // Trường hợp không hợp lệ (phòng ngừa enum sai)
-                throw new IllegalStateException("Unsupported policy status: " + policy.getStatus());
+                log.info("Inactivated WarrantyPolicy id {} and updated its PartPolicies", updated.getId());
+
+                return UpdatePolicyResponse.builder().policy(updated).build();
         }
 }

@@ -1,6 +1,9 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
+import java.time.LocalDateTime;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -14,6 +17,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class GetAllRepairDetailResponse {
     List<RepairDetailResponse> repairDetails;
 }

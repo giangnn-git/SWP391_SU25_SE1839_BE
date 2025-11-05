@@ -5,7 +5,6 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartPol
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyCodeResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartWarrantyInfoResponse;
 
 public interface PartPolicyService {
     GetAllPartPolicyResponse handleGetAllPartPolicies();
@@ -17,7 +16,5 @@ public interface PartPolicyService {
     PartPolicyCodeResponse handleGetPartPolicyCode();
 
     PartPolicyResponse handleUpdateStatusPartPolicy(Long partPolicyId);
-
-    PartWarrantyInfoResponse getWarrantyInfoBySerial(String serialNumber);
 
 }

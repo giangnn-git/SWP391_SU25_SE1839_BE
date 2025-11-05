@@ -41,7 +41,4 @@ public interface WarrantyClaimService {
     List<ClaimsByPriorityResponse> calculateClaimsByPriority(Long serviceCenterId);
 
     CostAnalysisResponse handleCalculateClaimCostByMonth(long serviceCenterId);
-
-    String handleUpdateClaim(long claimId, CreateClaimRequest request);
-
 }

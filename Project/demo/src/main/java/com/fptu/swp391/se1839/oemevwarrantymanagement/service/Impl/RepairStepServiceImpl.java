@@ -184,11 +184,12 @@ public class RepairStepServiceImpl implements RepairStepService {
                                 .findByPartIdAndServiceCenterId(oldVP.getPart().getId(),
                                         order.getWarrantyClaim().getServiceCenter().getId())
                                 .orElseThrow(() -> new RuntimeException("Inventory not found"));
-                        inventory
-                                .setQuantity(inventory.getQuantity() - order.getWarrantyClaim().getPartClaims().stream()
-                                        .filter(pc -> pc.getPart().getId().equals(oldVP.getPart().getId()))
-                                        .mapToLong(pc -> pc.getQuantity())
-                                        .sum());
+                        long totalQty = order.getWarrantyClaim().getPartClaims().stream()
+                                .filter(pc -> pc.getPart().getId().equals(oldVP.getPart().getId()))
+                                .mapToLong(pc -> pc.getQuantity())
+                                .sum();
+                        System.out.println("Trừ số lượng: " + totalQty);
+
                         partInventoryRepository.save(inventory);
                     }
                 }

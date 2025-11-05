@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.PartListRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartCategoryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartListResponse;
@@ -52,14 +51,14 @@ public class PartServiceImpl implements PartService {
                 .build();
     }
 
-    public PartListResponse handlePartList(PartListRequest request) {
+    public PartListResponse handlePartList(String category, String vin) {
         // 1. Lấy xe theo VIN
-        Vehicle vehicle = vehicleRepository.findByVin(request.getVin())
-                .orElseThrow(() -> new NoSuchElementException("Vehicle not found with VIN: " + request.getVin()));
+        Vehicle vehicle = vehicleRepository.findByVin(vin)
+                .orElseThrow(() -> new NoSuchElementException("Vehicle not found with VIN: " + vin));
 
         // 2. Lấy danh sách Part liên quan đến model và category từ ModelPart
         List<ModelPart> modelParts = modelPartRepository
-                .findByModelIdAndPartPartCategoryIgnoreCase(vehicle.getModel().getId(), request.getName());
+                .findByModelIdAndPartPartCategoryIgnoreCase(vehicle.getModel().getId(), category);
 
         // 3. Chuyển sang response
         Set<PartResponse> responseList = modelParts.stream()

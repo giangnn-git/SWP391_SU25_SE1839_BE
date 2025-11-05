@@ -42,10 +42,6 @@ public class VehicleServiceImpl implements VehicleService {
                                 .map(v -> GetVehicleResponse.builder()
                                                 .vin(v.getVin())
                                                 .licensePlate(v.getLicensePlate())
-						.modelName(v.getModel().getName())
-                                                .productYear(v.getProductYear())
-                                                .customerName(v.getCustomer() != null ? v.getCustomer().getName()
-                                                                : "N/A")
                                                 .build())
                                 .collect(Collectors.toList());
 

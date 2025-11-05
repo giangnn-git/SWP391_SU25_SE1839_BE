@@ -1,5 +1,9 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
 
+import java.util.List;
+
+import org.springframework.web.multipart.MultipartFile;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +16,8 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class PartListRequest {
-    String vin;
-    String name;
+public class RepairOrderVerificationRequest {
+    String signature;
+    String notes;
+    boolean acceptedResponsibility;
 }

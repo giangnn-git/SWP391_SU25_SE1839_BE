@@ -1,6 +1,5 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.PartListRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartCategoryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartListResponse;
@@ -8,7 +7,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartListRespo
 public interface PartService {
     PartCategoryResponse handleListCategory();
 
-    PartListResponse handlePartList(PartListRequest request);
+    PartListResponse handlePartList(String category, String vin);
 
     public GetAllPartResponse handleGetPartList();
 }

@@ -15,6 +15,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -133,13 +134,13 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 if (serviceCenterId == null) {
                         // Lấy tất cả service center
                         count = warrantyClaimRepository.count();
-                        emergencyCount = warrantyClaimRepository.countByPriority(WarrantyClaim.ClaimPriority.URGENT);
+                        emergencyCount = warrantyClaimRepository.countByPriority(WarrantyClaim.ClaimPriority.HIGH);
                 } else {
                         // Lấy theo service center cụ thể
                         count = warrantyClaimRepository.countByServiceCenterId(serviceCenterId);
                         emergencyCount = warrantyClaimRepository
                                         .countByServiceCenterIdAndPriority(serviceCenterId,
-                                                        WarrantyClaim.ClaimPriority.URGENT);
+                                                        WarrantyClaim.ClaimPriority.HIGH);
                 }
 
                 return DashboardClaimSummaryResponse.builder()
@@ -457,54 +458,87 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         public CreateClaimResponse handleCreateClaim(CreateClaimRequest request, long serviceCenterId,
                         MultipartFile[] attachments, long userId) throws IOException {
 
+                // Determine claim priority
                 WarrantyClaim.ClaimPriority priorityEnum = resolvePriority(request.getPriority());
                 WarrantyClaim warrantyClaim = buildWarrantyClaim(request, serviceCenterId, userId, priorityEnum);
 
+                // Assign campaign if recall is agreed
                 if (request.isAgreeRecall()) {
                         assignCampaign(warrantyClaim, request.getVin());
                 }
 
-                // Lưu claim trước để có ID
+                // Save claim first to get ID
                 warrantyClaimRepository.saveAndFlush(warrantyClaim);
 
-                // Nếu có danh sách part bị lỗi
-                if (request.getDefectivePartIds() != null && !request.getDefectivePartIds().isEmpty()) {
-                        // Lấy các VehiclePart còn đang gắn trên xe
-                        List<VehiclePart> vehicleParts = vehiclePartRepository.findActiveByVehicleVinAndPartIdIn(
-                                        request.getVin(),
-                                        request.getDefectivePartIds());
+                Map<Long, String> partErrors = new HashMap<>();
+                List<VehiclePart> validVehicleParts = new ArrayList<>();
 
-                        // Gán claim_id cho các part bị lỗi
+                // Check defective parts
+                if (request.getDefectivePartIds() != null && !request.getDefectivePartIds().isEmpty()) {
+                        List<VehiclePart> vehicleParts = vehiclePartRepository.findActiveByVehicleVinAndPartIdIn(
+                                        request.getVin(), request.getDefectivePartIds());
+
                         for (VehiclePart vp : vehicleParts) {
+                                WarrantyClaim existingClaim = vp.getWarrantyClaim();
+
+                                if (existingClaim != null
+                                                && existingClaim.getStatus() != WarrantyClaim.ClaimStatus.COMPLETED) {
+                                        // Part already has an active claim → add detailed message and skip
+                                        partErrors.put(vp.getPart().getId(),
+                                                        "Part " + vp.getPart().getId() + " on vehicle "
+                                                                        + vp.getVehicle().getVin() +
+                                                                        " already has claim #" + existingClaim.getId() +
+                                                                        " at service center "
+                                                                        + existingClaim.getServiceCenter().getName() +
+                                                                        " with status " + existingClaim.getStatus());
+                                        continue;
+                                }
+
+                                if (existingClaim != null
+                                                && existingClaim.getStatus() == WarrantyClaim.ClaimStatus.COMPLETED) {
+                                        // Previous claim completed → allow new claim
+                                        vp.setWarrantyClaim(null);
+                                }
+
+                                // Assign new claim to the part
                                 vp.setWarrantyClaim(warrantyClaim);
+                                validVehicleParts.add(vp);
                         }
 
-                        vehiclePartRepository.saveAll(vehicleParts);
+                        // If any part has errors → throw a combined exception
+                        if (!partErrors.isEmpty()) {
+                                throw new RuntimeException(String.join("; ", partErrors.values()));
+                        }
+
+                        // Save valid parts
+                        vehiclePartRepository.saveAll(validVehicleParts);
                 }
 
-                // Giả sử bạn có request.getDefectivePartIds() là List<Long>
+                // Create PartClaim only for valid parts
                 if (request.getDefectivePartIds() != null && !request.getDefectivePartIds().isEmpty()) {
                         Set<PartClaimRequest> partRequests = request.getDefectivePartIds().stream()
-                                        .map(id -> PartClaimRequest.builder()
-                                                        .id(id)
-                                                        .build())
+                                        .filter(id -> !partErrors.containsKey(id)) // exclude blocked parts
+                                        .map(id -> PartClaimRequest.builder().id(id).build())
                                         .collect(Collectors.toSet());
 
                         Set<PartClaim> partClaims = buildPartClaims(partRequests, warrantyClaim);
-                        partClaimRepository.saveAll(partClaims); // lưu vào DB
+                        partClaimRepository.saveAll(partClaims);
                 }
 
-                // Gửi sự kiện và lưu file đính kèm
+                // Publish event
                 applicationEventPublisher.publishEvent(new EntityCreatedEvent<>(this, warrantyClaim));
 
+                // Save attachments
                 List<String> attachmentPaths = saveAttachmentsToDocker(warrantyClaim, attachments);
 
+                // Send info via WebSocket
                 FilterClaimResponse dto = mapToFilterClaimResponse(warrantyClaim, userId);
                 messagingTemplate.convertAndSend("/topic/claims", dto);
 
                 return CreateClaimResponse.builder()
-                                .sccuess("success")
+                                .success("success")
                                 .attachmentBase64(attachmentPaths)
+                                .claim(dto)
                                 .message("Registered claim successfully")
                                 .build();
         }
@@ -1310,17 +1344,6 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                 .costOfSalesRatio(costOfSalesRatio)
                                 .targetRatio(targetRatio)
                                 .build();
-        }
-
-        public String handleUpdateClaim(long claimId, CreateClaimRequest request) {
-                WarrantyClaim wc = warrantyClaimRepository.findById(claimId)
-                                .orElseThrow(() -> new NoSuchElementException("Warranty claim doesn't exist"));
-                wc.setDescription(request.getDescription());
-                wc.setMileage(request.getMileage());
-                wc.setStatus(WarrantyClaim.ClaimStatus.valueOf(request.getStatus()));
-                wc.setPriority(WarrantyClaim.ClaimPriority.valueOf(request.getPriority()));
-                warrantyClaimRepository.save(wc);
-                return "Update Claim succesfully";
         }
 
         @Override

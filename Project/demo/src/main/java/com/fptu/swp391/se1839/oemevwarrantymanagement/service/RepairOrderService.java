@@ -1,12 +1,18 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service;
 
+import java.io.IOException;
+
+import org.springframework.web.multipart.MultipartFile;
+
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChooseTechnicalRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.FilterRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.RepairOrderVerificationRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChooseTechnicalResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardOrderSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDashboardResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderSummaryResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairOrderVerificationResponse;
 
 public interface RepairOrderService {
     DashboardOrderSummaryResponse findSunSummaryOrder(Long serviceCenterId);
@@ -16,7 +22,7 @@ public interface RepairOrderService {
 
     ChooseTechnicalResponse handleChooseTechnical(long repairOrderId, ChooseTechnicalRequest request);
 
-    OrderDetailResponse handleGetDetailOrder(long serviceCenterId, long orderId);
+    OrderDetailResponse handleGetDetailOrder(long serviceCenterId, long orderId) throws IOException;
 
     int handleCalculateResponseScore(Long serviceCenterId);
 
@@ -33,4 +39,7 @@ public interface RepairOrderService {
     OrderSummaryResponse handleCalculateResolutionRateDifferent(Long serviceCenterId);
 
     String sendRepairCompletedEmail(Long repairOrderId);
+
+    RepairOrderVerificationResponse verifyRepairOrder(long repairOrderId, RepairOrderVerificationRequest request,
+            long userId, MultipartFile[] attachments) throws IOException;
 }

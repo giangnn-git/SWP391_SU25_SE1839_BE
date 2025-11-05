@@ -15,11 +15,13 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartClaim;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartInventory;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairDetail;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrderVerification;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairStep;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.VehiclePart;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartInventoryRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairDetailRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderVerificationRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairStepRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehiclePartRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairDetailService;
@@ -37,6 +39,7 @@ public class RepairDetailServiceImpl implements RepairDetailService {
         final VehiclePartRepository vehiclePartRepository;
         final RepairStepRepository repairStepRepository;
         final RepairOrderRepository repairOrderRepository;
+        final RepairOrderVerificationRepository repairOrderVerificationRepository;
 
         RepairDetailResponse buildRepairDetailResponse(RepairDetail rd) {
                 long quantity = rd.getRepairOrder().getWarrantyClaim().getPartClaims().stream()

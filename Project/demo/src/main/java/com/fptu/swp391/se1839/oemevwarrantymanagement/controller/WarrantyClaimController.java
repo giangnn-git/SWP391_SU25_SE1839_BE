@@ -30,7 +30,6 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ClaimDetailRe
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CreateClaimResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.WarrantyClaimStatusResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.WarrantyClaimService;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
@@ -116,19 +115,6 @@ public class WarrantyClaimController {
                                 .status(HttpStatus.OK.toString())
                                 .message("Get claim detail successfully")
                                 .data(detail)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
-
-        @PutMapping("/claims/{id}")
-        public ResponseEntity<ApiResponse<String>> changeStatus(
-                        @PathVariable("id") long claimId,
-                        @RequestBody CreateClaimRequest request) {
-                String updateClaim = this.warrantyClaimService.handleUpdateClaim(claimId, request);
-                var result = ApiResponse.<String>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("Update claim successfully")
-                                .data(updateClaim)
                                 .build();
                 return ResponseEntity.ok(result);
         }

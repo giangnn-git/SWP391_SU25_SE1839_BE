@@ -5,9 +5,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.PartListRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartCategoryResponse;
@@ -38,8 +38,9 @@ public class PartController {
 
     @GetMapping("/parts/{category}")
     public ResponseEntity<ApiResponse<PartListResponse>> partFlCategory(
-            @PathVariable("category") PartListRequest request) {
-        PartListResponse partListResponse = this.partService.handlePartList(request);
+            @PathVariable("category") String category,
+            @RequestParam("vin") String vin) {
+        PartListResponse partListResponse = this.partService.handlePartList(category, vin);
         var result = ApiResponse.<PartListResponse>builder()
                 .status(HttpStatus.OK.toString())
                 .message("Get part list successfully")

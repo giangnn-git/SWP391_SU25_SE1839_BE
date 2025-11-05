@@ -15,7 +15,8 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreateClaimResponse {
-    String sccuess;
+    String success;
     List<String> attachmentBase64;
     String message;
+    FilterClaimResponse claim;
 }
