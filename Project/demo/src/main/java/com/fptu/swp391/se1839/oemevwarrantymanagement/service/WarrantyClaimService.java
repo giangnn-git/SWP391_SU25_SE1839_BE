@@ -40,5 +40,5 @@ public interface WarrantyClaimService {
 
     List<ClaimsByPriorityResponse> calculateClaimsByPriority(Long serviceCenterId);
 
-    CostAnalysisResponse handleCalculateClaimCostByMonth(long serviceCenterId);
+    CostAnalysisResponse handleCalculateClaimCostByMonth(Long serviceCenterId);
 }

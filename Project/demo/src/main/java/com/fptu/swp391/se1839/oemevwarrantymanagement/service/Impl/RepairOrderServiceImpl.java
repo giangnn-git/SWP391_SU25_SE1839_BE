@@ -11,6 +11,8 @@ import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -21,10 +23,12 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,6 +44,8 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetTechnicals
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDashboardResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderSummaryResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairDetailHistoryResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairHistoryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairOrderVerificationResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryItemResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryOrderResponse;
@@ -136,59 +142,85 @@ public class RepairOrderServiceImpl implements RepairOrderService {
         }
 
         SummaryItemResponse calculateWeekSummary(Long serviceCenterId) {
-                LocalDate currentStart = LocalDate.now().with(DayOfWeek.MONDAY);
-                LocalDate currentEnd = LocalDate.now().with(DayOfWeek.SUNDAY);
+                LocalDateTime currentStart = LocalDate.now().with(DayOfWeek.MONDAY).atStartOfDay();
+                LocalDateTime currentEnd = LocalDate.now().with(DayOfWeek.SUNDAY).atTime(LocalTime.MAX);
 
                 long currentWeek;
                 long previousWeek;
 
                 if (serviceCenterId != null && serviceCenterId > 0) {
-                        currentWeek = repairOrderRepository.countRepairFlWeek(serviceCenterId, currentStart,
+                        currentWeek = repairOrderRepository.countRepairFlWeek(serviceCenterId,
+                                        RepairOrder.OrderStatus.COMPLETED, currentStart,
                                         currentEnd);
                         previousWeek = repairOrderRepository.countRepairFlWeek(serviceCenterId,
+                                        RepairOrder.OrderStatus.COMPLETED,
                                         currentStart.minusWeeks(1), currentEnd.minusWeeks(1));
                 } else {
-                        currentWeek = repairOrderRepository.countRepairFlWeekAll(currentStart, currentEnd);
+                        currentWeek = repairOrderRepository.countRepairFlWeekAll(RepairOrder.OrderStatus.COMPLETED,
+                                        currentStart, currentEnd);
                         previousWeek = repairOrderRepository.countRepairFlWeekAll(
-                                        currentStart.minusWeeks(1), currentEnd.minusWeeks(1));
+                                        RepairOrder.OrderStatus.COMPLETED, currentStart.minusWeeks(1),
+                                        currentEnd.minusWeeks(1));
                 }
 
                 return calculateSummary(currentWeek, previousWeek);
         }
 
         SummaryItemResponse calculateMonthSummary(Long serviceCenterId) {
-                LocalDate startMonth = LocalDate.now().withDayOfMonth(1);
-                LocalDate endMonth = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+                LocalDate today = LocalDate.now();
+
+                LocalDateTime startMonth = today.withDayOfMonth(1).atStartOfDay();
+                LocalDateTime endMonth = today.withDayOfMonth(today.lengthOfMonth()).atTime(LocalTime.MAX);
+
+                YearMonth prev = YearMonth.from(today).minusMonths(1);
+                LocalDateTime prevStart = prev.atDay(1).atStartOfDay();
+                LocalDateTime prevEnd = prev.atEndOfMonth().atTime(LocalTime.MAX);
 
                 long currentMonth;
                 long previousMonth;
 
                 if (serviceCenterId != null && serviceCenterId > 0) {
-                        // Tính cho trung tâm cụ thể
                         currentMonth = repairOrderRepository.countRepairFlStatusAndMonth(
-                                        serviceCenterId, RepairOrder.OrderStatus.COMPLETED, startMonth, endMonth);
-
-                        LocalDate prevStart = LocalDate.now().minusMonths(1).withDayOfMonth(1);
-                        LocalDate prevEnd = LocalDate.now().minusMonths(1)
-                                        .withDayOfMonth(LocalDate.now().minusMonths(1).lengthOfMonth());
+                                        serviceCenterId,
+                                        RepairOrder.OrderStatus.COMPLETED,
+                                        startMonth, endMonth);
 
                         previousMonth = repairOrderRepository.countRepairFlStatusAndMonth(
-                                        serviceCenterId, RepairOrder.OrderStatus.COMPLETED, prevStart, prevEnd);
-
+                                        serviceCenterId,
+                                        RepairOrder.OrderStatus.COMPLETED,
+                                        prevStart, prevEnd);
                 } else {
-                        // Tính cho tất cả trung tâm
                         currentMonth = repairOrderRepository.countRepairFlStatusAndMonthAll(
-                                        RepairOrder.OrderStatus.COMPLETED, startMonth, endMonth);
-
-                        LocalDate prevStart = LocalDate.now().minusMonths(1).withDayOfMonth(1);
-                        LocalDate prevEnd = LocalDate.now().minusMonths(1)
-                                        .withDayOfMonth(LocalDate.now().minusMonths(1).lengthOfMonth());
+                                        RepairOrder.OrderStatus.COMPLETED,
+                                        startMonth, endMonth);
 
                         previousMonth = repairOrderRepository.countRepairFlStatusAndMonthAll(
-                                        RepairOrder.OrderStatus.COMPLETED, prevStart, prevEnd);
+                                        RepairOrder.OrderStatus.COMPLETED,
+                                        prevStart, prevEnd);
                 }
 
                 return calculateSummary(currentMonth, previousMonth);
+        }
+
+        public long calculateCompleteOneMonth(Long serviceCenterId) {
+                LocalDate today = LocalDate.now();
+                LocalDateTime startMonth = today.withDayOfMonth(1).atStartOfDay();
+                LocalDateTime endMonth = today.withDayOfMonth(today.lengthOfMonth()).atTime(LocalTime.MAX);
+
+                long currentMonth;
+
+                if (serviceCenterId != null && serviceCenterId > 0) {
+                        currentMonth = repairOrderRepository.countRepairFlStatusAndMonth(
+                                        serviceCenterId,
+                                        RepairOrder.OrderStatus.COMPLETED,
+                                        startMonth, endMonth);
+                } else {
+                        currentMonth = repairOrderRepository.countRepairFlStatusAndMonthAll(
+                                        RepairOrder.OrderStatus.COMPLETED,
+                                        startMonth, endMonth);
+                }
+
+                return currentMonth;
         }
 
         @Override
@@ -197,19 +229,18 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 long countOrderOneWeek = 0;
                 SummaryItemResponse weekResult = new SummaryItemResponse(0, "No Data");
                 SummaryItemResponse monthResult = new SummaryItemResponse(0, "No Data");
-
+                long monthComplete = 0;
                 try {
                         // Nếu serviceCenterId null hoặc <= 0 → tính tất cả trung tâm
                         if (serviceCenterId != null && serviceCenterId > 0) {
-                                countOrderOneWeek = repairOrderRepository.countRepairFlStatus(
-                                                serviceCenterId, RepairOrder.OrderStatus.IN_PROGRESS);
+                                countOrderOneWeek = repairOrderRepository.countRepairFlAllStatus(serviceCenterId);
                         } else {
-                                countOrderOneWeek = repairOrderRepository.countRepairFlStatusAll(
-                                                RepairOrder.OrderStatus.IN_PROGRESS);
+                                countOrderOneWeek = repairOrderRepository.countRepairFlAllStatusAllCenters();
                         }
 
                         weekResult = calculateWeekSummary(serviceCenterId);
                         monthResult = calculateMonthSummary(serviceCenterId);
+                        monthComplete = calculateCompleteOneMonth(serviceCenterId);
 
                 } catch (DataAccessException | PersistenceException e) {
                         log.error("Error while calculating dashboard summary", e);
@@ -219,7 +250,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 return DashboardOrderSummaryResponse.builder()
                                 .countOrderInOneWeek(countOrderOneWeek)
                                 .differenceOneWeek(weekResult.getPercentage())
-                                .completeOneMonth(monthResult.getPercentage())
+                                .completeOneMonth(monthComplete)
                                 .differenceOneMonth(monthResult.getPercentage())
                                 .status(status)
                                 .build();
@@ -534,57 +565,29 @@ public class RepairOrderServiceImpl implements RepairOrderService {
         }
 
         GetTechnicalsResponse handleTechnicalStatus(Long serviceCenterId, long orderId) {
+                // Lấy RepairOrder (nếu cần, hiện tại chưa dùng order)
                 RepairOrder order = repairOrderRepository.findById(orderId)
                                 .orElseThrow(() -> new IllegalArgumentException("Order không tồn tại"));
 
-                // Nếu order đã có kỹ thuật viên
-                if (order.getTechnical() != null) {
-                        long countJobs = repairOrderRepository.countByTechnicalIdAndStatusIn(
-                                        order.getTechnical().getId(),
-                                        Arrays.asList(
-                                                        RepairOrder.OrderStatus.WAITING,
-                                                        RepairOrder.OrderStatus.PENDING,
-                                                        RepairOrder.OrderStatus.IN_PROGRESS));
-
-                        String message = countJobs > 0
-                                        ? "Busy, hiện có " + countJobs + " công việc đang xử lý"
-                                        : "Available";
-
-                        TechnicalsResponse technicians = TechnicalsResponse.builder()
-                                        .id(order.getTechnical().getId())
-                                        .name(order.getTechnical().getName())
-                                        .countJob(countJobs)
-                                        .message(message)
-                                        .build();
-
-                        return GetTechnicalsResponse.builder()
-                                        .technicians(Collections.singletonList(technicians))
-                                        .build();
-                }
-
-                // Lấy danh sách kỹ thuật viên
+                // Lấy danh sách kỹ thuật viên có trạng thái AVAILABLE
                 List<User> technicians;
                 if (serviceCenterId != null && serviceCenterId > 0) {
                         // Lấy theo trung tâm cụ thể
-                        technicians = userRepository.findByWorkStatusInAndServiceCenterIdAndRole(
-                                        Arrays.asList(User.WorkStatus.AVAILABLE, User.WorkStatus.BUSY),
+                        technicians = userRepository.findByWorkStatusAndServiceCenterIdAndRole(
+                                        User.WorkStatus.AVAILABLE,
                                         serviceCenterId,
                                         User.Role.TECHNICIAN);
                 } else {
                         // Lấy tất cả trung tâm
-                        technicians = userRepository.findByWorkStatusInAndRole(
-                                        Arrays.asList(User.WorkStatus.AVAILABLE, User.WorkStatus.BUSY),
+                        technicians = userRepository.findByWorkStatusAndRole(
+                                        User.WorkStatus.AVAILABLE,
                                         User.Role.TECHNICIAN);
                 }
 
                 List<TechnicalsResponse> result = new ArrayList<>();
 
                 for (User tech : technicians) {
-                        // Bỏ qua nếu kỹ thuật viên nghỉ hôm nay
-                        boolean hasLeave = userRepository.existsByTechnicianIdAndDate(tech.getId(), LocalDate.now());
-                        if (hasLeave)
-                                continue;
-
+                        // Lấy số lượng công việc đang xử lý của từng kỹ thuật viên
                         long countJobs = repairOrderRepository.countByTechnicalIdAndStatusIn(
                                         tech.getId(),
                                         Arrays.asList(
@@ -607,7 +610,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
 
         public OrderDetailResponse handleGetDetailOrder(long serviceCenterId, long orderId) throws IOException {
                 List<DecodeImageReponse> attachments = new ArrayList<>();
-                String uploadDir = attachmentBasePath + "/claims/" + orderId;
+                String uploadDir = attachmentBasePath + "/repair_orders/" + orderId;
                 File dir = new File(uploadDir);
                 if (dir.exists() && dir.isDirectory()) {
                         for (File file : Objects.requireNonNull(dir.listFiles())) {
@@ -622,20 +625,25 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                         }
                 }
 
-                RepairOrderVerification verify = repairOrderVerificationRepository.findByRepairOrderId(orderId)
-                                .orElseThrow(() -> new NoSuchElementException("Repair order not found"));
+                Optional<RepairOrderVerification> verifyOpt = repairOrderVerificationRepository
+                                .findByRepairOrderId(orderId);
+
+                RepairOrderVerification verify = verifyOpt.orElse(null);
+
                 return OrderDetailResponse.builder()
                                 .filterOrderResponse(handleFilterOrder(orderId))
                                 .getTechnicalsResponse(handleTechnicalStatus(serviceCenterId, orderId))
-                                .repairOrderId(verify.getRepairOrder().getId())
-                                .signature(verify.getSignature())
-                                .notes(verify.getNotes())
+                                .repairOrderId(orderId)
+                                .signature(verify != null ? verify.getSignature() : null)
+                                .notes(verify != null ? verify.getNotes() : null)
                                 .attachmentPaths(attachments)
-                                .acceptedResponsibility(verify.isAcceptedResponsibility())
-                                .verifiedAt(verify.getCreatedAt())
-                                .verifiedBy(userRepository.findById(verify.getCreatedBy())
-                                                .orElseThrow(() -> new NoSuchElementException("user not found"))
-                                                .getName())
+                                .acceptedResponsibility(verify != null && verify.isAcceptedResponsibility())
+                                .verifiedAt(verify != null ? verify.getCreatedAt() : null)
+                                .verifiedBy(verify != null
+                                                ? userRepository.findById(verify.getCreatedBy())
+                                                                .map(u -> u.getName())
+                                                                .orElse(null)
+                                                : null)
                                 .build();
         }
 
@@ -792,7 +800,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
 
                 double avgDays = completedOrders.stream()
                                 .filter(o -> o.getStartDate() != null && o.getEndDate() != null)
-                                .mapToDouble(o -> Duration.between(o.getStartDate(), o.getEndDate()).toHours() / 24.0)
+                                .mapToDouble(o -> Duration.between(o.getStartDate(), o.getEndDate()).toHours())
                                 .average()
                                 .orElse(0);
 
@@ -968,17 +976,16 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 return response;
         }
 
-        List<String> saveVerificationAttachmentsToDocker(Long repairOrderId, MultipartFile[] files)
+        private List<String> saveVerificationAttachmentsToDocker(Long repairOrderId, MultipartFile[] attachments)
                         throws IOException {
                 List<String> attachmentBase64 = new ArrayList<>();
-                if (files == null || files.length == 0)
+                if (attachments == null || attachments.length == 0)
                         return attachmentBase64;
 
-                Path uploadDir = Paths.get(attachmentBasePath, "repair_orders",
-                                String.valueOf(repairOrderId));
+                Path uploadDir = Paths.get(attachmentBasePath, "repair_orders", String.valueOf(repairOrderId));
                 Files.createDirectories(uploadDir);
 
-                for (MultipartFile file : files) {
+                for (MultipartFile file : attachments) {
                         if (file == null || file.isEmpty())
                                 continue;
 
@@ -1036,4 +1043,39 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 emailService.sendHtmlMail(details);
         }
 
+        @Override
+        public List<RepairHistoryResponse> getRecentRepairHistoryByVin(String vin) {
+                List<RepairOrder> orders = repairOrderRepository
+                                .findRecentRepairOrdersByVin(vin, PageRequest.of(0, 4));
+
+                return orders.stream()
+                                .map(order -> {
+                                        WarrantyClaim claim = order.getWarrantyClaim();
+
+                                        // Map RepairDetail → RepairDetailHistoryResponse
+                                        List<RepairDetailHistoryResponse> detailResponses = order.getRepairDetails()
+                                                        .stream()
+                                                        .map(detail -> RepairDetailHistoryResponse.builder()
+                                                                        .partName(detail.getPart() != null
+                                                                                        ? detail.getPart().getName()
+                                                                                        : "Unknown part")
+                                                                        .status(detail.getStatus().name())
+                                                                        .description(detail.getDescription())
+                                                                        .build())
+                                                        .collect(Collectors.toList());
+
+                                        return RepairHistoryResponse.builder()
+                                                        .orderId(order.getId())
+                                                        .status(order.getStatus().toString())
+                                                        .startDate(order.getStartDate())
+                                                        .endDate(order.getEndDate())
+                                                        .supervisorApproved(Boolean.TRUE
+                                                                        .equals(order.getSupervisorApproved()))
+                                                        .claimDescription(claim != null ? claim.getDescription() : null)
+                                                        .claimMileage(claim != null ? claim.getMileage() : 0)
+                                                        .details(detailResponses)
+                                                        .build();
+                                })
+                                .collect(Collectors.toList());
+        }
 }

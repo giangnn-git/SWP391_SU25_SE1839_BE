@@ -11,4 +11,6 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ModelPart;
 public interface ModelPartRepository extends JpaRepository<ModelPart, Long> {
 
     List<ModelPart> findByModelIdAndPartPartCategoryIgnoreCase(long modelId, String partCategory);
+
+    List<ModelPart> findByModelId(long modelId);
 }

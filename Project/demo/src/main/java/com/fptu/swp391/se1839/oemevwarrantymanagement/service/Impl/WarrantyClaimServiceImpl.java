@@ -13,6 +13,7 @@ import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -94,6 +96,8 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehicleReposito
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.WarrantyClaimRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.WarrantyClaimService;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -125,23 +129,26 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         final RepairManualRepository repairManualRepository;
         final SimpMessagingTemplate messagingTemplate;
 
+        @PersistenceContext
+        private EntityManager entityManager;
         // ================= Dashboard & Summary =================
 
         public DashboardClaimSummaryResponse handleSummaryClaims(Long serviceCenterId) {
                 long count;
                 long emergencyCount;
 
-                if (serviceCenterId == null) {
-                        // Lấy tất cả service center
-                        count = warrantyClaimRepository.count();
-                        emergencyCount = warrantyClaimRepository.countByPriority(WarrantyClaim.ClaimPriority.HIGH);
+                if (serviceCenterId == null || serviceCenterId == 0) {
+                        // EVM Staff: xem tất cả claim
+                        count = warrantyClaimRepository.countAllClaims(); // <--- viết lại query tổng
+                        emergencyCount = warrantyClaimRepository.countAllByPriority(WarrantyClaim.ClaimPriority.HIGH);
                 } else {
-                        // Lấy theo service center cụ thể
+                        // SC Staff: xem claim theo trung tâm
                         count = warrantyClaimRepository.countByServiceCenterId(serviceCenterId);
-                        emergencyCount = warrantyClaimRepository
-                                        .countByServiceCenterIdAndPriority(serviceCenterId,
-                                                        WarrantyClaim.ClaimPriority.HIGH);
+                        emergencyCount = warrantyClaimRepository.countByServiceCenterIdAndPriority(
+                                        serviceCenterId, WarrantyClaim.ClaimPriority.HIGH);
                 }
+
+                System.out.println("Total claims: " + count + ", High: " + emergencyCount);
 
                 return DashboardClaimSummaryResponse.builder()
                                 .count(count)
@@ -449,6 +456,12 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                         + ";base64," + base64;
                         attachmentBase64.add(base64WithPrefix);
                 }
+                System.out.println(">>> Save Claim Attachments");
+                System.out.println("attachmentBasePath = " + attachmentBasePath);
+                System.out.println("attachments = " + Arrays.toString(attachments));
+                for (MultipartFile f : attachments) {
+                        System.out.println("file: " + f.getOriginalFilename() + " size=" + f.getSize());
+                }
 
                 return attachmentBase64;
         }
@@ -467,57 +480,33 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                         assignCampaign(warrantyClaim, request.getVin());
                 }
 
+                // Check if vehicle already has an active claim (not COMPLETED)
+                List<WarrantyClaim> activeClaims = warrantyClaimRepository.findByVehicleVinAndStatusNot(
+                                request.getVin(), WarrantyClaim.ClaimStatus.COMPLETED);
+
+                if (!activeClaims.isEmpty()) {
+                        WarrantyClaim existing = activeClaims.get(0);
+                        throw new RuntimeException("Vehicle " + request.getVin() +
+                                        " already has an active claim #" + existing.getId() +
+                                        " at service center " + existing.getServiceCenter().getName() +
+                                        " with status " + existing.getStatus());
+                }
+
                 // Save claim first to get ID
                 warrantyClaimRepository.saveAndFlush(warrantyClaim);
 
-                Map<Long, String> partErrors = new HashMap<>();
-                List<VehiclePart> validVehicleParts = new ArrayList<>();
-
-                // Check defective parts
+                // Assign claim to all defective parts (if any)
                 if (request.getDefectivePartIds() != null && !request.getDefectivePartIds().isEmpty()) {
-                        List<VehiclePart> vehicleParts = vehiclePartRepository.findActiveByVehicleVinAndPartIdIn(
-                                        request.getVin(), request.getDefectivePartIds());
+                        List<VehiclePart> vehicleParts = vehiclePartRepository.findActiveByVehicleVin(request.getVin());
 
                         for (VehiclePart vp : vehicleParts) {
-                                WarrantyClaim existingClaim = vp.getWarrantyClaim();
-
-                                if (existingClaim != null
-                                                && existingClaim.getStatus() != WarrantyClaim.ClaimStatus.COMPLETED) {
-                                        // Part already has an active claim → add detailed message and skip
-                                        partErrors.put(vp.getPart().getId(),
-                                                        "Part " + vp.getPart().getId() + " on vehicle "
-                                                                        + vp.getVehicle().getVin() +
-                                                                        " already has claim #" + existingClaim.getId() +
-                                                                        " at service center "
-                                                                        + existingClaim.getServiceCenter().getName() +
-                                                                        " with status " + existingClaim.getStatus());
-                                        continue;
-                                }
-
-                                if (existingClaim != null
-                                                && existingClaim.getStatus() == WarrantyClaim.ClaimStatus.COMPLETED) {
-                                        // Previous claim completed → allow new claim
-                                        vp.setWarrantyClaim(null);
-                                }
-
-                                // Assign new claim to the part
                                 vp.setWarrantyClaim(warrantyClaim);
-                                validVehicleParts.add(vp);
                         }
 
-                        // If any part has errors → throw a combined exception
-                        if (!partErrors.isEmpty()) {
-                                throw new RuntimeException(String.join("; ", partErrors.values()));
-                        }
+                        vehiclePartRepository.saveAll(vehicleParts);
 
-                        // Save valid parts
-                        vehiclePartRepository.saveAll(validVehicleParts);
-                }
-
-                // Create PartClaim only for valid parts
-                if (request.getDefectivePartIds() != null && !request.getDefectivePartIds().isEmpty()) {
+                        // Create PartClaim for each selected part
                         Set<PartClaimRequest> partRequests = request.getDefectivePartIds().stream()
-                                        .filter(id -> !partErrors.containsKey(id)) // exclude blocked parts
                                         .map(id -> PartClaimRequest.builder().id(id).build())
                                         .collect(Collectors.toSet());
 
@@ -624,6 +613,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                         repairOrder.setWarrantyClaim(wc);
                                         repairOrderRepository.save(repairOrder);
                                         wc.setRepairOrder(repairOrder);
+                                        warrantyClaimRepository.save(wc);
                                 }
 
                                 // Tạo RepairDetail cho từng part
@@ -685,12 +675,15 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 }
 
                 warrantyClaimRepository.save(wc);
-                messagingTemplate.convertAndSend("/topic/claims", "Claim status updated successfully");
+                messagingTemplate.convertAndSend("/topic/claims", mapToFilterClaimResponse(wc, userId));
                 applicationEventPublisher.publishEvent(new EntityCreatedEvent<>(this, wc));
 
                 return WarrantyClaimStatusResponse.builder()
+                                .repairOrderId(
+                                                wc.getRepairOrder() != null ? wc.getRepairOrder().getId() : null)
                                 .message("Change Status successfully")
                                 .build();
+
         }
 
         private double suggestHours(String title) {
@@ -716,7 +709,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 VehiclePart vehiclePart = null;
                 if (vehicle != null) {
                         vehiclePart = vehiclePartRepository
-                                        .findByVehicleVinAndPartIdAndWarrantyClaimId(vehicle.getVin(), part.getId(),
+                                        .findActiveRemovedPart(vehicle.getVin(), part.getId(),
                                                         warrantyClaim.getId())
                                         .orElse(null);
                         if (vehiclePart != null) {
@@ -1188,22 +1181,6 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                 && claim.getRepairOrder().getStatus() == RepairOrder.OrderStatus.COMPLETED;
         }
 
-        long calculateTotalCostForMonth(long serviceCenterId, int year, int month) {
-                List<WarrantyClaim> claims = warrantyClaimRepository
-                                .findByServiceCenterAndMonth(serviceCenterId, year, month)
-                                .stream()
-                                .filter(c -> c.getStatus() == WarrantyClaim.ClaimStatus.APPROVED) // chỉ claim được chấp
-                                                                                                  // thuận
-                                .filter(this::hasCompletedRepairOrder) // chỉ claim có ít nhất 1 RepairOrder hoàn tất
-                                .toList();
-
-                double totalCostDouble = claims.stream()
-                                .mapToDouble(this::calculateEstimatedCost)
-                                .sum();
-
-                return (long) totalCostDouble;
-        }
-
         MonthlyCostSummaryResponse buildMonthlySummary(String monthLabel, long totalClaims, long totalCost,
                         NumberFormat formatter) {
                 return MonthlyCostSummaryResponse.builder()
@@ -1213,7 +1190,14 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                 .build();
         }
 
-        List<MonthlyCostSummaryResponse> calculateMonthlySummaries(long serviceCenterId) {
+        long calculateTotalCostForClaims(List<WarrantyClaim> claims) {
+                double totalCostDouble = claims.stream()
+                                .mapToDouble(this::calculateEstimatedCost) // dùng logic tính cost sẵn có
+                                .sum();
+                return (long) totalCostDouble;
+        }
+
+        List<MonthlyCostSummaryResponse> calculateMonthlySummaries(Long serviceCenterId) {
                 List<MonthlyCostSummaryResponse> monthlySummaries = new ArrayList<>();
                 NumberFormat formatter = NumberFormat.getInstance(Locale.US);
                 List<String> last6Months = getLast6Months();
@@ -1223,36 +1207,48 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                         int month = ym.getMonthValue();
                         int year = ym.getYear();
 
-                        List<WarrantyClaim> claims = warrantyClaimRepository
-                                        .findByServiceCenterAndMonth(serviceCenterId, year, month)
-                                        .stream()
-                                        .filter(c -> c.getStatus() == WarrantyClaim.ClaimStatus.APPROVED)
+                        List<WarrantyClaim> claims = (serviceCenterId == null || serviceCenterId == 0)
+                                        ? warrantyClaimRepository.findByMonth(year, month) // <-- Query không lọc theo
+                                                                                           // service center
+                                        : warrantyClaimRepository.findByServiceCenterAndMonth(serviceCenterId, year,
+                                                        month);
+
+                        List<WarrantyClaim> completedClaims = claims.stream()
+                                        .filter(c -> c.getStatus() == WarrantyClaim.ClaimStatus.COMPLETED)
                                         .filter(this::hasCompletedRepairOrder)
                                         .toList();
 
-                        long totalClaims = claims.size();
-                        long totalCost = calculateTotalCostForMonth(serviceCenterId, year, month);
+                        long totalClaims = completedClaims.size();
+                        long totalCost = calculateTotalCostForClaims(completedClaims);
 
-                        monthlySummaries.add(
-                                        buildMonthlySummary(last6Months.get(5 - i), totalClaims, totalCost, formatter));
+                        monthlySummaries.add(buildMonthlySummary(
+                                        last6Months.get(5 - i),
+                                        totalClaims,
+                                        totalCost,
+                                        formatter));
                 }
 
                 return monthlySummaries;
         }
 
-        private List<ComponentCostSummaryResponse> calculateCostByComponent(long serviceCenterId) {
+        private List<ComponentCostSummaryResponse> calculateCostByComponent(Long serviceCenterId) {
                 NumberFormat formatter = NumberFormat.getInstance(Locale.US);
                 List<ComponentCostSummaryResponse> summaries = new ArrayList<>();
 
-                List<Object[]> componentData = partClaimRepository.countFailuresByComponent(serviceCenterId);
+                List<Object[]> componentData = (serviceCenterId == null || serviceCenterId == 0)
+                                ? partClaimRepository.countFailuresByComponentAllCenters()
+                                : partClaimRepository.countFailuresByComponent(serviceCenterId);
 
                 for (Object[] row : componentData) {
                         Part part = (Part) row[0];
                         long totalFailures = (Long) row[1];
 
-                        List<PartClaim> partClaims = partClaimRepository
-                                        .findByServiceCenterAndComponent(serviceCenterId, part.getPartCategory())
-                                        .stream()
+                        List<PartClaim> partClaims = (serviceCenterId == null || serviceCenterId == 0)
+                                        ? partClaimRepository.findByComponentAllCenters(part.getPartCategory())
+                                        : partClaimRepository.findByServiceCenterAndComponent(serviceCenterId,
+                                                        part.getPartCategory());
+
+                        partClaims = partClaims.stream()
                                         .filter(pc -> pc.getWarrantyClaim() != null
                                                         && pc.getWarrantyClaim()
                                                                         .getStatus() == WarrantyClaim.ClaimStatus.APPROVED)
@@ -1262,7 +1258,6 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                         .toList();
 
                         double totalCostDouble = 0;
-
                         for (PartClaim pc : partClaims) {
                                 PartPriceHistory pph = partPriceHistoryRepository
                                                 .findCurrentPrice(pc.getPart().getId(),
@@ -1291,7 +1286,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 return summaries;
         }
 
-        public CostAnalysisResponse handleCalculateClaimCostByMonth(long serviceCenterId) {
+        public CostAnalysisResponse handleCalculateClaimCostByMonth(Long serviceCenterId) {
 
                 List<MonthlyCostSummaryResponse> monthlySummaries = calculateMonthlySummaries(serviceCenterId);
 
@@ -1313,7 +1308,9 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                                 ? (double) totalWarrantyCost / totalClaimsProcessed
                                 : 0;
 
-                double totalRevenue = scExpenseReposiotry.findTotalRevenueByServiceCenter(serviceCenterId);
+                double totalRevenue = (serviceCenterId == null || serviceCenterId == 0)
+                                ? scExpenseReposiotry.findTotalRevenueAllCenters()
+                                : scExpenseReposiotry.findTotalRevenueByServiceCenter(serviceCenterId);
 
                 double costOfSalesRatio = totalRevenue > 0
                                 ? (totalWarrantyCost / totalRevenue) * 100
@@ -1347,30 +1344,44 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         }
 
         @Override
-        public java.util.Map<String, Long> getClaimCountsBreakdown(Long serviceCenterId) {
-                java.util.Map<String, Long> map = new java.util.HashMap<>();
+        public Map<String, Long> getClaimCountsBreakdown(Long serviceCenterId) {
+                Map<String, Long> map = new HashMap<>();
 
-                long total = warrantyClaimRepository.countByServiceCenterId(serviceCenterId);
-                long draft = warrantyClaimRepository.countByServiceCenterIdAndStatus(serviceCenterId,
-                                WarrantyClaim.ClaimStatus.DRAFT);
-                long pending = warrantyClaimRepository.countByServiceCenterIdAndStatus(serviceCenterId,
-                                WarrantyClaim.ClaimStatus.PENDING);
-                long approved = warrantyClaimRepository.countByServiceCenterIdAndStatus(serviceCenterId,
-                                WarrantyClaim.ClaimStatus.APPROVED);
-                long rejected = warrantyClaimRepository.countByServiceCenterIdAndStatus(serviceCenterId,
-                                WarrantyClaim.ClaimStatus.REJECTED);
+                long total, draft, pending, approved, rejected, newToday, newThisWeek;
 
-                java.time.LocalDate today = java.time.LocalDate.now();
+                LocalDate today = LocalDate.now();
                 LocalDateTime startToday = today.atStartOfDay();
                 LocalDateTime startTomorrow = startToday.plusDays(1);
-                long newToday = warrantyClaimRepository.countByServiceCenterIdAndClaimDateBetween(serviceCenterId,
-                                startToday, startTomorrow);
 
-                java.time.LocalDate startOfWeekDate = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                LocalDate startOfWeekDate = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
                 LocalDateTime startOfWeek = startOfWeekDate.atStartOfDay();
                 LocalDateTime startNextWeek = startOfWeek.plusDays(7);
-                long newThisWeek = warrantyClaimRepository.countByServiceCenterIdAndClaimDateBetween(serviceCenterId,
-                                startOfWeek, startNextWeek);
+
+                // 👉 Nếu không có serviceCenterId => EVM Staff xem toàn bộ
+                if (serviceCenterId == null || serviceCenterId == 0) {
+                        total = warrantyClaimRepository.count();
+                        draft = warrantyClaimRepository.countByStatus(WarrantyClaim.ClaimStatus.DRAFT);
+                        pending = warrantyClaimRepository.countByStatus(WarrantyClaim.ClaimStatus.PENDING);
+                        approved = warrantyClaimRepository.countByStatus(WarrantyClaim.ClaimStatus.APPROVED);
+                        rejected = warrantyClaimRepository.countByStatus(WarrantyClaim.ClaimStatus.REJECTED);
+                        newToday = warrantyClaimRepository.countByClaimDateBetween(startToday, startTomorrow);
+                        newThisWeek = warrantyClaimRepository.countByClaimDateBetween(startOfWeek, startNextWeek);
+                } else {
+                        // 👉 SC Staff: lọc theo serviceCenterId
+                        total = warrantyClaimRepository.countByServiceCenterId(serviceCenterId);
+                        draft = warrantyClaimRepository.countByServiceCenterIdAndStatus(serviceCenterId,
+                                        WarrantyClaim.ClaimStatus.DRAFT);
+                        pending = warrantyClaimRepository.countByServiceCenterIdAndStatus(serviceCenterId,
+                                        WarrantyClaim.ClaimStatus.PENDING);
+                        approved = warrantyClaimRepository.countByServiceCenterIdAndStatus(serviceCenterId,
+                                        WarrantyClaim.ClaimStatus.APPROVED);
+                        rejected = warrantyClaimRepository.countByServiceCenterIdAndStatus(serviceCenterId,
+                                        WarrantyClaim.ClaimStatus.REJECTED);
+                        newToday = warrantyClaimRepository.countByServiceCenterIdAndClaimDateBetween(serviceCenterId,
+                                        startToday, startTomorrow);
+                        newThisWeek = warrantyClaimRepository.countByServiceCenterIdAndClaimDateBetween(serviceCenterId,
+                                        startOfWeek, startNextWeek);
+                }
 
                 map.put("total", total);
                 map.put("draft", draft);
@@ -1382,4 +1393,5 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
                 return map;
         }
+
 }

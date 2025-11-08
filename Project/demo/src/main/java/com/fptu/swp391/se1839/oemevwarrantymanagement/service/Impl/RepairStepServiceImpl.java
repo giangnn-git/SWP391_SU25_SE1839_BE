@@ -1,6 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -24,6 +25,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.VehiclePart;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.event.EntityUpdatedEvent;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartInventoryRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairDetailRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairStepRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehiclePartRepository;
@@ -45,6 +47,7 @@ public class RepairStepServiceImpl implements RepairStepService {
     final ApplicationEventPublisher applicationEventPublisher;
     final VehiclePartRepository vehiclePartRepository;
     final PartInventoryRepository partInventoryRepository;
+    final RepairDetailRepository repairDetailRepository;
 
     // --- Tính % hoàn thành tất cả step ---
     int calculatePercent(long repairOrderId) {
@@ -153,12 +156,27 @@ public class RepairStepServiceImpl implements RepairStepService {
         }
 
         repairStepRepository.save(step);
-        repairOrderReposity.save(order); // lưu RepairOrder nếu cập nhật start_date
-        applicationEventPublisher.publishEvent(new EntityUpdatedEvent<>(this, step));
+        repairOrderReposity.save(order);
 
         // --- Logic riêng cho Disassembly và Assembly ---
         if (newStatus == RepairStep.StepStatus.COMPLETED) {
             Set<RepairDetail> details = order.getRepairDetails();
+            LocalDate nowDate = LocalDate.now();
+
+            if ("Repair/Replace Part".equalsIgnoreCase(step.getTitle())) {
+                for (RepairDetail rd : details) {
+                    // 1️⃣ Set status REPLACED
+                    rd.setStatus(RepairDetail.DetailStatus.REPLACED);
+                    repairDetailRepository.save(rd);
+
+                    // 2️⃣ Nếu có VehiclePart → set removeDate
+                    VehiclePart vp = rd.getVehiclePart();
+                    if (vp != null) {
+                        vp.setRemoveDate(nowDate);
+                        vehiclePartRepository.save(vp);
+                    }
+                }
+            }
 
             if ("Assembly".equalsIgnoreCase(step.getTitle())) {
                 for (RepairDetail rd : details) {
@@ -178,17 +196,26 @@ public class RepairStepServiceImpl implements RepairStepService {
                                 .build();
                         vehiclePartRepository.save(newVP);
 
-                        // Trừ số lượng kho
                         PartInventory inventory = partInventoryRepository
                                 .findByPartIdAndServiceCenterId(oldVP.getPart().getId(),
                                         order.getWarrantyClaim().getServiceCenter().getId())
                                 .orElseThrow(() -> new RuntimeException("Inventory not found"));
+
                         long totalQty = order.getWarrantyClaim().getPartClaims().stream()
                                 .filter(pc -> pc.getPart().getId().equals(oldVP.getPart().getId()))
                                 .mapToLong(pc -> pc.getQuantity())
                                 .sum();
+
                         System.out.println("Trừ số lượng: " + totalQty);
 
+                        long newQuantity = inventory.getQuantity() - totalQty;
+                        if (newQuantity < 0) {
+                            throw new IllegalStateException(
+                                    "Not enough inventory for part ID: " + oldVP.getPart().getId());
+                        }
+                        inventory.setQuantity(newQuantity);
+
+                        // Lưu lại kho
                         partInventoryRepository.save(inventory);
                     }
                 }

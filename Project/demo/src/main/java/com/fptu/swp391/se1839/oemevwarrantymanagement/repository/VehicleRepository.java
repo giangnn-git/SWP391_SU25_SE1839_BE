@@ -28,7 +28,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, String> {
 
         boolean existsByLicensePlate(String licensePlate);
 
-        Optional<Vehicle> findByCustomerId(Long customerId);
+        List<Vehicle> findByCustomerId(Long customerId);
 
         @Query("SELECT v FROM Vehicle v WHERE v.customer IS NOT NULL")
         List<Vehicle> findAllRegisteredVehicles();

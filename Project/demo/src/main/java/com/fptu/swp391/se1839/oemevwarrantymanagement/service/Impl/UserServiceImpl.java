@@ -563,4 +563,9 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
+    public List<UserResponse> getTechniciansByServiceCenter(Long scId) {
+        List<User> users = userRepository.findByRoleAndServiceCenterId(User.Role.TECHNICIAN, scId);
+        return users.stream().map(UserResponse::fromEntity).toList();
+    }
+
 }

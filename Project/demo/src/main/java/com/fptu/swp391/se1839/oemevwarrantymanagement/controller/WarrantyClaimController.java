@@ -55,7 +55,7 @@ public class WarrantyClaimController {
                                 attachments, userId);
 
                 var result = ApiResponse.<CreateClaimResponse>builder()
-                                .status(HttpStatus.OK.toString())
+                                .status(HttpStatus.CREATED.toString())
                                 .message("Create claim successfully")
                                 .data(response)
                                 .build();

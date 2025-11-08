@@ -43,4 +43,11 @@ public interface SCExpenseRepository extends JpaRepository<SCExpense, Long> {
         AND e.status = 'PAID'
       """)
   double findTotalRevenueByServiceCenter(@Param("serviceCenterId") long serviceCenterId);
+
+  @Query("""
+      SELECT COALESCE(SUM(e.amount), 0)
+      FROM SCExpense e
+      WHERE e.status = 'PAID'
+      """)
+  double findTotalRevenueAllCenters();
 }

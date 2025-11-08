@@ -3,9 +3,7 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangeStatusRepairDetailRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChangeStatusRepairDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllRepairDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairDetailService;
 
@@ -18,9 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/api")
@@ -38,18 +34,6 @@ public class RepairDetailController {
                                 .status(HttpStatus.OK.toString())
                                 .message("Get Repair Order successfully")
                                 .data(gadr)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
-
-        @PatchMapping("/repair-details/{id}")
-        public ResponseEntity<ApiResponse<String>> changeStatus(
-                        @PathVariable("id") Long repairDetailId,
-                        @RequestBody ChangeStatusRepairDetailRequest request) {
-                this.repairDetailService.handleChangeDetailStatus(request, repairDetailId);
-                var result = ApiResponse.<String>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("Change staytus Repair Detail successfully")
                                 .build();
                 return ResponseEntity.ok(result);
         }

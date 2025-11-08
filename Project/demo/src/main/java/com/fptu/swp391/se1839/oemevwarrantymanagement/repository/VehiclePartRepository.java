@@ -25,14 +25,18 @@ public interface VehiclePartRepository extends JpaRepository<VehiclePart, String
       FROM VehiclePart vp
       WHERE vp.vehicle = :vehicle
         AND vp.part = :part
-        AND vp.removalDate IS NULL
+        AND vp.removeDate IS NULL
       """)
   Optional<VehiclePart> findActiveVehiclePart(@Param("vehicle") Vehicle vehicle, @Param("part") Part part);
 
   /**
    * 🔹 Tìm VehiclePart theo VIN, PartId và ClaimId.
    */
-  Optional<VehiclePart> findByVehicleVinAndPartIdAndWarrantyClaimId(String vin, Long partId, Long claimId);
+  @Query("SELECT vp FROM VehiclePart vp WHERE vp.vehicle.vin = :vin AND vp.part.id = :partId AND vp.warrantyClaim.id = :claimId AND vp.removeDate IS NULL")
+  Optional<VehiclePart> findActiveRemovedPart(
+      @Param("vin") String vin,
+      @Param("partId") Long partId,
+      @Param("claimId") Long claimId);
 
   /**
    * 🔹 Tìm VehiclePart theo VIN và PartId (bất kể có claim hay chưa).
@@ -47,14 +51,12 @@ public interface VehiclePartRepository extends JpaRepository<VehiclePart, String
       SELECT vp
       FROM VehiclePart vp
       WHERE vp.vehicle.vin = :vin
-        AND vp.part.id IN :partIds
-        AND vp.removalDate IS NULL
+        AND vp.removeDate IS NULL
       """)
-  List<VehiclePart> findActiveByVehicleVinAndPartIdIn(
-      @Param("vin") String vin,
-      @Param("partIds") Collection<Long> partIds);
+  List<VehiclePart> findActiveByVehicleVin(
+      @Param("vin") String vin);
 
-  @Query("SELECT vp FROM VehiclePart vp WHERE vp.part.id = :partId AND vp.vehicle.vin = :vin AND vp.removalDate IS NULL")
+  @Query("SELECT vp FROM VehiclePart vp WHERE vp.part.id = :partId AND vp.vehicle.vin = :vin AND vp.removeDate IS NULL")
   Optional<VehiclePart> findActivePart(@Param("partId") Long partId, @Param("vin") String vin);
 
   @Query("""

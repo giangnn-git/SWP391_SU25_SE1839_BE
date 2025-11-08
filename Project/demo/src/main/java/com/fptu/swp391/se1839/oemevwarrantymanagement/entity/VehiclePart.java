@@ -50,7 +50,7 @@ public class VehiclePart {
     WarrantyClaim warrantyClaim;
     LocalDate installationDate;
 
-    LocalDate removalDate;
+    LocalDate removeDate;
 
     @Column(name = "new_serial_number")
     String newSerialNumber;
@@ -76,6 +76,6 @@ public class VehiclePart {
         return "VehiclePart{" + "oldSerialNumber='" + oldSerialNumber + '\'' + ", vehicleVin="
                 + (vehicle != null ? vehicle.getVin() : null) + ", partId=" + (part != null ? part.getId() : null)
                 + ", claimId=" + (warrantyClaim != null ? warrantyClaim.getId() : null) + ", installationDate="
-                + installationDate + ", removalDate=" + removalDate + '}';
+                + installationDate + ", removeDate=" + removeDate + '}';
     }
 }

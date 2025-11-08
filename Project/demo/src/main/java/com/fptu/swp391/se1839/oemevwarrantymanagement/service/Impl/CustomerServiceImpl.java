@@ -35,65 +35,63 @@ public class CustomerServiceImpl implements CustomerService {
 
         final CustomerRepository customerRepository;
         final VehicleRepository vehicleRepository;
-	final UserRepository userRepository;
-    	final ServiceCenterRepository scRepository;
+        final UserRepository userRepository;
+        final ServiceCenterRepository scRepository;
 
         @Override
-    @Transactional
-    public CustomerRegisterResponse registerCustomer(CustomerRegisterRequest req, Long userId, Long scId) {
-        // Check VÍN
-        var vehicle = vehicleRepository.findByVin(req.getVin())
-                .orElseThrow(() -> new NoSuchElementException(
-                "Vehicle with VIN " + req.getVin() + " not found"));
+        @Transactional
+        public CustomerRegisterResponse registerCustomer(CustomerRegisterRequest req, Long userId, Long scId) {
+                // Check VÍN
+                var vehicle = vehicleRepository.findByVin(req.getVin())
+                                .orElseThrow(() -> new NoSuchElementException(
+                                                "Vehicle with VIN " + req.getVin() + " not found"));
 
-        // Check vehicle đã có customer
-        if (vehicle.getCustomer() != null) {
-            throw new IllegalArgumentException("This vehicle already has a registered customer");
+                if (vehicle.getCustomer() != null) {
+                        throw new IllegalArgumentException("This vehicle already has a registered customer");
+                }
+
+                if (vehicleRepository.existsByLicensePlate(req.getLicensePlate())) {
+                        throw new IllegalArgumentException("License plate already exists");
+                }
+
+                if (userId == null || userRepository.findById(userId).isEmpty()) {
+                        throw new IllegalArgumentException("User ID is invalid");
+                }
+
+                // Check email và phone
+                customerRepository.findByPhoneNumber(req.getPhoneNumber())
+                                .ifPresent(c -> {
+                                        throw new IllegalArgumentException("Phone number already exists");
+                                });
+
+                customerRepository.findByEmail(req.getEmail())
+                                .ifPresent(c -> {
+                                        throw new IllegalArgumentException("Email already exists");
+                                });
+
+                // Lưu customer
+                var customer = new Customer();
+                customer.setName(req.getName());
+                customer.setPhoneNumber(req.getPhoneNumber());
+                customer.setEmail(req.getEmail());
+                customer.setAddress(req.getAddress());
+                customer.setCreatedBy(userRepository.findById(userId).get());
+                customer.setServiceCenter(scRepository.findById(scId).get());
+
+                var savedCustomer = customerRepository.save(customer);
+
+                // Gắn customer vào vehicle
+                vehicle.setCustomer(savedCustomer);
+                vehicle.setLicensePlate(req.getLicensePlate());
+                vehicleRepository.save(vehicle);
+
+                return new CustomerRegisterResponse(
+                                savedCustomer.getId(),
+                                savedCustomer.getName(),
+                                savedCustomer.getPhoneNumber(),
+                                savedCustomer.getEmail(),
+                                savedCustomer.getAddress());
         }
-
-        if (vehicleRepository.existsByLicensePlate(req.getLicensePlate())) {
-            throw new IllegalArgumentException("License plate already exists");
-        }
-
-        if (userId == null || userRepository.findById(userId).isEmpty()) {
-            throw new IllegalArgumentException("User ID is invalid");
-        }
-
-        // Check email và phone
-        customerRepository.findByPhoneNumber(req.getPhoneNumber())
-                .ifPresent(c -> {
-                    throw new IllegalArgumentException("Phone number already exists");
-                });
-
-        customerRepository.findByEmail(req.getEmail())
-                .ifPresent(c -> {
-                    throw new IllegalArgumentException("Email already exists");
-                });
-
-        // Lưu customer
-        var customer = new Customer();
-        customer.setName(req.getName());
-        customer.setPhoneNumber(req.getPhoneNumber());
-        customer.setEmail(req.getEmail());
-        customer.setAddress(req.getAddress());
-        customer.setCreatedBy(userRepository.findById(userId).get());
-        customer.setServiceCenter(scRepository.findById(scId).get());
-
-        var savedCustomer = customerRepository.save(customer);
-
-        // Gắn customer vào vehicle
-        vehicle.setCustomer(savedCustomer);
-        vehicle.setLicensePlate(req.getLicensePlate());
-        vehicleRepository.save(vehicle);
-
-        // Trả về CustomerResponse
-        return new CustomerRegisterResponse(
-                savedCustomer.getId(),
-                savedCustomer.getName(),
-                savedCustomer.getPhoneNumber(),
-                savedCustomer.getEmail(),
-                savedCustomer.getAddress());
-    }
 
         @Override
         public CustomerRegisterResponse handleFindCustomerByVin(String vin) {
@@ -112,6 +110,7 @@ public class CustomerServiceImpl implements CustomerService {
         }
 
         @Override
+        @Transactional
         public CustomerRegisterResponse updateCustomer(Long id, CustomerRegisterRequest req) {
                 // 1️⃣ Tìm customer
                 var customer = customerRepository.findById(id)
@@ -133,22 +132,22 @@ public class CustomerServiceImpl implements CustomerService {
 
                 // 4️⃣ Nếu request có biển số → kiểm tra & cập nhật
                 if (req.getLicensePlate() != null && !req.getLicensePlate().isBlank()) {
+                        Vehicle currentVehicle = vehicleRepository.findByVin(req.getVin())
+                                        .orElseThrow(() -> new NoSuchElementException(
+                                                        "Vehicle not found with VIN " + req.getVin()));
                         vehicleRepository.findByLicensePlate(req.getLicensePlate())
                                         .ifPresent(existingVehicle -> {
-                                                if (existingVehicle.getCustomer() != null
-                                                                && !Objects.equals(
-                                                                                existingVehicle.getCustomer().getId(),
-                                                                                id)) {
+                                                if (!Objects.equals(existingVehicle.getVin(),
+                                                                currentVehicle.getVin())) {
                                                         throw new IllegalArgumentException(
-                                                                        "License plate already belongs to another customer");
+                                                                        "License plate already belongs to another vehicle");
                                                 }
                                         });
 
                         // Lấy xe hiện tại của customer để cập nhật
-                        var vehicle = vehicleRepository.findByVin(req.getVin()).orElse(null);
-                        if (vehicle != null) {
-                                vehicle.setLicensePlate(req.getLicensePlate());
-                                vehicleRepository.save(vehicle);
+                        if (!Objects.equals(currentVehicle.getLicensePlate(), req.getLicensePlate())) {
+                                currentVehicle.setLicensePlate(req.getLicensePlate());
+                                vehicleRepository.save(currentVehicle);
                         }
                 }
 
@@ -226,7 +225,7 @@ public class CustomerServiceImpl implements CustomerService {
                                                 .vehicleCount(customer.getVehicles() != null
                                                                 ? customer.getVehicles().size()
                                                                 : 0)
-                                                 .scId(customer.getServiceCenter().getId())               
+                                                .scId(customer.getServiceCenter().getId())
                                                 .build())
                                 .toList();
         }
@@ -250,6 +249,41 @@ public class CustomerServiceImpl implements CustomerService {
                                                                 : List.<String>of())
                                                 .build())
                                 .toList();
+        }
+
+        @Override
+        public List<CustomerSummaryResponse> findByKey(String key) {
+                List<Vehicle> vehicles;
+
+                if (key.length() == 17) {
+                        vehicles = vehicleRepository.findByVin(key)
+                                        .map(List::of)
+                                        .orElseThrow(() -> new NoSuchElementException(
+                                                        "Vehicle with VIN " + key + " not found"));
+                } else {
+                        vehicles = vehicleRepository.findByCustomerPhone(key);
+                        if (vehicles.isEmpty()) {
+                                throw new NoSuchElementException("Customer did not register " + key);
+                        }
+                }
+
+                return vehicles.stream()
+                                .map(v -> v.getCustomer())
+                                .filter(Objects::nonNull)
+                                .distinct() // loại trùng customer
+                                .map(customer -> CustomerSummaryResponse.builder()
+                                                .id(customer.getId())
+                                                .name(customer.getName())
+                                                .phoneNumber(customer.getPhoneNumber())
+                                                .email(customer.getEmail())
+                                                .address(customer.getAddress())
+                                                .vehicleCount(customer.getVehicles() != null
+                                                                ? customer.getVehicles().size()
+                                                                : 0)
+                                                .scId(customer.getServiceCenter().getId())
+                                                .build())
+                                .toList();
+
         }
 
 }

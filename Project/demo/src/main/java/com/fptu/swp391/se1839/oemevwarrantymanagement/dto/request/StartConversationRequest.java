@@ -1,6 +1,4 @@
-package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
+package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -10,12 +8,10 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class WarrantyClaimStatusResponse {
-    Long repairOrderId;
-    String message;
+public class StartConversationRequest {
+    Long technicianId;
 }

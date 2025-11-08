@@ -15,6 +15,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PartPolicyCodeResponse {
-    List<String> partCode;
-    List<String> policyCode;
+    Map<String, String> partMap;
+    Map<String, String> policyMap;
 }
