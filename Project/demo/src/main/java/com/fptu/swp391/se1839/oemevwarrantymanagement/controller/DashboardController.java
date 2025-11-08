@@ -12,15 +12,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.MonthlyCostSummaryResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RecentActivityResponse;
-
 import static com.fptu.swp391.se1839.oemevwarrantymanagement.Utilities.TimeUtil.formatTimeAgo;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CostAnalysisResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardClaimSummaryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardOrderSummaryResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.MonthlyCostSummaryResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RecentActivityResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.ActivityLogService;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PartInventoryService;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairOrderService;
@@ -46,7 +45,7 @@ public class DashboardController {
         public ResponseEntity<ApiResponse<DashboardResponse>> getDashboardSummary(@AuthenticationPrincipal Jwt jwt) {
 
                 Object scClaim = jwt.getClaim("serviceCenterId");
-                Long serviceCenterId = (scClaim != null) ? Long.parseLong(scClaim.toString()) : 0L;
+                Long serviceCenterId = (scClaim != null) ? Long.parseLong(scClaim.toString()) : 1L;
 
                 DashboardOrderSummaryResponse orderSummary = repairOrderService.findSunSummaryOrder(serviceCenterId);
                 DashboardClaimSummaryResponse claimSummary = warrantyClaimService.handleSummaryClaims(serviceCenterId);

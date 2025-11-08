@@ -24,4 +24,7 @@ public interface CustomerService {
 
     List<VehicleInfoResponse> getVehiclesByCustomerId(Long customerId);
 
+    List<CustomerSummaryResponse> findByKey(String key);
+
+
 }

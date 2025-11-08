@@ -1,6 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -24,6 +25,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.VehiclePart;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.event.EntityUpdatedEvent;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartInventoryRepository;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairDetailRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairStepRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehiclePartRepository;
@@ -45,6 +47,8 @@ public class RepairStepServiceImpl implements RepairStepService {
     final ApplicationEventPublisher applicationEventPublisher;
     final VehiclePartRepository vehiclePartRepository;
     final PartInventoryRepository partInventoryRepository;
+    final RepairDetailRepository repairDetailRepository;
+
 
     // --- Tính % hoàn thành tất cả step ---
     int calculatePercent(long repairOrderId) {
@@ -147,6 +151,8 @@ public class RepairStepServiceImpl implements RepairStepService {
             throw new IllegalArgumentException("Cannot change status from " + step.getStatus() + " to " + newStatus);
         }
 
+        
+
         step.setStatus(newStatus);
         if ("Inspection".equalsIgnoreCase(step.getTitle()) && order.getStartDate() == null) {
             order.setStartDate(LocalDateTime.now());
@@ -159,6 +165,22 @@ public class RepairStepServiceImpl implements RepairStepService {
         // --- Logic riêng cho Disassembly và Assembly ---
         if (newStatus == RepairStep.StepStatus.COMPLETED) {
             Set<RepairDetail> details = order.getRepairDetails();
+            LocalDate nowDate = LocalDate.now();
+
+            if ("Repair/Replace Part".equalsIgnoreCase(step.getTitle())) {
+                for (RepairDetail rd : details) {
+                    // Set status REPLACED
+                    rd.setStatus(RepairDetail.DetailStatus.REPLACED);
+                    repairDetailRepository.save(rd);
+
+                    // Nếu có VehiclePart → set removeDate
+                    VehiclePart vp = rd.getVehiclePart();
+                    if (vp != null) {
+                        vp.setRemovalDate(nowDate);
+                        vehiclePartRepository.save(vp);
+                    }
+                }
+            }
 
             if ("Assembly".equalsIgnoreCase(step.getTitle())) {
                 for (RepairDetail rd : details) {

@@ -1,7 +1,19 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.controller;
 
+import java.io.IOException;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,26 +25,13 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChooseTechnicalResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDashboardResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDetailResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairHistoryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairOrderVerificationResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairOrderService;
 
-import org.springframework.http.MediaType;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.security.oauth2.jwt.Jwt;
-
-import java.io.IOException;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
 @RequestMapping("/api")
@@ -120,4 +119,23 @@ public class RepairOrderController {
                 .build();
         return ResponseEntity.ok(result);
     }
+
+    @GetMapping("/repair-orders/history/{vin}")
+        public ResponseEntity<ApiResponse<List<RepairHistoryResponse>>> getRepairHistoryByVin(
+                @PathVariable("vin") String vin) {
+
+        // Gọi service lấy danh sách 4 repair order gần nhất
+        List<RepairHistoryResponse> history = repairOrderService.getRecentRepairHistoryByVin(vin);
+
+        // Đóng gói API response
+        var result = ApiResponse.<List<RepairHistoryResponse>>builder()
+                .status(HttpStatus.OK.toString())
+                .message("Recent repair history fetched successfully")
+                .data(history)
+                .build();
+
+        return ResponseEntity.ok(result);
+        }
+
+
 }

@@ -137,4 +137,20 @@ public class CustomerController {
 
         }
 
+        @GetMapping("/vehicles/find")
+        @PreAuthorize("hasAnyAuthority('SC_STAFF', 'ADMIN')")
+        public ResponseEntity<ApiResponse<List<CustomerSummaryResponse>>> findByKey(
+                @RequestParam String key) {
+
+        List<CustomerSummaryResponse> data = customerService.findByKey(key);
+
+        var result = ApiResponse.<List<CustomerSummaryResponse>>builder()
+                .status(HttpStatus.OK.toString())
+                .message("Find registered vehicles successfully")
+                .data(data)
+                .build();
+
+        return ResponseEntity.ok(result);
+        }
+
 }

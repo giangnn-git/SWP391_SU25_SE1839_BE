@@ -1,6 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,6 +13,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DashboardOrde
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDashboardResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderSummaryResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairHistoryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairOrderVerificationResponse;
 
 public interface RepairOrderService {
@@ -42,4 +44,7 @@ public interface RepairOrderService {
 
     RepairOrderVerificationResponse verifyRepairOrder(long repairOrderId, RepairOrderVerificationRequest request,
             long userId, MultipartFile[] attachments) throws IOException;
+
+
+        List<RepairHistoryResponse> getRecentRepairHistoryByVin(String vin);
 }

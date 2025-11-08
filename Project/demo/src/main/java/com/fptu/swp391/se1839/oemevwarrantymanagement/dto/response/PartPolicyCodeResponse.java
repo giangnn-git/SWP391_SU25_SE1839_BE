@@ -1,6 +1,6 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
-import java.util.List;
+import java.util.Map;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -15,6 +15,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PartPolicyCodeResponse {
-    List<String> partCode;
-    List<String> policyCode;
+    Map<String, String> partMap;
+    Map<String, String> policyMap;
 }

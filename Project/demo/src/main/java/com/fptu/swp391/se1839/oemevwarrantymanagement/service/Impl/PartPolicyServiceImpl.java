@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
@@ -129,7 +130,7 @@ public class PartPolicyServiceImpl implements PartPolicyService {
                                         .warrantyPolicy(policy)
                                         .startDate(startDate)
                                         .endDate(endDate)
-                                        .status(PartPolicy.Status.INACTIVE)
+                                        .status(PartPolicy.Status.ACTIVE)
                                         .build();
 
                         PartPolicy saved = partPolicyRepository.save(newPolicy);
@@ -150,22 +151,20 @@ public class PartPolicyServiceImpl implements PartPolicyService {
         }
 
         @Override
-        public PartPolicyCodeResponse handleGetPartPolicyCode() {
+                public PartPolicyCodeResponse handleGetPartPolicyCode() {
                 List<Part> parts = partRepository.findAll();
                 List<WarrantyPolicy> policies = policyRepository.findAll();
 
-                List<String> partCodes = parts.stream()
-                                .map(Part::getCode)
-                                .collect(Collectors.toList());
+                Map<String, String> partMap = parts.stream()
+                        .collect(Collectors.toMap(Part::getCode, Part::getName));
 
-                List<String> policyCodes = policies.stream()
-                                .map(WarrantyPolicy::getCode)
-                                .collect(Collectors.toList());
+                Map<String, String> policyMap = policies.stream()
+                        .collect(Collectors.toMap(WarrantyPolicy::getCode, WarrantyPolicy::getName));
 
                 return PartPolicyCodeResponse.builder()
-                                .partCode(partCodes)
-                                .policyCode(policyCodes)
-                                .build();
+                        .partMap(partMap)
+                        .policyMap(policyMap)
+                        .build();
         }
 
         @Override

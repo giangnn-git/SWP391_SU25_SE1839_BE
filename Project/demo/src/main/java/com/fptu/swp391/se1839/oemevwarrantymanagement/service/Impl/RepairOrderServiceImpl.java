@@ -21,10 +21,12 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,6 +42,8 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetTechnicals
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDashboardResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.OrderSummaryResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairDetailHistoryResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairHistoryResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairOrderVerificationResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryItemResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.SummaryOrderResponse;
@@ -605,9 +609,9 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                                 .build();
         }
 
-        public OrderDetailResponse handleGetDetailOrder(long serviceCenterId, long orderId) throws IOException {
+       public OrderDetailResponse handleGetDetailOrder(long serviceCenterId, long orderId) throws IOException {
                 List<DecodeImageReponse> attachments = new ArrayList<>();
-                String uploadDir = attachmentBasePath + "/claims/" + orderId;
+                String uploadDir = attachmentBasePath + "/repair_orders/" + orderId;
                 File dir = new File(uploadDir);
                 if (dir.exists() && dir.isDirectory()) {
                         for (File file : Objects.requireNonNull(dir.listFiles())) {
@@ -622,20 +626,25 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                         }
                 }
 
-                RepairOrderVerification verify = repairOrderVerificationRepository.findByRepairOrderId(orderId)
-                                .orElseThrow(() -> new NoSuchElementException("Repair order not found"));
+                Optional<RepairOrderVerification> verifyOpt = repairOrderVerificationRepository
+                                .findByRepairOrderId(orderId);
+
+                RepairOrderVerification verify = verifyOpt.orElse(null);
+
                 return OrderDetailResponse.builder()
                                 .filterOrderResponse(handleFilterOrder(orderId))
                                 .getTechnicalsResponse(handleTechnicalStatus(serviceCenterId, orderId))
-                                .repairOrderId(verify.getRepairOrder().getId())
-                                .signature(verify.getSignature())
-                                .notes(verify.getNotes())
+                                .repairOrderId(orderId)
+                                .signature(verify != null ? verify.getSignature() : null)
+                                .notes(verify != null ? verify.getNotes() : null)
                                 .attachmentPaths(attachments)
-                                .acceptedResponsibility(verify.isAcceptedResponsibility())
-                                .verifiedAt(verify.getCreatedAt())
-                                .verifiedBy(userRepository.findById(verify.getCreatedBy())
-                                                .orElseThrow(() -> new NoSuchElementException("user not found"))
-                                                .getName())
+                                .acceptedResponsibility(verify != null && verify.isAcceptedResponsibility())
+                                .verifiedAt(verify != null ? verify.getCreatedAt() : null)
+                                .verifiedBy(verify != null
+                                                ? userRepository.findById(verify.getCreatedBy())
+                                                                .map(u -> u.getName())
+                                                                .orElse(null)
+                                                : null)
                                 .build();
         }
 
@@ -1034,6 +1043,39 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 details.setMessageBody(htmlBody);
 
                 emailService.sendHtmlMail(details);
+        }
+
+        @Override
+        public List<RepairHistoryResponse> getRecentRepairHistoryByVin(String vin) {
+        List<RepairOrder> orders = repairOrderRepository
+                .findRecentRepairOrdersByVin(vin, PageRequest.of(0, 4));
+
+        return orders.stream()
+                .map(order -> {
+                        WarrantyClaim claim = order.getWarrantyClaim();
+
+                        // Map RepairDetail → RepairDetailHistoryResponse
+                        List<RepairDetailHistoryResponse> detailResponses = order.getRepairDetails()
+                                .stream()
+                                .map(detail -> RepairDetailHistoryResponse.builder()
+                                        .partName(detail.getPart() != null ? detail.getPart().getName() : "Unknown part")
+                                        .status(detail.getStatus().name())
+                                        .description(detail.getDescription())
+                                        .build())
+                                .collect(Collectors.toList());
+
+                        return RepairHistoryResponse.builder()
+                                .orderId(order.getId())
+                                .status(order.getStatus().toString())
+                                .startDate(order.getStartDate())
+                                .endDate(order.getEndDate())
+                                .supervisorApproved(Boolean.TRUE.equals(order.getSupervisorApproved()))
+                                .claimDescription(claim != null ? claim.getDescription() : null)
+                                .claimMileage(claim != null ? claim.getMileage() : 0)
+                                .details(detailResponses)
+                                .build();
+                })
+                .collect(Collectors.toList());
         }
 
 }

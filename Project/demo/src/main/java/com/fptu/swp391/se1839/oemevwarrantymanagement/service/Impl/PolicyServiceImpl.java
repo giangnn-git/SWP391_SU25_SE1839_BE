@@ -7,7 +7,6 @@ import java.util.NoSuchElementException;
 import org.springframework.stereotype.Service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePolicyRequest;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.TogglePolicyStatusRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UpdatePolicyRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CreatePolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DeletePolicyResponse;
@@ -78,9 +77,10 @@ public class PolicyServiceImpl implements PolicyService {
                                 .description(request.getDescription())
                                 .durationPeriod(request.getDurationPeriod())
                                 .mileageLimit(request.getMileageLimit())
+                                .status(WarrantyPolicy.Status.ACTIVE)
                                 .type(request.getType() == null ? WarrantyPolicy.PolicyType.NORMAL
                                                 : WarrantyPolicy.PolicyType.valueOf(request.getType().name()))
-                                .build();
+                                .build();                                                                                                                                                                                               
 
                 WarrantyPolicy saved = policyRepository.save(policy);
                 log.info("Created new WarrantyPolicy with id: {}", saved.getId());

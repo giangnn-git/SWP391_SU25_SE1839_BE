@@ -131,7 +131,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 long count;
                 long emergencyCount;
 
-                if (serviceCenterId == null) {
+                if (serviceCenterId == null || serviceCenterId <= 1) {
                         // Lấy tất cả service center
                         count = warrantyClaimRepository.count();
                         emergencyCount = warrantyClaimRepository.countByPriority(WarrantyClaim.ClaimPriority.HIGH);
@@ -1031,7 +1031,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
                 return wcList.stream()
                                 // Chỉ filter theo serviceCenterId nếu > 0
-                                .filter(wc -> serviceCenterId == 0
+                                .filter(wc -> serviceCenterId == 1
                                                 || wc.getServiceCenter().getId().equals(serviceCenterId))
                                 .filter(wc -> {
                                         if (user.getRole() == User.Role.EVM_STAFF) {
@@ -1065,7 +1065,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
                 List<ServiceCenter> serviceCenters;
 
-                if (serviceCenterId > 0) {
+                if (serviceCenterId > 1) {
                         // Lấy trung tâm cụ thể
                         ServiceCenter sc = serviceCenterRepository.findById(serviceCenterId)
                                         .orElseThrow(() -> new NoSuchElementException("ServiceCenter not found"));

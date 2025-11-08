@@ -1,5 +1,6 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -10,6 +11,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ModelResponse
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ModelPolicyDetailResponse;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Model;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartPolicy;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ModelRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartPolicyRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.ModelService;
@@ -44,17 +46,20 @@ public class ModelServiceImpl implements ModelService {
 
         List<ModelPolicyDetailResponse> partPolicyDetails = model.getModelParts().stream()
                 .flatMap(mp -> partPolicyRepository.findByPartId(mp.getPart().getId()).stream()
+                        // chỉ lấy policy còn hiệu lực
+                        .filter(pp -> pp.getStatus() == PartPolicy.Status.ACTIVE
+                                && (pp.getEndDate() == null || !pp.getEndDate().isBefore(LocalDate.now())))
                         .map(pp -> ModelPolicyDetailResponse.builder()
-                                .partId(mp.getPart().getId())
-                                .partName(mp.getPart().getName())
-                                .policyId(pp.getWarrantyPolicy().getId())
-                                .policyName(pp.getWarrantyPolicy().getName())
-                                .description(pp.getWarrantyPolicy().getDescription())
-                                .durationPeriod(pp.getWarrantyPolicy().getDurationPeriod())
-                                .mileageLimit(pp.getWarrantyPolicy().getMileageLimit())
-                                .startDate(pp.getStartDate() != null ? pp.getStartDate().toString() : null)
-                                .endDate(pp.getEndDate() != null ? pp.getEndDate().toString() : null)
-                                .build()))
+                        .partId(mp.getPart().getId())
+                        .partName(mp.getPart().getName())
+                        .policyId(pp.getWarrantyPolicy().getId())
+                        .policyName(pp.getWarrantyPolicy().getName())
+                        .description(pp.getWarrantyPolicy().getDescription())
+                        .durationPeriod(pp.getWarrantyPolicy().getDurationPeriod())
+                        .mileageLimit(pp.getWarrantyPolicy().getMileageLimit())
+                        .startDate(pp.getStartDate() != null ? pp.getStartDate().toString() : null)
+                        .endDate(pp.getEndDate() != null ? pp.getEndDate().toString() : null)
+                        .build()))
                 .collect(Collectors.toList());
 
         return DetailModelResponse.builder()
