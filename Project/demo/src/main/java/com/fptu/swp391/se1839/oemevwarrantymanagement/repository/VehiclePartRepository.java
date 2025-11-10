@@ -65,4 +65,6 @@ public interface VehiclePartRepository extends JpaRepository<VehiclePart, String
              OR vp.newSerialNumber = :serial
       """)
   Optional<VehiclePart> findBySerialNumber(@Param("serial") String serialNumber);
+
+  Optional<VehiclePart> findById(Long partId);
 }
