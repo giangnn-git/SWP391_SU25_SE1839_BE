@@ -1069,7 +1069,6 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                                 .status(order.getStatus().toString())
                                 .startDate(order.getStartDate())
                                 .endDate(order.getEndDate())
-                                .supervisorApproved(Boolean.TRUE.equals(order.getSupervisorApproved()))
                                 .claimDescription(claim != null ? claim.getDescription() : null)
                                 .claimMileage(claim != null ? claim.getMileage() : 0)
                                 .details(detailResponses)

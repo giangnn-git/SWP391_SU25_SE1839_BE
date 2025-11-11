@@ -19,7 +19,6 @@ public class RepairHistoryResponse {
     private String status;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-    private boolean supervisorApproved;
     private String claimDescription;
     private int claimMileage;
     private List<RepairDetailHistoryResponse> details;

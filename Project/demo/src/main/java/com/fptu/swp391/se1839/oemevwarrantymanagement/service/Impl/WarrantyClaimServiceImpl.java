@@ -126,10 +126,12 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         final SimpMessagingTemplate messagingTemplate;
 
         // ================= Dashboard & Summary =================
+        
 
         public DashboardClaimSummaryResponse handleSummaryClaims(Long serviceCenterId) {
                 long count;
                 long emergencyCount;
+
 
                 if (serviceCenterId == null || serviceCenterId <= 1) {
                         // Lấy tất cả service center
