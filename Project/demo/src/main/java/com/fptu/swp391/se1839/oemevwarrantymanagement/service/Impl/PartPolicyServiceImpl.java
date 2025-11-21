@@ -3,17 +3,17 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePartPolicyRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPartPolicyResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartCategoryGroupResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyCodeResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartPolicyResponse;
@@ -132,7 +132,7 @@ public class PartPolicyServiceImpl implements PartPolicyService {
                                         .warrantyPolicy(policy)
                                         .startDate(startDate)
                                         .endDate(endDate)
-                                        .status(PartPolicy.Status.ACTIVE)
+                                        .status(PartPolicy.Status.INACTIVE)
                                         .build();
 
                         PartPolicy saved = partPolicyRepository.save(newPolicy);
@@ -154,62 +154,99 @@ public class PartPolicyServiceImpl implements PartPolicyService {
 
         @Override
         public PartPolicyCodeResponse handleGetPartPolicyCode() {
-                List<Part> parts = partRepository.findAll();
+
+                // Lấy tất cả policies
                 List<WarrantyPolicy> policies = policyRepository.findAll();
 
-                Map<String, String> partMap = parts.stream()
-                                .collect(Collectors.toMap(Part::getCode, Part::getName));
-
                 Map<String, String> policyMap = policies.stream()
-                                .collect(Collectors.toMap(WarrantyPolicy::getCode, WarrantyPolicy::getName));
+                        .collect(Collectors.toMap(WarrantyPolicy::getCode, WarrantyPolicy::getName));
+
+                // Lấy tất cả parts
+                List<Part> parts = partRepository.findAll();
+
+                // Group theo partCategory
+                Map<String, Map<String, String>> groupedParts = parts.stream()
+                        .collect(Collectors.groupingBy(
+                                Part::getPartCategory,
+                                Collectors.toMap(Part::getCode, Part::getName)
+                        ));
+
+                // Convert sang object response
+                Map<String, PartCategoryGroupResponse> categoryResponse = new HashMap<>();
+
+                groupedParts.forEach((category, partMap) -> {
+                        categoryResponse.put(
+                        category,
+                        PartCategoryGroupResponse.builder()
+                                .partMap(partMap)
+                                .build()
+                        );
+                });
 
                 return PartPolicyCodeResponse.builder()
-                                .partMap(partMap)
-                                .policyMap(policyMap)
-                                .build();
+                        .policyMap(policyMap)
+                        .categories(categoryResponse) 
+                        .build();
         }
+
 
         @Override
         public PartPolicyResponse handleUpdateStatusPartPolicy(Long partPolicyId) {
-                PartPolicy partPolicy = partPolicyRepository.findById(partPolicyId)
-                                .orElseThrow(() -> new NoSuchElementException(
-                                                "PartPolicy with ID " + partPolicyId + " not found"));
-                if (partPolicy.getStatus() == PartPolicy.Status.INACTIVE) {
-                        List<PartPolicy> activePolicies = partPolicyRepository
-                                        .findByPartId(partPolicy.getPart().getId()).stream()
-                                        .filter(pp -> !pp.getId().equals(partPolicy.getId())) // bỏ qua chính nó
-                                        .filter(pp -> pp.getStatus() == PartPolicy.Status.ACTIVE)
-                                        .filter(pp -> isOverlapping(
-                                                        partPolicy.getStartDate(),
-                                                        partPolicy.getEndDate(),
-                                                        pp.getStartDate(),
-                                                        pp.getEndDate()))
-                                        .toList();
 
-                        if (!activePolicies.isEmpty()) {
-                                throw new IllegalStateException(
-                                                "This part already has an active policy during the selected period.");
-                        }
-                } else {
-                        partPolicy.setStatus(PartPolicy.Status.INACTIVE);
+        PartPolicy partPolicy = partPolicyRepository.findById(partPolicyId)
+                .orElseThrow(() -> new NoSuchElementException(
+                        "PartPolicy with ID " + partPolicyId + " not found"));
+
+        // Nếu đang INACTIVE -> muốn ACTIVATE
+        if (partPolicy.getStatus() == PartPolicy.Status.INACTIVE) {
+
+                List<PartPolicy> activePolicies = partPolicyRepository
+                        .findByPartId(partPolicy.getPart().getId()).stream()
+                        .filter(pp -> !pp.getId().equals(partPolicy.getId()))
+                        .filter(pp -> pp.getStatus() == PartPolicy.Status.ACTIVE)
+                        .filter(pp -> isOverlapping(
+                                partPolicy.getStartDate(),
+                                partPolicy.getEndDate(),
+                                pp.getStartDate(),
+                                pp.getEndDate()))
+                        .toList();
+
+                if (!activePolicies.isEmpty()) {
+                throw new IllegalStateException(
+                        "This part already has an active policy during the selected period.");
                 }
-                PartPolicy saved = partPolicyRepository.save(partPolicy);
-                return PartPolicyResponse.builder()
-                                .id(saved.getId())
-                                .partName(saved.getPart().getName())
-                                .partCode(saved.getPart().getCode())
-                                .policyCode(saved.getWarrantyPolicy().getCode())
-                                .startDate(saved.getStartDate() != null ? formatter.format(saved.getStartDate()) : null)
-                                .endDate(saved.getEndDate() != null ? formatter.format(saved.getEndDate()) : null)
-                                .status(PartPolicyResponse.Status.valueOf(saved.getStatus().name()))
-                                .build();
+
+                // thực sự kích hoạt policy
+                partPolicy.setStatus(PartPolicy.Status.ACTIVE);
+
+        } else {
+
+                // Nếu đang ACTIVE thì chuyển sang INACTIVE
+                partPolicy.setStatus(PartPolicy.Status.INACTIVE);
         }
 
-        private boolean isOverlapping(LocalDate start1, LocalDate end1, LocalDate start2, LocalDate end2) {
-                LocalDate actualEnd1 = end1 != null ? end1 : LocalDate.MAX;
-                LocalDate actualEnd2 = end2 != null ? end2 : LocalDate.MAX;
-                return !actualEnd1.isBefore(start2) && !actualEnd2.isBefore(start1);
+        PartPolicy saved = partPolicyRepository.save(partPolicy);
+
+        return PartPolicyResponse.builder()
+                .id(saved.getId())
+                .partName(saved.getPart().getName())
+                .partCode(saved.getPart().getCode())
+                .policyCode(saved.getWarrantyPolicy().getCode())
+                .startDate(saved.getStartDate() != null ? formatter.format(saved.getStartDate()) : null)
+                .endDate(saved.getEndDate() != null ? formatter.format(saved.getEndDate()) : null)
+                .status(PartPolicyResponse.Status.valueOf(saved.getStatus().name()))
+                .build();
         }
+
+
+        private boolean isOverlapping(LocalDate start1, LocalDate end1,
+                              LocalDate start2, LocalDate end2) {
+                LocalDate e1 = (end1 != null ? end1 : LocalDate.MAX);
+                LocalDate e2 = (end2 != null ? end2 : LocalDate.MAX);
+
+                return !start1.isAfter(e2) && !start2.isAfter(e1);
+        }
+
 
         public PartWarrantyInfoResponse getWarrantyInfoBySerial(String serialNumber) {
                 VehiclePart vp = vehiclePartRepository.findBySerial(serialNumber)
@@ -224,7 +261,7 @@ public class PartPolicyServiceImpl implements PartPolicyService {
 
                 var warranty = latestPolicy.getWarrantyPolicy();
 
-                LocalDate start = vehicle.getProductionDate();
+                LocalDate start = vehicle.getPurchaseDate();
                 LocalDate end = start.plusMonths(warranty.getDurationPeriod());
 
                 return PartWarrantyInfoResponse.builder()

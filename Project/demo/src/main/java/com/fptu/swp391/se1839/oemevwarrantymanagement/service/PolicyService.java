@@ -18,7 +18,7 @@ public interface PolicyService {
 
     UpdatePolicyResponse handleUpdatePolicy(Long policyId, UpdatePolicyRequest request);
 
-    DeletePolicyResponse handleDeletePolicy(Long policyId);
+    // DeletePolicyResponse handleDeletePolicy(Long policyId);
 
-    String updatePolicyStatus(Long policyId);
+    // String updatePolicyStatus(Long policyId);
 }

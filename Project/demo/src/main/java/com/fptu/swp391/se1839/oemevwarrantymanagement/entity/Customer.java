@@ -43,7 +43,7 @@ public class Customer {
     @Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
     String name;
 
-    @Pattern(regexp = "^\\d{10}$", message = "Phone must contain ten numberics")
+    @Pattern(regexp = "^0\\\\d{9}$", message = "Phone number must start with 0 and contain exactly 10 digits")
     String phoneNumber;
 
     @Email(message = "Email is not valid", regexp = "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$")

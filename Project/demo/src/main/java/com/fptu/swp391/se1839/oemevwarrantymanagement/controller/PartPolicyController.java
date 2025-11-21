@@ -92,7 +92,7 @@ public class PartPolicyController {
 
                 PartPolicyCodeResponse response = partPolicyService.handleGetPartPolicyCode();
                 var result = ApiResponse.<PartPolicyCodeResponse>builder()
-                                .status(HttpStatus.CREATED.toString())
+                                .status(HttpStatus.OK.toString())
                                 .message("Get part policy code successfully")
                                 .data(response)
                                 .build();

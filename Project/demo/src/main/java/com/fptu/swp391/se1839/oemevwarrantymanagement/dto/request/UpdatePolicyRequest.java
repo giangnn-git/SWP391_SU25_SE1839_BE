@@ -14,8 +14,8 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UpdatePolicyRequest {
     String name;
-    int durationPeriod;
-    int mileageLimit;
+    Integer durationPeriod;
+    Integer mileageLimit;
     String description;
     PolicyType policyType;
 

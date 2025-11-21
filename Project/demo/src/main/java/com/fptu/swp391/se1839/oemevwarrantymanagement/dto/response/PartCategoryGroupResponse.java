@@ -7,13 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PartPolicyCodeResponse {
-    private Map<String, String> policyMap;
-    private Map<String, PartCategoryGroupResponse> categories;
+public class PartCategoryGroupResponse {
+    private Map<String, String> partMap;
 }
 

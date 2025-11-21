@@ -95,36 +95,36 @@ public class PolicyController {
                 return ResponseEntity.ok(result);
         }
 
-        @DeleteMapping("/policy/{policyId}")
-        @PreAuthorize("hasAuthority('ADMIN')")
-        public ResponseEntity<ApiResponse<DeletePolicyResponse>> deletePolicy(
-                        @AuthenticationPrincipal Jwt jwt,
-                        @PathVariable Long policyId) {
+        // @DeleteMapping("/policy/{policyId}")
+        // @PreAuthorize("hasAuthority('ADMIN')")
+        // public ResponseEntity<ApiResponse<DeletePolicyResponse>> deletePolicy(
+        //                 @AuthenticationPrincipal Jwt jwt,
+        //                 @PathVariable Long policyId) {
 
-                DeletePolicyResponse response = policyService.handleDeletePolicy(policyId);
+        //         DeletePolicyResponse response = policyService.handleDeletePolicy(policyId);
 
-                var result = ApiResponse.<DeletePolicyResponse>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message(response.getMessage())
-                                .data(response)
-                                .build();
+        //         var result = ApiResponse.<DeletePolicyResponse>builder()
+        //                         .status(HttpStatus.OK.toString())
+        //                         .message(response.getMessage())
+        //                         .data(response)
+        //                         .build();
 
-                return ResponseEntity.ok(result);
-        }
+        //         return ResponseEntity.ok(result);
+        // }
 	
-	@PatchMapping("/policy/status/{policyId}")
-        @PreAuthorize("hasAuthority('ADMIN')")
-        public ResponseEntity<ApiResponse<String>> updateStatusPolicy(
-                        @AuthenticationPrincipal Jwt jwt,
-                        @PathVariable Long policyId) {
+	// @PatchMapping("/policy/status/{policyId}")
+        // @PreAuthorize("hasAuthority('ADMIN')")
+        // public ResponseEntity<ApiResponse<String>> updateStatusPolicy(
+        //                 @AuthenticationPrincipal Jwt jwt,
+        //                 @PathVariable Long policyId) {
 
-                String response = policyService.updatePolicyStatus(policyId);
+        //         String response = policyService.updatePolicyStatus(policyId);
 
-                var result = ApiResponse.<String>builder()
-                                .status(HttpStatus.OK.toString())
-                                .message("Policy status changed successfully")
-                                .data(response)
-                                .build();
-                return ResponseEntity.ok(result);
-        }
+        //         var result = ApiResponse.<String>builder()
+        //                         .status(HttpStatus.OK.toString())
+        //                         .message("Policy status changed successfully")
+        //                         .data(response)
+        //                         .build();
+        //         return ResponseEntity.ok(result);
+        // }
 }
