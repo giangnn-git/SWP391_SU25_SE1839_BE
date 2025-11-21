@@ -47,12 +47,28 @@ public interface UserRepository extends JpaRepository<User, Long> {
       @Param("statuses") List<User.WorkStatus> statuses,
       @Param("role") User.Role role);
 
-  @Query("""
-      SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END
-      FROM User u
-      WHERE u.id = :techId AND u.date = :day
-      """)
-  boolean existsByTechnicianIdAndDate(@Param("techId") long techId, @Param("day") LocalDate day);
-
   User findByName(String techName);
+
+  @Query("""
+      SELECT u FROM User u
+      WHERE u.workStatus = :workStatus
+        AND u.serviceCenter.id = :serviceCenterId
+        AND u.role = :technician
+      """)
+  List<User> findByWorkStatusAndServiceCenterIdAndRole(
+      @Param("workStatus") User.WorkStatus workStatus,
+      @Param("serviceCenterId") Long serviceCenterId,
+      @Param("technician") User.Role role);
+
+  @Query("""
+      SELECT u FROM User u
+      WHERE u.workStatus = :workStatus
+        AND u.role = :technician
+      """)
+  List<User> findByWorkStatusAndRole(
+      @Param("workStatus") User.WorkStatus workStatus,
+      @Param("technician") User.Role role);
+
+  List<User> findByRoleAndServiceCenterId(User.Role role, Long serviceCenterId);
+
 }

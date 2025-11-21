@@ -1,6 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -32,5 +33,7 @@ public class RepairDetailResponse {
     String technicianName;
     String replacementDescription;
     String newSerialNumber;
+
+    List<String> listOldSerialNumber;
 
 }

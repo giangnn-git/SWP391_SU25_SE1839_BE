@@ -1,6 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePolicyRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.TogglePolicyStatusRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UpdatePolicyRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CreatePolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DeletePolicyResponse;

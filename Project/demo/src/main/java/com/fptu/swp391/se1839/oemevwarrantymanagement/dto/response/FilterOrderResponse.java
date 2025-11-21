@@ -22,6 +22,8 @@ public class FilterOrderResponse {
     String modelName;
     String vin;
     String licensePlate;
+    String userName;
+    String userPhoneNumber;
     String techinal;
     double percentInProcess;
     LocalDateTime orderDate;

@@ -1,4 +1,5 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,4 +16,3 @@ public class RepairDetailHistoryResponse {
     private String status;
     private String description;
 }
-

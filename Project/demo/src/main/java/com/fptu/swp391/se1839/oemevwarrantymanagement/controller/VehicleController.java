@@ -68,4 +68,5 @@ public class VehicleController {
                                 .build();
                 return ResponseEntity.ok(result);
         }
+
 }

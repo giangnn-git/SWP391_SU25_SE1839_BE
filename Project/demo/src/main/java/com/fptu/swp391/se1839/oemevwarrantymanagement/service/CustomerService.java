@@ -26,5 +26,4 @@ public interface CustomerService {
 
     List<CustomerSummaryResponse> findByKey(String key);
 
-
 }

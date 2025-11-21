@@ -23,4 +23,5 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .addInterceptors(new WebSocketAuthInterceptor()) // Giữ interceptor xác thực JWT
                 .withSockJS();
     }
+
 }

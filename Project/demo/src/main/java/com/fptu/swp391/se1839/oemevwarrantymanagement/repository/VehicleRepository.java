@@ -30,7 +30,6 @@ public interface VehicleRepository extends JpaRepository<Vehicle, String> {
 
         List<Vehicle> findByCustomerId(Long customerId);
 
-
         @Query("SELECT v FROM Vehicle v WHERE v.customer IS NOT NULL")
         List<Vehicle> findAllRegisteredVehicles();
 
@@ -41,4 +40,6 @@ public interface VehicleRepository extends JpaRepository<Vehicle, String> {
                         """)
         List<Vehicle> findAllByCustomerIdWithCampaigns(@Param("customerId") Long customerId);
 
+        @Query("SELECT v.vin FROM Vehicle v WHERE v.licensePlate = :licensePlate")
+        String findVinByLicensePlate(@Param("licensePlate") String licensePlate);
 }

@@ -19,7 +19,19 @@ public class UserResponse {
     String email;
     String name;
     String phoneNumber;
-    User.Role role;
+    User.Role role; // dùng luôn enum của entity
     User.Status status;
     Long serviceCenterId;
+
+    public static UserResponse fromEntity(User u) {
+        return UserResponse.builder()
+                .id(u.getId())
+                .name(u.getName())
+                .email(u.getEmail())
+                .phoneNumber(u.getPhoneNumber())
+                .role(u.getRole()) // ✅ đúng kiểu
+                .status(u.getStatus())
+                .serviceCenterId(u.getServiceCenter() != null ? u.getServiceCenter().getId() : null)
+                .build();
+    }
 }

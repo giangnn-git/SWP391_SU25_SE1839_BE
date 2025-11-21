@@ -25,42 +25,31 @@ public interface VehiclePartRepository extends JpaRepository<VehiclePart, String
       FROM VehiclePart vp
       WHERE vp.vehicle = :vehicle
         AND vp.part = :part
-        AND vp.removalDate IS NULL
+        AND vp.removeDate IS NULL
       """)
   Optional<VehiclePart> findActiveVehiclePart(@Param("vehicle") Vehicle vehicle, @Param("part") Part part);
 
   /**
    * 🔹 Tìm VehiclePart theo VIN, PartId và ClaimId.
    */
-  Optional<VehiclePart> findByVehicleVinAndPartIdAndWarrantyClaimId(String vin, Long partId, Long claimId);
+  @Query("SELECT vp FROM VehiclePart vp WHERE vp.vehicle.vin = :vin AND vp.part.id = :partId AND vp.warrantyClaim.id = :claimId AND vp.removeDate IS NULL")
+  Optional<VehiclePart> findActiveRemovedPart(
+      @Param("vin") String vin,
+      @Param("partId") Long partId,
+      @Param("claimId") Long claimId);
 
   /**
    * 🔹 Tìm VehiclePart theo VIN và PartId (bất kể có claim hay chưa).
    */
-  Optional<VehiclePart> findByVehicleVinAndPartId(String vin, Long partId);
+  @Query("SELECT vp FROM VehiclePart vp WHERE vp.vehicle.vin = :vin AND vp.part.id = :partId AND vp.removeDate IS NULL")
+  List<VehiclePart> findActiveByVehicleVinAndPartId(@Param("vin") String vin, @Param("partId") Long partId);
 
-  /**
-   * 🔹 Lấy danh sách các part đang gắn trên xe theo VIN và danh sách partId.
-   * Chỉ lấy các part chưa bị tháo (removalDate IS NULL).
-   */
-  @Query("""
-      SELECT vp
-      FROM VehiclePart vp
-      WHERE vp.vehicle.vin = :vin
-        AND vp.part.id IN :partIds
-        AND vp.removalDate IS NULL
-      """)
-  List<VehiclePart> findActiveByVehicleVinAndPartIdIn(
-      @Param("vin") String vin,
-      @Param("partIds") Collection<Long> partIds);
+  @Query("SELECT vp FROM VehiclePart vp WHERE vp.oldSerialNumber= :serial")
+  Optional<VehiclePart> findBySerial(@Param("serial") String serialNumber);
 
-  @Query("SELECT vp FROM VehiclePart vp WHERE vp.part.id = :partId AND vp.vehicle.vin = :vin AND vp.removalDate IS NULL")
-  Optional<VehiclePart> findActivePart(@Param("partId") Long partId, @Param("vin") String vin);
+  @Query("SELECT vp FROM VehiclePart vp WHERE vp.vehicle.vin = :vin AND vp.part.id IN :partIds AND vp.removeDate IS NULL")
+  List<VehiclePart> findActiveByVehicleVinAndPartIds(@Param("vin") String vin, @Param("partIds") List<Long> partIds);
 
-  @Query("""
-          SELECT vp FROM VehiclePart vp
-          WHERE vp.oldSerialNumber = :serial
-             OR vp.newSerialNumber = :serial
-      """)
-  Optional<VehiclePart> findBySerialNumber(@Param("serial") String serialNumber);
+  VehiclePart findByOldSerialNumber(String serialNumber);
+
 }

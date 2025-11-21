@@ -1,6 +1,7 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreateCampaignRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.EmailDetailsRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UpdateCampaignRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.FilterClaimResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllCampaignResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllVehicleCampaignResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ServiceCampaignDetailResponse;
@@ -112,6 +114,7 @@ public class CampaignServiceImpl implements CampaignService {
                                                 .code(c.getCode())
                                                 .totalVehicles(c.getCampaignVehicles().size())
                                                 .build())
+                                .sorted(Comparator.comparing(ServiceCampaignResponse::getId).reversed())
                                 .toList();
 
                 return GetAllCampaignResponse.builder().campaigns(list).build();
@@ -371,38 +374,38 @@ public class CampaignServiceImpl implements CampaignService {
                                 " customers in campaign: " + campaign.getName();
         }
 
-	@Override
+        @Override
         public List<VehicleInCampaignResponse> handleGetVehiclesInCampaignByServiceCenter(Long scId) {
-        // Lấy danh sách CampaignVehicle theo ServiceCenter
-        List<CampaignVehicle> campaignVehicles = campaignVehicleRepository.findByServiceCenterId(scId);
+                // Lấy danh sách CampaignVehicle theo ServiceCenter
+                List<CampaignVehicle> campaignVehicles = campaignVehicleRepository.findByServiceCenterId(scId);
 
-        // Kiểm tra rỗng
-        if (campaignVehicles.isEmpty()) {
-                throw new IllegalArgumentException("No vehicles found for service center ID: " + scId);
-        }
+                // Kiểm tra rỗng
+                if (campaignVehicles.isEmpty()) {
+                        throw new IllegalArgumentException("No vehicles found for service center ID: " + scId);
+                }
 
-        //Map sang DTO VehicleInCampaignResponse
-        List<VehicleInCampaignResponse> responses = campaignVehicles.stream()
-                .map(cv -> {
-                var vehicle = cv.getVehicle();
-                var campaign = cv.getServiceCampaign();
-                var customer = vehicle.getCustomer();
+                // Map sang DTO VehicleInCampaignResponse
+                List<VehicleInCampaignResponse> responses = campaignVehicles.stream()
+                                .map(cv -> {
+                                        var vehicle = cv.getVehicle();
+                                        var campaign = cv.getServiceCampaign();
+                                        var customer = vehicle.getCustomer();
 
-                return VehicleInCampaignResponse.builder()
-                        .campaignName(campaign.getName())
-                        .vin(vehicle.getVin())
-                        .customerName(customer != null ? customer.getName() : "")
-                        .email(customer != null ? customer.getEmail() : "")
-                        .phoneNumber(customer != null ? customer.getPhoneNumber() : "")
-                        .address(customer != null ? customer.getAddress() : "")
-                        .startDate(campaign.getStartDate())
-                        .endDate(campaign.getEndDate())
-                        .status(cv.getStatus())
-                        .build();
-                })
-                .toList();
+                                        return VehicleInCampaignResponse.builder()
+                                                        .campaignName(campaign.getName())
+                                                        .vin(vehicle.getVin())
+                                                        .customerName(customer != null ? customer.getName() : "")
+                                                        .email(customer != null ? customer.getEmail() : "")
+                                                        .phoneNumber(customer != null ? customer.getPhoneNumber() : "")
+                                                        .address(customer != null ? customer.getAddress() : "")
+                                                        .startDate(campaign.getStartDate())
+                                                        .endDate(campaign.getEndDate())
+                                                        .status(cv.getStatus())
+                                                        .build();
+                                })
+                                .toList();
 
-        // Trả kết quả về
-        return responses;
+                // Trả kết quả về
+                return responses;
         }
 }

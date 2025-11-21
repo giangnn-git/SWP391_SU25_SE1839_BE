@@ -26,13 +26,13 @@ public interface CampaignVehicleRepository extends JpaRepository<CampaignVehicle
     boolean existsByServiceCampaignIdAndVehicleVin(Long campaignId, String vin);
 
     @Query("""
-        SELECT DISTINCT cv
-        FROM CampaignVehicle cv
-        JOIN cv.vehicle v
-        JOIN v.customer cust
-        JOIN cust.createdBy u
-        JOIN u.serviceCenter sc
-        WHERE sc.id = :scId
-        """)
+            SELECT DISTINCT cv
+                FROM CampaignVehicle cv
+                JOIN cv.vehicle v
+                JOIN v.customer cust
+                JOIN cust.createdBy u
+                WHERE u.serviceCenter.id = :scId
+                """)
     List<CampaignVehicle> findByServiceCenterId(@Param("scId") Long scId);
+
 }

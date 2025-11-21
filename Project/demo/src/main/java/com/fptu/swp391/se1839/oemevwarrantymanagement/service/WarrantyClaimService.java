@@ -32,7 +32,7 @@ public interface WarrantyClaimService {
 
     WarrantyClaimStatusResponse handleChangeStatus(long claimId, WarrantyClaimStatusRequest request, long userId);
 
-    ClaimDetailResponse handleGetClaimDetail(long claimId, Long userId) throws IOException;
+    ClaimDetailResponse handleGetClaimDetail(long claimId, Long userId) throws Exception;
 
     ClaimSummaryResponse calculateRepeatClaimsRateWithComparison(Long serviceCenterId);
 
@@ -40,5 +40,5 @@ public interface WarrantyClaimService {
 
     List<ClaimsByPriorityResponse> calculateClaimsByPriority(Long serviceCenterId);
 
-    CostAnalysisResponse handleCalculateClaimCostByMonth(long serviceCenterId);
+    CostAnalysisResponse handleCalculateClaimCostByMonth(Long serviceCenterId);
 }

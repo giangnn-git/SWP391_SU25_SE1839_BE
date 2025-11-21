@@ -19,74 +19,80 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PartInventoryServiceImpl implements PartInventoryService {
 
-    private final PartInventoryRepository partInventoryRepository;
+        private final PartInventoryRepository partInventoryRepository;
 
-    @Override
-    public List<PartInventoryResponse> getAllPartInventories() {
-        return partInventoryRepository.findAll()
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
+        @Override
+        public List<PartInventoryResponse> getAllPartInventories() {
+                return partInventoryRepository.findAll()
+                                .stream()
+                                .map(this::mapToResponse)
+                                .collect(Collectors.toList());
+        }
 
-    @Override
-    public List<PartInventoryResponse> getPartInventoriesByServiceCenter(Long serviceCenterId) {
-        return partInventoryRepository.findByServiceCenterId(serviceCenterId)
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
+        @Override
+        public List<PartInventoryResponse> getPartInventoriesByServiceCenter(Long serviceCenterId) {
+                return partInventoryRepository.findByServiceCenterId(serviceCenterId)
+                                .stream()
+                                .map(this::mapToResponse)
+                                .collect(Collectors.toList());
+        }
 
-    private PartInventoryResponse mapToResponse(PartInventory pi) {
-        return PartInventoryResponse.builder()
-                .id(pi.getId())
-                .partId(pi.getPart().getId())
-                .partCode(pi.getPart().getCode())
-                .partName(pi.getPart().getName())
-                .partCategory(pi.getPart().getPartCategory())
-                .serviceCenterId(pi.getServiceCenter().getId())
-                .serviceCenterName(pi.getServiceCenter().getName())
-                .serviceCenterAddress(pi.getServiceCenter().getAddress())
-                .quantity(pi.getQuantity())
-                .unit(pi.getPart().getUnit().toString())
-                .build();
-    }
+        public int handleCalculatePartAvailability(long serviceCenterId) {
+                boolean hasSpecificCenter = serviceCenterId > 0;
 
-    public int handleCalculatePartAvailability(long serviceCenterId) {
-        boolean hasSpecificCenter = serviceCenterId > 0;
+                long totalPartsRequested = hasSpecificCenter
+                                ? partInventoryRepository.countByServiceCenterId(serviceCenterId)
+                                : partInventoryRepository.countByServiceCenterIdIsNull(); // chỉ lấy những bản ghi
+                                                                                          // serviceCenterId là null
 
-        long totalPartsRequested = hasSpecificCenter
-                ? partInventoryRepository.countByServiceCenterId(serviceCenterId)
-                : partInventoryRepository.countAllParts(); // method tổng cho tất cả trung tâm
+                long availableParts = hasSpecificCenter
+                                ? partInventoryRepository.countByServiceCenterIdAndQuantityGreaterThan(serviceCenterId,
+                                                0)
+                                : partInventoryRepository.countByServiceCenterIdIsNullAndQuantityGreaterThan(0);
 
-        long availableParts = hasSpecificCenter
-                ? partInventoryRepository.countByServiceCenterIdAndQuantityGreaterThan(serviceCenterId, 0)
-                : partInventoryRepository.countAllPartsWithQuantityGreaterThan(0); // method tổng cho tất cả trung tâm
+                return totalPartsRequested == 0
+                                ? 100
+                                : (int) Math.round((availableParts * 100.0) / totalPartsRequested);
+        }
 
-        return totalPartsRequested == 0
-                ? 100
-                : (int) Math.round((availableParts * 100.0) / totalPartsRequested);
-    }
+        public int countLowStockParts(long serviceCenterId) {
+                boolean hasSpecificCenter = serviceCenterId > 0;
 
-    public int countLowStockParts(long serviceCenterId) {
-        boolean hasSpecificCenter = serviceCenterId > 0;
+                List<PartInventory> parts = hasSpecificCenter
+                                ? partInventoryRepository.findByServiceCenterId(serviceCenterId)
+                                : partInventoryRepository.findAll();
 
-        List<PartInventory> parts = hasSpecificCenter
-                ? partInventoryRepository.findByServiceCenterId(serviceCenterId)
-                : partInventoryRepository.findAll();
+                double avgQuantity = parts.stream()
+                                .mapToLong(PartInventory::getQuantity)
+                                .average()
+                                .orElse(0);
 
-        double avgQuantity = parts.stream()
-                .mapToLong(PartInventory::getQuantity)
-                .average()
-                .orElse(0);
+                int lowStockThreshold = (int) Math.ceil(avgQuantity * 0.2);
 
-        int lowStockThreshold = (int) Math.ceil(avgQuantity * 0.2);
+                long count = parts.stream()
+                                .filter(pi -> pi.getQuantity() <= lowStockThreshold)
+                                .count();
 
-        long count = parts.stream()
-                .filter(pi -> pi.getQuantity() <= lowStockThreshold)
-                .count();
+                return (int) count;
+        }
 
-        return (int) count;
-    }
+        private PartInventoryResponse mapToResponse(PartInventory inventory) {
+                boolean isOemWarehouse = (inventory.getServiceCenter() == null);
+
+                return PartInventoryResponse.builder()
+                                .id(inventory.getId())
+                                .partId(inventory.getPart().getId())
+                                .partCode(inventory.getPart().getCode())
+                                .partName(inventory.getPart().getName())
+                                .partCategory(inventory.getPart().getPartCategory())
+                                .serviceCenterId(isOemWarehouse ? null : inventory.getServiceCenter().getId())
+                                .serviceCenterName(isOemWarehouse ? "OEM Warehouse"
+                                                : inventory.getServiceCenter().getName())
+                                .serviceCenterAddress(isOemWarehouse ? "Main OEM Stock"
+                                                : inventory.getServiceCenter().getAddress())
+                                .quantity(inventory.getQuantity())
+                                .unit(inventory.getPart().getUnit().name())
+                                .build();
+        }
 
 }

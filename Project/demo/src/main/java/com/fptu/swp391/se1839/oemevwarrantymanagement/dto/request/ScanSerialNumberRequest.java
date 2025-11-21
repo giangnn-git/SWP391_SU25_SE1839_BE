@@ -12,6 +12,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ChangeStatusRepairDetailRequest {
-     String status;
+public class ScanSerialNumberRequest {
+    String oldSerialNumber;
+    String newSerialNumber;
 }

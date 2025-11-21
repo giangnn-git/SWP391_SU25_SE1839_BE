@@ -3,9 +3,8 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangeStatusRepairDetailRequest;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UpdateRepairDetailRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChangeStatusRepairDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllRepairDetailResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairDetailService;
 
@@ -18,8 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
@@ -42,14 +41,17 @@ public class RepairDetailController {
                 return ResponseEntity.ok(result);
         }
 
-        @PatchMapping("/repair-details/{id}")
-        public ResponseEntity<ApiResponse<String>> changeStatus(
+        @PutMapping("/repair-details/{id}")
+        public ResponseEntity<ApiResponse<String>> updateRepairDetail(
                         @PathVariable("id") Long repairDetailId,
-                        @RequestBody ChangeStatusRepairDetailRequest request) {
-                this.repairDetailService.handleChangeDetailStatus(request, repairDetailId);
+                        @RequestBody UpdateRepairDetailRequest request,
+                        @AuthenticationPrincipal Jwt jwt) {
+                this.repairDetailService.updateRepairDetail(repairDetailId, request.getOldSerialNumber());
+                String successMessage = "Update Repair Detail successfully"; // Placeholder message
                 var result = ApiResponse.<String>builder()
                                 .status(HttpStatus.OK.toString())
-                                .message("Change staytus Repair Detail successfully")
+                                .message(successMessage)
+                                .data(null)
                                 .build();
                 return ResponseEntity.ok(result);
         }

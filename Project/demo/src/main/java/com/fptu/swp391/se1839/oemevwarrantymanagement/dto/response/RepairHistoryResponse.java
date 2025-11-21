@@ -23,4 +23,3 @@ public class RepairHistoryResponse {
     private int claimMileage;
     private List<RepairDetailHistoryResponse> details;
 }
-

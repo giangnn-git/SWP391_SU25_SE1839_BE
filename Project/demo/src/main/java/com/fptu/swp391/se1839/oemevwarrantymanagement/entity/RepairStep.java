@@ -32,10 +32,14 @@ public class RepairStep {
 
     String title;
     Double estimatedHours;
+    @Builder.Default
+    Double actualHours = 0.0;
+
+    LocalDateTime endTime;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    StepStatus status = StepStatus.PENDING;
+    StepStatus status = StepStatus.WAITING;
 
     @ManyToOne
     @JsonIgnore

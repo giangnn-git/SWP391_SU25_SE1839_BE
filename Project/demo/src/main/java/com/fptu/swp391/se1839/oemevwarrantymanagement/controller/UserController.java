@@ -179,19 +179,19 @@ public class UserController {
                 return ResponseEntity.ok(result);
         }
 
-        // @GetMapping("/users/{userID}")
-        // @PreAuthorize("hasAuthority('ADMIN')")
-        // public ResponseEntity<ApiResponse<UserResponse>> getUserByID(
-        // @AuthenticationPrincipal Jwt jwt,
-        // @PathVariable Long userID) {
-        // UserResponse user = employeeService.getUserById(userID);
-        // var result = ApiResponse.<UserResponse>builder()
-        // .status(HttpStatus.OK.toString())
-        // .message("Get user " + userID + " successfully")
-        // .data(user)
-        // .build();
-        // return ResponseEntity.ok(result);
-        // }
+        @GetMapping("/users/{userID}")
+        @PreAuthorize("hasAuthority('ADMIN')")
+        public ResponseEntity<ApiResponse<UserResponse>> getUserByID(
+                        @AuthenticationPrincipal Jwt jwt,
+                        @PathVariable Long userID) {
+                UserResponse user = employeeService.getUserById(userID);
+                var result = ApiResponse.<UserResponse>builder()
+                                .status(HttpStatus.OK.toString())
+                                .message("Get user " + userID + " successfully")
+                                .data(user)
+                                .build();
+                return ResponseEntity.ok(result);
+        }
 
         // @GetMapping("/users/search")
         // @PreAuthorize("hasAuthority('ADMIN')")
@@ -245,5 +245,20 @@ public class UserController {
                                 .data(message)
                                 .build();
                 return ResponseEntity.ok(result);
+        }
+
+        @GetMapping("/service-centers/technicians")
+        public ResponseEntity<ApiResponse<List<UserResponse>>> getTechnicians(
+                        @AuthenticationPrincipal Jwt jwt) {
+                Object scClaim = jwt.getClaim("serviceCenterId");
+                Long serviceCenterId = (scClaim != null) ? Long.parseLong(scClaim.toString()) : 0L;
+                List<UserResponse> technicians = employeeService.getTechniciansByServiceCenter(serviceCenterId);
+
+                return ResponseEntity.ok(
+                                ApiResponse.<List<UserResponse>>builder()
+                                                .status("200")
+                                                .message("Get technicians successfully")
+                                                .data(technicians)
+                                                .build());
         }
 }

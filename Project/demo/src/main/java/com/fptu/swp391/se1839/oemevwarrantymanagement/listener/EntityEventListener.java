@@ -56,20 +56,7 @@ public class EntityEventListener {
     public void handleEntityUpdated(EntityUpdatedEvent<?> event) {
         Object entity = event.getEntity();
 
-        if (entity instanceof RepairStep step) {
-            ActivityLog log = ActivityLog.builder()
-                    .title("Repair Step Status Updated")
-                    .status("UPDATED")
-                    .detail("Repair step #" + step.getId() + " changed to " + step.getStatus())
-                    .createdAt(LocalDateTime.now())
-                    .meta("{\"event\":\"EntityUpdatedEvent\"}")
-                    .build();
-
-            activityLogRepository.save(log);
-            System.out.println(">>> 🧩 ActivityLog for RepairStep saved!");
-        }
-
-        else if (entity instanceof WarrantyClaim claim) {
+        if (entity instanceof WarrantyClaim claim) {
             ActivityLog log = ActivityLog.builder()
                     .title("Warranty Claim Status Updated")
                     .status("UPDATED")

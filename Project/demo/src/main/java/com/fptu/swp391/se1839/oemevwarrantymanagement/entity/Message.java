@@ -1,11 +1,10 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.entity;
 
-import java.time.LocalDateTime;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -23,26 +22,19 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-@Table(name = "repair_order_evidence")
-public class RepairOrderEvidence {
+@Table(name = "messages")
+public class Message {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    private RepairOrder repairOrder;
+    private Long senderId; // staff hoặc technician
+    private String content;
 
-    private String evidenceType; // SIGNATURE, NOTE
-
-    private String signature; // chữ ký online (Base64)
-
-    private String otpCode;
-
-    private String notes;
+    private Long timestamp;
 
     @ManyToOne
-    private User createdBy;
-
-    LocalDateTime createdAt = LocalDateTime.now();
+    @JoinColumn(name = "conversation_id")
+    private Conversation conversation;
 }

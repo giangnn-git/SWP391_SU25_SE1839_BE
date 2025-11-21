@@ -24,6 +24,7 @@ public class FilterClaimResponse {
     String vin;
     String licensePlate;
     String userName;
+    String userPhoneNumber;
     String serviceCenterName;
     String description;
     String diagnosis;

@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartClaim;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartInventory;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.VehiclePart;
 
 @Repository
@@ -68,6 +69,15 @@ public interface PartClaimRepository extends JpaRepository<PartClaim, Long> {
                         """)
         List<Object[]> countFailuresByComponent(@Param("serviceCenterId") Long serviceCenterId);
 
+        @Query("""
+                            SELECT p, COUNT(pc)
+                            FROM PartClaim pc
+                            JOIN pc.warrantyClaim wc
+                            JOIN pc.part p
+                            GROUP BY p
+                        """)
+        List<Object[]> countFailuresByComponentAllCenters();
+
         /**
          * Lấy danh sách PartClaim theo component cụ thể.
          * Nếu serviceCenterId = null → lấy tất cả trung tâm.
@@ -84,4 +94,13 @@ public interface PartClaimRepository extends JpaRepository<PartClaim, Long> {
                         @Param("serviceCenterId") Long serviceCenterId,
                         @Param("component") String component);
 
+        @Query("""
+                            SELECT pc
+                            FROM PartClaim pc
+                            JOIN pc.warrantyClaim wc
+                            JOIN pc.part p
+                            WHERE p.partCategory = :component
+                        """)
+        List<PartClaim> findByComponentAllCenters(
+                        @Param("component") String component);
 }

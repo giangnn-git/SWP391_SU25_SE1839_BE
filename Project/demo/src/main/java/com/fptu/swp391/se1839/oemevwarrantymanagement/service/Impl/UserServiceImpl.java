@@ -15,22 +15,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSObject;
-import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.Payload;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jose.crypto.MACVerifier;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
-
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
-
 import com.fptu.swp391.se1839.oemevwarrantymanagement.Utilities.PasswordGeneration;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangePasswordRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.EmailDetailsRequest;
@@ -58,6 +42,21 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.ServiceCenterRe
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.UserRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.EmailService;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.UserService;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -96,6 +95,10 @@ public class UserServiceImpl implements UserService {
         boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
         if (!authenticated) {
             throw new IllegalArgumentException("Password isn't correct");
+        }
+
+        if (user.getStatus() != User.Status.ACTIVE) {
+            throw new IllegalArgumentException("Your account has been suspended.");
         }
 
         user.setWorkStatus(User.WorkStatus.AVAILABLE);
@@ -561,6 +564,11 @@ public class UserServiceImpl implements UserService {
                 .currentRate(rateThisMonth)
                 .changePercent(changePercent)
                 .build();
+    }
+
+    public List<UserResponse> getTechniciansByServiceCenter(Long scId) {
+        List<User> users = userRepository.findByRoleAndServiceCenterId(User.Role.TECHNICIAN, scId);
+        return users.stream().map(UserResponse::fromEntity).toList();
     }
 
 }

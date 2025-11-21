@@ -10,11 +10,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangeStatusPartClaimRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.PartClaimRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChangeStatusPartClaimResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.PartClaimService;
 
 import lombok.AccessLevel;
@@ -36,27 +38,43 @@ public class PartClaimController {
                         @AuthenticationPrincipal Jwt jwt) {
 
                 Long userId = Long.parseLong(jwt.getClaim("userId").toString());
-                partClaimService.handleUpdatePartQuantities(claimId, updates, userId);
+                String success = partClaimService.handleUpdatePartQuantities(claimId, updates, userId);
 
                 var result = ApiResponse.<String>builder()
                                 .status(HttpStatus.OK.toString())
-                                .message("Updated part quantities successfully")
-                                .data("success")
+                                .message(success)
+                                .data(null)
                                 .build();
 
                 return ResponseEntity.ok(result);
         }
 
         @PutMapping("/claimId/part-claims/{partClaimId}/status")
-        public ResponseEntity<ApiResponse<String>> changeStatusPartClaim(@PathVariable("id") long claimId,
+        public ResponseEntity<ApiResponse<ChangeStatusPartClaimResponse>> changeStatusPartClaim(
                         @RequestBody ChangeStatusPartClaimRequest request,
                         @PathVariable("partClaimId") long partClaimId, @AuthenticationPrincipal Jwt jwt) {
                 Long userId = Long.parseLong(jwt.getClaim("userId").toString());
-                String partClaim = this.partClaimService.handleChangeStatusPartClaim(request, claimId, partClaimId,
+                ChangeStatusPartClaimResponse partClaim = this.partClaimService.handleChangeStatusPartClaim(request,
+                                partClaimId,
                                 userId);
-                var result = ApiResponse.<String>builder()
+                var result = ApiResponse.<ChangeStatusPartClaimResponse>builder()
                                 .status(HttpStatus.OK.toString())
                                 .message("Change status part claim successfully")
+                                .data(partClaim)
+                                .build();
+                return ResponseEntity.ok(result);
+        }
+
+        @PostMapping("/claims/{claimId}/parts/submit")
+        public ResponseEntity<ApiResponse<String>> addPartClaim(
+                        @PathVariable("claimId") long claimId,
+                        @RequestBody List<PartClaimRequest> requests,
+                        @AuthenticationPrincipal Jwt jwt) {
+                Long userId = Long.parseLong(jwt.getClaim("userId").toString());
+                String partClaim = this.partClaimService.handleSubmitPartClaims(claimId, userId, requests);
+                var result = ApiResponse.<String>builder()
+                                .status(HttpStatus.OK.toString())
+                                .message("Submit part claims successfully")
                                 .data(partClaim)
                                 .build();
                 return ResponseEntity.ok(result);

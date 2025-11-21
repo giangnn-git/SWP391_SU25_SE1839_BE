@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePartPolicyRequest;
@@ -156,54 +158,51 @@ public class PartPolicyServiceImpl implements PartPolicyService {
                 List<WarrantyPolicy> policies = policyRepository.findAll();
 
                 Map<String, String> partMap = parts.stream()
-                        .collect(Collectors.toMap(Part::getCode, Part::getName));
+                                .collect(Collectors.toMap(Part::getCode, Part::getName));
 
                 Map<String, String> policyMap = policies.stream()
-                        .collect(Collectors.toMap(WarrantyPolicy::getCode, WarrantyPolicy::getName));
+                                .collect(Collectors.toMap(WarrantyPolicy::getCode, WarrantyPolicy::getName));
 
                 return PartPolicyCodeResponse.builder()
-                        .partMap(partMap)
-                        .policyMap(policyMap)
-                        .build();
+                                .partMap(partMap)
+                                .policyMap(policyMap)
+                                .build();
         }
 
         @Override
         public PartPolicyResponse handleUpdateStatusPartPolicy(Long partPolicyId) {
                 PartPolicy partPolicy = partPolicyRepository.findById(partPolicyId)
-                        .orElseThrow(() -> new NoSuchElementException("PartPolicy with ID " + partPolicyId + " not found"));
-
+                                .orElseThrow(() -> new NoSuchElementException(
+                                                "PartPolicy with ID " + partPolicyId + " not found"));
                 if (partPolicy.getStatus() == PartPolicy.Status.INACTIVE) {
-                        // Kiểm tra trùng thời gian với PartPolicy khác cùng Part
-                        List<PartPolicy> activePolicies = partPolicyRepository.findByPartId(partPolicy.getPart().getId()).stream()
-                                .filter(pp -> !pp.getId().equals(partPolicy.getId())) // bỏ qua chính nó
-                                .filter(pp -> pp.getStatus() == PartPolicy.Status.ACTIVE)
-                                .filter(pp -> isOverlapping(
-                                        partPolicy.getStartDate(),
-                                        partPolicy.getEndDate(),
-                                        pp.getStartDate(),
-                                        pp.getEndDate()))
-                                .toList();
+                        List<PartPolicy> activePolicies = partPolicyRepository
+                                        .findByPartId(partPolicy.getPart().getId()).stream()
+                                        .filter(pp -> !pp.getId().equals(partPolicy.getId())) // bỏ qua chính nó
+                                        .filter(pp -> pp.getStatus() == PartPolicy.Status.ACTIVE)
+                                        .filter(pp -> isOverlapping(
+                                                        partPolicy.getStartDate(),
+                                                        partPolicy.getEndDate(),
+                                                        pp.getStartDate(),
+                                                        pp.getEndDate()))
+                                        .toList();
 
                         if (!activePolicies.isEmpty()) {
-                        throw new IllegalStateException("This part already has an active policy during the selected period.");
+                                throw new IllegalStateException(
+                                                "This part already has an active policy during the selected period.");
                         }
-
-                        partPolicy.setStatus(PartPolicy.Status.ACTIVE);
                 } else {
                         partPolicy.setStatus(PartPolicy.Status.INACTIVE);
                 }
-
                 PartPolicy saved = partPolicyRepository.save(partPolicy);
-
                 return PartPolicyResponse.builder()
-                        .id(saved.getId())
-                        .partName(saved.getPart().getName())
-                        .partCode(saved.getPart().getCode())
-                        .policyCode(saved.getWarrantyPolicy().getCode())
-                        .startDate(saved.getStartDate() != null ? formatter.format(saved.getStartDate()) : null)
-                        .endDate(saved.getEndDate() != null ? formatter.format(saved.getEndDate()) : null)
-                        .status(PartPolicyResponse.Status.valueOf(saved.getStatus().name()))
-                        .build();
+                                .id(saved.getId())
+                                .partName(saved.getPart().getName())
+                                .partCode(saved.getPart().getCode())
+                                .policyCode(saved.getWarrantyPolicy().getCode())
+                                .startDate(saved.getStartDate() != null ? formatter.format(saved.getStartDate()) : null)
+                                .endDate(saved.getEndDate() != null ? formatter.format(saved.getEndDate()) : null)
+                                .status(PartPolicyResponse.Status.valueOf(saved.getStatus().name()))
+                                .build();
         }
 
         private boolean isOverlapping(LocalDate start1, LocalDate end1, LocalDate start2, LocalDate end2) {
@@ -212,9 +211,8 @@ public class PartPolicyServiceImpl implements PartPolicyService {
                 return !actualEnd1.isBefore(start2) && !actualEnd2.isBefore(start1);
         }
 
-
         public PartWarrantyInfoResponse getWarrantyInfoBySerial(String serialNumber) {
-                VehiclePart vp = vehiclePartRepository.findBySerialNumber(serialNumber)
+                VehiclePart vp = vehiclePartRepository.findBySerial(serialNumber)
                                 .orElseThrow(() -> new IllegalArgumentException("Serial number not found"));
 
                 var vehicle = vp.getVehicle();

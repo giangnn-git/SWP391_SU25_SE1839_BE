@@ -46,7 +46,7 @@ public class PolicyServiceImpl implements PolicyService {
                                                 .mileageLimit(policy.getMileageLimit())
                                                 .code(policy.getCode())
                                                 .policyType(PolicyResponse.PolicyType.valueOf(policy.getType().name()))
-						.status(PolicyResponse.Status.valueOf(policy.getStatus().name()))
+                                                .status(PolicyResponse.Status.valueOf(policy.getStatus().name()))
                                                 .build())
                                 .toList();
 
@@ -77,10 +77,9 @@ public class PolicyServiceImpl implements PolicyService {
                                 .description(request.getDescription())
                                 .durationPeriod(request.getDurationPeriod())
                                 .mileageLimit(request.getMileageLimit())
-                                .status(WarrantyPolicy.Status.ACTIVE)
                                 .type(request.getType() == null ? WarrantyPolicy.PolicyType.NORMAL
                                                 : WarrantyPolicy.PolicyType.valueOf(request.getType().name()))
-                                .build();                                                                                                                                                                                               
+                                .build();
 
                 WarrantyPolicy saved = policyRepository.save(policy);
                 log.info("Created new WarrantyPolicy with id: {}", saved.getId());

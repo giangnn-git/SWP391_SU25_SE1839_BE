@@ -17,34 +17,36 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairHistory
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.RepairOrderVerificationResponse;
 
 public interface RepairOrderService {
-    DashboardOrderSummaryResponse findSunSummaryOrder(Long serviceCenterId);
+        DashboardOrderSummaryResponse findSunSummaryOrder(Long serviceCenterId);
 
-    OrderDashboardResponse handleOrderDashboard(long serviceCenterId,
-            FilterRequest request, Long userId);
+        OrderDashboardResponse handleOrderDashboard(long serviceCenterId,
+                        FilterRequest request, Long userId);
 
-    ChooseTechnicalResponse handleChooseTechnical(long repairOrderId, ChooseTechnicalRequest request);
+        ChooseTechnicalResponse handleChooseTechnical(long repairOrderId, ChooseTechnicalRequest request);
 
-    OrderDetailResponse handleGetDetailOrder(long serviceCenterId, long orderId) throws IOException;
+        OrderDetailResponse handleGetDetailOrder(long serviceCenterId, long orderId) throws Exception;
 
-    int handleCalculateResponseScore(Long serviceCenterId);
+        int handleCalculateResponseScore(Long serviceCenterId);
 
-    int handleCalculatePerformanceMetrics(Long serviceCenterId);
+        int handleCalculatePerformanceMetrics(Long serviceCenterId);
 
-    int handleCalculateOverdueRepairs(Long serviceCenterId);
+        int handleCalculateOverdueRepairs(Long serviceCenterId);
 
-    int hanldeCalculateCompleteToday(long serviceCenterId);
+        int hanldeCalculateCompleteToday(long serviceCenterId);
 
-    double handleCalculateAvgDays(long serviceCenterId);
+        double handleCalculateAvgDays(long serviceCenterId);
 
-    int handleCalculateResolutionRate(Long serviceCenterId);
+        int handleCalculateResolutionRate(Long serviceCenterId);
 
-    OrderSummaryResponse handleCalculateResolutionRateDifferent(Long serviceCenterId);
+        OrderSummaryResponse handleCalculateResolutionRateDifferent(Long serviceCenterId);
 
-    String sendRepairCompletedEmail(Long repairOrderId);
+        String sendRepairCompletedEmail(Long repairOrderId);
 
-    RepairOrderVerificationResponse verifyRepairOrder(long repairOrderId, RepairOrderVerificationRequest request,
-            long userId, MultipartFile[] attachments) throws IOException;
-
+        RepairOrderVerificationResponse verifyRepairOrder(long repairOrderId, RepairOrderVerificationRequest request,
+                        long userId, MultipartFile[] attachments) throws IOException;
 
         List<RepairHistoryResponse> getRecentRepairHistoryByVin(String vin);
+
+        // Start a repair order (set start date and mark as IN_PROGRESS)
+        void startRepairOrder(Long repairOrderId);
 }

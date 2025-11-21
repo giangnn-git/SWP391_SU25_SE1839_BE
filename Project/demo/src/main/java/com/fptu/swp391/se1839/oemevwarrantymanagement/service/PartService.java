@@ -5,7 +5,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartCategoryR
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PartListResponse;
 
 public interface PartService {
-    PartCategoryResponse handleListCategory();
+    PartCategoryResponse handleListCategory(String vin);
 
     PartListResponse handlePartList(String category, String vin);
 

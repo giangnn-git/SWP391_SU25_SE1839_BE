@@ -55,4 +55,6 @@ public interface UserService {
     UserResponse deleteUser(Long id, Long ownId);
 
     TechnicianPerformanceResponse calculateTechnicianPerformanceWithComparison(Long serviceCenterId);
+    
+    List<UserResponse> getTechniciansByServiceCenter(Long userId);
 }

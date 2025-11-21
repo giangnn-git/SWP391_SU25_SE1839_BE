@@ -152,8 +152,6 @@ public class PartSupplyServiceImpl implements PartSupplyService {
 
                 // Xử lý khi approve
                 if ("APPROVE".equalsIgnoreCase(request.getAction())) {
-                        ServiceCenter oemWarehouse = serviceCenterRepository.findById(1L)
-                                        .orElseThrow(() -> new IllegalArgumentException("OEM warehouse not found"));
 
                         for (PartApprovalDetailResquest d : request.getDetails()) {
                                 PartRequestDetail detail = partRequestDetailRepository.findById(d.getDetailId())
@@ -162,21 +160,6 @@ public class PartSupplyServiceImpl implements PartSupplyService {
                                 Part part = detail.getPart();
                                 int approvedQty = d.getApprovedQuantity();
 
-                                // Trừ kho hãng
-                                PartInventory oemInventory = partInventoryRepository
-                                                .findByPartAndServiceCenter(part, oemWarehouse)
-                                                .orElseThrow(() -> new IllegalArgumentException(
-                                                                "Part " + part.getCode()
-                                                                                + " not found in OEM warehouse"));
-                                if (oemInventory.getQuantity() < approvedQty) {
-                                        throw new IllegalArgumentException(
-                                                        "Insufficient stock for part " + part.getCode()
-                                                                        + " in OEM warehouse");
-                                }
-                                oemInventory.setQuantity(oemInventory.getQuantity() - approvedQty);
-                                partInventoryRepository.save(oemInventory);
-
-                                // Cộng kho SC
                                 ServiceCenter sc = supply.getServiceCenter();
                                 PartInventory scInventory = partInventoryRepository.findByPartAndServiceCenter(part, sc)
                                                 .orElse(PartInventory.builder()

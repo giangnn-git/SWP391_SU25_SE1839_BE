@@ -3,7 +3,6 @@ package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -47,7 +46,6 @@ public class CustomerServiceImpl implements CustomerService {
                                 .orElseThrow(() -> new NoSuchElementException(
                                                 "Vehicle with VIN " + req.getVin() + " not found"));
 
-                // Check vehicle đã có customer
                 if (vehicle.getCustomer() != null) {
                         throw new IllegalArgumentException("This vehicle already has a registered customer");
                 }
@@ -87,7 +85,6 @@ public class CustomerServiceImpl implements CustomerService {
                 vehicle.setLicensePlate(req.getLicensePlate());
                 vehicleRepository.save(vehicle);
 
-                // Trả về CustomerResponse
                 return new CustomerRegisterResponse(
                                 savedCustomer.getId(),
                                 savedCustomer.getName(),
@@ -115,6 +112,7 @@ public class CustomerServiceImpl implements CustomerService {
         @Override
         @Transactional
         public CustomerRegisterResponse updateCustomer(Long id, CustomerRegisterRequest req) {
+                // 1️⃣ Tìm customer
                 var customer = customerRepository.findById(id)
                                 .orElseThrow(() -> new NoSuchElementException("Customer not found"));
 
@@ -131,17 +129,14 @@ public class CustomerServiceImpl implements CustomerService {
                                                 throw new IllegalArgumentException("Email already exists");
                                         }
                                 });
-                if (req.getLicensePlate() != null && !req.getLicensePlate().isBlank()) {
 
-                        // Tìm xe hiện tại theo VIN
+                // 4️⃣ Nếu request có biển số → kiểm tra & cập nhật
+                if (req.getLicensePlate() != null && !req.getLicensePlate().isBlank()) {
                         Vehicle currentVehicle = vehicleRepository.findByVin(req.getVin())
                                         .orElseThrow(() -> new NoSuchElementException(
                                                         "Vehicle not found with VIN " + req.getVin()));
-
-                        // Tìm xem biển số này đã tồn tại ở xe khác chưa
                         vehicleRepository.findByLicensePlate(req.getLicensePlate())
                                         .ifPresent(existingVehicle -> {
-                                                // Nếu biển số đang thuộc về xe khác VIN → lỗi
                                                 if (!Objects.equals(existingVehicle.getVin(),
                                                                 currentVehicle.getVin())) {
                                                         throw new IllegalArgumentException(
@@ -149,13 +144,14 @@ public class CustomerServiceImpl implements CustomerService {
                                                 }
                                         });
 
-                        // Chỉ update nếu khác
+                        // Lấy xe hiện tại của customer để cập nhật
                         if (!Objects.equals(currentVehicle.getLicensePlate(), req.getLicensePlate())) {
                                 currentVehicle.setLicensePlate(req.getLicensePlate());
                                 vehicleRepository.save(currentVehicle);
                         }
                 }
 
+                // 5️⃣ Cập nhật thông tin customer
                 customer.setName(req.getName());
                 customer.setPhoneNumber(req.getPhoneNumber());
                 customer.setEmail(req.getEmail());
@@ -163,6 +159,7 @@ public class CustomerServiceImpl implements CustomerService {
 
                 var saved = customerRepository.save(customer);
 
+                // 6️⃣ Trả về response
                 return new CustomerRegisterResponse(
                                 saved.getId(),
                                 saved.getName(),

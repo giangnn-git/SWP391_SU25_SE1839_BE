@@ -9,27 +9,23 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangeStatusRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChangeStatusRepairStepResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetRepairStepResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Part;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartInventory;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairDetail;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairStep;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.VehiclePart;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.event.EntityUpdatedEvent;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyClaim;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartInventoryRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairDetailRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairStepRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehiclePartRepository;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.WarrantyClaimRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairStepService;
 
 import jakarta.transaction.Transactional;
@@ -43,12 +39,9 @@ import lombok.experimental.FieldDefaults;
 public class RepairStepServiceImpl implements RepairStepService {
     final RepairStepRepository repairStepRepository;
     final RepairOrderRepository repairOrderReposity;
-    final WarrantyClaimRepository warrantyClaimRepository;
-    final ApplicationEventPublisher applicationEventPublisher;
     final VehiclePartRepository vehiclePartRepository;
     final PartInventoryRepository partInventoryRepository;
     final RepairDetailRepository repairDetailRepository;
-
 
     // --- Tính % hoàn thành tất cả step ---
     int calculatePercent(long repairOrderId) {
@@ -84,44 +77,38 @@ public class RepairStepServiceImpl implements RepairStepService {
             List<RepairStep> steps = repairStepRepository.findByRepairOrderId(repairOrder.getId())
                     .stream()
                     .filter(step -> step.getStatus() != RepairStep.StepStatus.REJECTED)
-                    .toList();
-
-            // Separate the last 2 steps
-            List<RepairStep> finalSteps = steps.stream()
-                    .filter(step -> step.getTitle().contains("Operation Check")
-                            || step.getTitle().contains("Repair Completion"))
-                    .toList();
-
-            // Other steps (sorted by id)
-            List<RepairStep> otherSteps = steps.stream()
-                    .filter(step -> !finalSteps.contains(step))
                     .sorted(Comparator.comparing(RepairStep::getId))
                     .toList();
 
             int stepNumber = 1;
 
-            // Add the other steps
-            for (RepairStep step : otherSteps) {
-                responses.add(GetRepairStepResponse.builder()
-                        .stepId(step.getId())
-                        .title("Step " + stepNumber + ": " + step.getTitle())
-                        .estimatedHour(step.getEstimatedHours() != null ? step.getEstimatedHours() : 0.0)
-                        .status(step.getStatus().name())
-                        .nextStatuses(getNextStepStatuses(step))
-                        .build());
-                stepNumber++;
-            }
+            // Sequential visibility rule:
+            // - Always show steps that are COMPLETED
+            // - Also show the first non-COMPLETED step (the current step)
+            // - Hide any steps after the first non-completed step
+            boolean shownFirstNonCompleted = false;
 
-            // Add the last 2 steps
-            for (RepairStep step : finalSteps) {
-                responses.add(GetRepairStepResponse.builder()
-                        .stepId(step.getId())
-                        .title("Step " + stepNumber + ": " + step.getTitle())
-                        .estimatedHour(step.getEstimatedHours() != null ? step.getEstimatedHours() : 0.0)
-                        .status(step.getStatus().name())
-                        .nextStatuses(getNextStepStatuses(step))
-                        .build());
-                stepNumber++;
+            for (RepairStep step : steps) {
+                if (!shownFirstNonCompleted) {
+                    responses.add(GetRepairStepResponse.builder()
+                            .stepId(step.getId())
+                            .title("Step " + stepNumber + ": " + step.getTitle())
+                            .estimatedHour(step.getEstimatedHours() != null
+                                    ? Math.round(step.getEstimatedHours() * 100.0) / 100.0
+                                    : 0.0)
+                            .status(step.getStatus().name())
+                            .nextStatuses(getNextStepStatuses(step))
+                            .build());
+                    stepNumber++;
+
+                    if (step.getStatus() != RepairStep.StepStatus.COMPLETED) {
+                        // this is the first non-completed step; stop after showing it
+                        shownFirstNonCompleted = true;
+                    }
+                } else {
+                    // already shown the first non-completed step -> do not reveal further steps
+                    break;
+                }
             }
         }
 
@@ -130,95 +117,85 @@ public class RepairStepServiceImpl implements RepairStepService {
 
     @Override
     @Transactional
-    public ChangeStatusRepairStepResponse changeStepStatus(long repairStepId, ChangeStatusRequest newStatusStr) {
+    public ChangeStatusRepairStepResponse completeRepairStep(long repairStepId) {
         RepairStep step = repairStepRepository.findById(repairStepId)
                 .orElseThrow(() -> new NoSuchElementException("Repair step not found: " + repairStepId));
 
         RepairOrder order = step.getRepairOrder();
         LocalDateTime now = LocalDateTime.now();
 
-        // Chuyển trạng thái step
-        RepairStep.StepStatus newStatus;
-        try {
-            newStatus = RepairStep.StepStatus.valueOf(newStatusStr.getStatus().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid status: " + newStatusStr.getStatus());
-        }
+        // Hoàn thành step
+        step.setEndTime(now);
+        step.setStatus(RepairStep.StepStatus.COMPLETED);
 
-        // Kiểm tra trạng thái hợp lệ
-        Set<String> allowedStatuses = getNextStepStatuses(step);
-        if (!allowedStatuses.contains(newStatus.name())) {
-            throw new IllegalArgumentException("Cannot change status from " + step.getStatus() + " to " + newStatus);
-        }
+        // Tính actualHours dựa trên step trước
+        List<RepairStep> stepsOrdered = order.getSteps().stream()
+                .sorted(Comparator.comparingLong(RepairStep::getId))
+                .collect(Collectors.toList());
 
-        
-
-        step.setStatus(newStatus);
-        if ("Inspection".equalsIgnoreCase(step.getTitle()) && order.getStartDate() == null) {
-            order.setStartDate(LocalDateTime.now());
+        RepairStep previousStep = null;
+        for (RepairStep s : stepsOrdered) {
+            if (s.getId().equals(step.getId())) {
+                if (previousStep == null) {
+                    // Step đầu tiên → tính từ repairOrder.startDate
+                    if (order.getStartDate() != null) {
+                        long seconds = Duration.between(order.getStartDate(), s.getEndTime()).getSeconds();
+                        s.setActualHours(seconds / 3600.0);
+                    }
+                } else {
+                    // Các step còn lại → tính từ endTime của step trước
+                    if (previousStep.getEndTime() != null) {
+                        long seconds = Duration.between(previousStep.getEndTime(), s.getEndTime()).getSeconds();
+                        s.setActualHours(seconds / 3600.0);
+                    }
+                }
+                break;
+            }
+            previousStep = s;
         }
 
         repairStepRepository.save(step);
-        repairOrderReposity.save(order); // lưu RepairOrder nếu cập nhật start_date
-        applicationEventPublisher.publishEvent(new EntityUpdatedEvent<>(this, step));
 
-        // --- Logic riêng cho Disassembly và Assembly ---
-        if (newStatus == RepairStep.StepStatus.COMPLETED) {
+        // Tạo step tiếp theo nếu cần
+        String nextStepTitle = switch (step.getTitle()) {
+            case "Inspection" -> "Repair/Replace Part";
+            case "Repair/Replace Part" -> "Assembly";
+            case "Assembly" -> "Repair Completion";
+            default -> null;
+        };
+
+        if (nextStepTitle != null) {
+            boolean nextStepExists = order.getSteps().stream()
+                    .anyMatch(s -> s.getTitle().equalsIgnoreCase(nextStepTitle));
+            if (!nextStepExists) {
+                RepairStep nextStep = RepairStep.builder()
+                        .title(nextStepTitle)
+                        .estimatedHours(suggestHours(nextStepTitle))
+                        .status(RepairStep.StepStatus.PENDING)
+                        .repairOrder(order)
+                        .build();
+                repairStepRepository.save(nextStep);
+                order.getSteps().add(nextStep);
+            }
+        }
+
+        // --- Logic Disassembly & Assembly ---
+        if ("Repair/Replace Part".equalsIgnoreCase(step.getTitle())) {
             Set<RepairDetail> details = order.getRepairDetails();
             LocalDate nowDate = LocalDate.now();
+            for (RepairDetail rd : details) {
+                rd.setStatus(RepairDetail.DetailStatus.REPLACED);
+                repairDetailRepository.save(rd);
 
-            if ("Repair/Replace Part".equalsIgnoreCase(step.getTitle())) {
-                for (RepairDetail rd : details) {
-                    // Set status REPLACED
-                    rd.setStatus(RepairDetail.DetailStatus.REPLACED);
-                    repairDetailRepository.save(rd);
-
-                    // Nếu có VehiclePart → set removeDate
-                    VehiclePart vp = rd.getVehiclePart();
-                    if (vp != null) {
-                        vp.setRemovalDate(nowDate);
-                        vehiclePartRepository.save(vp);
-                    }
-                }
-            }
-
-            if ("Assembly".equalsIgnoreCase(step.getTitle())) {
-                for (RepairDetail rd : details) {
-                    VehiclePart oldVP = rd.getVehiclePart();
-                    if (oldVP != null) {
-                        Vehicle vehicle = oldVP.getVehicle(); // lấy từ VehiclePart cũ
-                        Part part = oldVP.getPart();
-                        String serialNumber = "SC-" + vehicle.getVin() + "-" + part.getId() + "-"
-                                + System.currentTimeMillis();
-                        oldVP.setNewSerialNumber(serialNumber);
-                        vehiclePartRepository.save(oldVP);
-                        VehiclePart newVP = VehiclePart.builder()
-                                .vehicle(oldVP.getVehicle())
-                                .part(oldVP.getPart())
-                                .oldSerialNumber(serialNumber)
-                                .installationDate(now.toLocalDate())
-                                .build();
-                        vehiclePartRepository.save(newVP);
-
-                        // Trừ số lượng kho
-                        PartInventory inventory = partInventoryRepository
-                                .findByPartIdAndServiceCenterId(oldVP.getPart().getId(),
-                                        order.getWarrantyClaim().getServiceCenter().getId())
-                                .orElseThrow(() -> new RuntimeException("Inventory not found"));
-                        long totalQty = order.getWarrantyClaim().getPartClaims().stream()
-                                .filter(pc -> pc.getPart().getId().equals(oldVP.getPart().getId()))
-                                .mapToLong(pc -> pc.getQuantity())
-                                .sum();
-                        System.out.println("Trừ số lượng: " + totalQty);
-
-                        partInventoryRepository.save(inventory);
-                    }
+                VehiclePart vp = rd.getVehiclePart();
+                if (vp != null) {
+                    vp.setRemoveDate(nowDate);
+                    vehiclePartRepository.save(vp);
                 }
             }
         }
 
         syncRepairOrderStatus(order);
-
         int percent = calculateCompletionPercent(order);
 
         return ChangeStatusRepairStepResponse.builder()
@@ -253,12 +230,10 @@ public class RepairStepServiceImpl implements RepairStepService {
             } else {
                 order.setStatus(RepairOrder.OrderStatus.COMPLETED);
 
-                // --- Set end_date và tính end_time ---
+                // Tính end time
                 if (order.getStartDate() != null) {
                     LocalDateTime now = LocalDateTime.now();
                     order.setEndDate(now);
-
-                    // Tính số giờ làm việc
                     long hours = Duration.between(order.getStartDate(), now).toHours();
                     order.setEndTime((int) hours);
                 }
@@ -282,5 +257,15 @@ public class RepairStepServiceImpl implements RepairStepService {
         long total = steps.size();
         long completed = steps.stream().filter(s -> s.getStatus() == RepairStep.StepStatus.COMPLETED).count();
         return total > 0 ? (int) ((completed * 100.0) / total) : 0;
+    }
+
+    private double suggestHours(String title) {
+        return switch (title) {
+            case "Inspection" -> 0.3;
+            case "Repair/Replace Part" -> 1.0;
+            case "Assembly" -> 0.5;
+            case "Repair Completion" -> 0.2;
+            default -> 0.3;
+        };
     }
 }

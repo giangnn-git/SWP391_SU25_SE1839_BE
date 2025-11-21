@@ -55,7 +55,7 @@ public class WarrantyClaimController {
                                 attachments, userId);
 
                 var result = ApiResponse.<CreateClaimResponse>builder()
-                                .status(HttpStatus.OK.toString())
+                                .status(HttpStatus.CREATED.toString())
                                 .message("Create claim successfully")
                                 .data(response)
                                 .build();
@@ -108,7 +108,7 @@ public class WarrantyClaimController {
         @GetMapping("/claims/{id}")
         public ResponseEntity<ApiResponse<ClaimDetailResponse>> getClaimDetail(
                         @PathVariable("id") long claimId,
-                        @AuthenticationPrincipal Jwt jwt) throws IOException {
+                        @AuthenticationPrincipal Jwt jwt) throws Exception {
                 Long userId = Long.parseLong(jwt.getClaim("userId").toString());
                 ClaimDetailResponse detail = this.warrantyClaimService.handleGetClaimDetail(claimId, userId);
                 var result = ApiResponse.<ClaimDetailResponse>builder()

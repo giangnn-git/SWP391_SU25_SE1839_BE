@@ -44,7 +44,7 @@ public class PartInventory {
 
     @ManyToOne
     @JsonIgnore
-    @JoinColumn(name = "serviceCenterId", nullable = false)
+    @JoinColumn(name = "serviceCenterId", nullable = true)
     ServiceCenter serviceCenter;
 
     @Override

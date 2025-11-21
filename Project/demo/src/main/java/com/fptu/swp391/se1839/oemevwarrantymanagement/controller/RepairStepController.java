@@ -7,11 +7,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.ChangeStatusRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ApiResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChangeStatusRepairStepResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetRepairStepResponse;
@@ -28,6 +27,7 @@ import lombok.experimental.FieldDefaults;
 public class RepairStepController {
 
         final RepairStepService repairStepService;
+        final com.fptu.swp391.se1839.oemevwarrantymanagement.service.RepairOrderService repairOrderService;
 
         @GetMapping("/repair-steps/{id}")
         public ResponseEntity<ApiResponse<List<GetRepairStepResponse>>> getStep(
@@ -43,14 +43,34 @@ public class RepairStepController {
 
         @PatchMapping("/repair-steps/{id}")
         public ResponseEntity<ApiResponse<ChangeStatusRepairStepResponse>> changeStatus(
-                        @PathVariable("id") Long repairStepId, @RequestBody ChangeStatusRequest status) {
+                        @PathVariable("id") Long repairStepId) {
                 ChangeStatusRepairStepResponse changeStatusRepairStep = this.repairStepService
-                                .changeStepStatus(repairStepId, status);
+                                .completeRepairStep(repairStepId);
                 var result = ApiResponse.<ChangeStatusRepairStepResponse>builder()
                                 .status(HttpStatus.OK.toString())
                                 .message("Change status step successfully")
                                 .data(changeStatusRepairStep)
                                 .build();
                 return ResponseEntity.ok(result);
+        }
+
+        @PostMapping("/repair-steps/{orderId}/start")
+        public ResponseEntity<ApiResponse<String>> startRepairOrder(@PathVariable Long orderId) {
+                try {
+                        repairOrderService.startRepairOrder(orderId);
+                        var resp = ApiResponse.<String>builder()
+                                        .status(HttpStatus.OK.toString())
+                                        .message("Repair order started successfully")
+                                        .data("✅ Repair order started successfully!")
+                                        .build();
+                        return ResponseEntity.ok(resp);
+                } catch (Exception e) {
+                        var resp = ApiResponse.<String>builder()
+                                        .status(HttpStatus.BAD_REQUEST.toString())
+                                        .message("Failed to start repair order: " + e.getMessage())
+                                        .data(null)
+                                        .build();
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+                }
         }
 }

@@ -18,4 +18,8 @@ public interface RepairStepRepository extends JpaRepository<RepairStep, Long> {
     }
 
     long countByStatus(RepairStep.StepStatus status);
+
+    List<RepairStep> findByTitleIgnoreCaseAndStatus(String title, RepairStep.StepStatus status);
+
+    boolean existsByRepairOrderIdAndTitle(long repairOrderId, String title);
 }
