@@ -37,6 +37,12 @@ public class PartClaimController {
                         @RequestBody List<PartClaimRequest> updates,
                         @AuthenticationPrincipal Jwt jwt) {
 
+                // In payload ra terminal
+                System.out.println("Payload sent to backend:");
+                for (PartClaimRequest update : updates) {
+                        System.out.println("id: " + update.getId() + ", quantity: " + update.getQuantity());
+                }
+
                 Long userId = Long.parseLong(jwt.getClaim("userId").toString());
                 String success = partClaimService.handleUpdatePartQuantities(claimId, updates, userId);
 

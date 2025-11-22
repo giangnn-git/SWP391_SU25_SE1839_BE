@@ -16,6 +16,7 @@ import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.CampaignVehicle;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Customer;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.ServiceCampaign;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.Vehicle;
+import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyClaim;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.CustomerRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.VehicleRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.service.VehicleService;
@@ -42,7 +43,7 @@ public class VehicleServiceImpl implements VehicleService {
                                 .map(v -> GetVehicleResponse.builder()
                                                 .vin(v.getVin())
                                                 .licensePlate(v.getLicensePlate())
-						.modelName(v.getModel().getName())
+                                                .modelName(v.getModel().getName())
                                                 .productYear(v.getProductYear())
                                                 .customerName(v.getCustomer() != null ? v.getCustomer().getName()
                                                                 : "N/A")
@@ -65,9 +66,36 @@ public class VehicleServiceImpl implements VehicleService {
                 LocalDate now = LocalDate.now();
 
                 for (Vehicle vehicle : vehicles) {
+
+                        // ===== CHECK CLAIM =====
+                        Set<WarrantyClaim> claims = vehicle.getWarrantyClaims();
+                        WarrantyClaim pendingClaim = null;
+
+                        if (claims != null) {
+                                for (WarrantyClaim claim : claims) {
+                                        if (claim.getStatus() != WarrantyClaim.ClaimStatus.COMPLETED &&
+                                                        claim.getStatus() != WarrantyClaim.ClaimStatus.REJECTED) {
+                                                pendingClaim = claim;
+                                                break; // <- tìm 1 claim pending là đủ
+                                        }
+                                }
+                        }
+
+                        // ===== CASE 1: VEHICLE HAS PENDING CLAIM → ADD 1 LẦN DUY NHẤT =====
+                        if (pendingClaim != null) {
+                                responses.add(GetRegisteredVehicleResponse.builder()
+                                                .vehicle(toGetVehicleResponse(vehicle))
+                                                .warningMessage("This vehicle is currently under warranty processing. "
+                                                                +
+                                                                "Claim No: " + pendingClaim.getId())
+                                                .build());
+
+                                continue; // 🔥 KHÔNG XÉT CAMPAIGN, KHÔNG ADD LẦN 2
+                        }
+
+                        // ===== CASE 2: NO PENDING CLAIM → CHECK CAMPAIGN =====
                         Set<CampaignVehicle> campaignVehicles = vehicle.getCampaignVehicles();
 
-                        // ✅ Xe không có campaign nào
                         if (campaignVehicles.isEmpty()) {
                                 responses.add(GetRegisteredVehicleResponse.builder()
                                                 .vehicle(toGetVehicleResponse(vehicle))
@@ -75,15 +103,14 @@ public class VehicleServiceImpl implements VehicleService {
                                 continue;
                         }
 
-                        // ✅ Có campaign -> kiểm tra thời gian
                         boolean matched = false;
+
                         for (CampaignVehicle cv : campaignVehicles) {
                                 ServiceCampaign campaign = cv.getServiceCampaign();
                                 LocalDate start = campaign.getStartDate();
                                 LocalDate end = campaign.getEndDate().plusDays(7);
 
                                 if (!now.isBefore(start) && !now.isAfter(end)) {
-                                        // now nằm trong khoảng hợp lệ → hiển thị campaign
                                         responses.add(GetRegisteredVehicleResponse.builder()
                                                         .vehicle(toGetVehicleResponse(vehicle))
                                                         .code(campaign.getCode())
@@ -99,8 +126,6 @@ public class VehicleServiceImpl implements VehicleService {
                                 }
                         }
 
-                        // ✅ Nếu không có campaign nào trong khoảng thời gian → hiển thị xe, các trường
-                        // campaign = null
                         if (!matched) {
                                 responses.add(GetRegisteredVehicleResponse.builder()
                                                 .vehicle(toGetVehicleResponse(vehicle))

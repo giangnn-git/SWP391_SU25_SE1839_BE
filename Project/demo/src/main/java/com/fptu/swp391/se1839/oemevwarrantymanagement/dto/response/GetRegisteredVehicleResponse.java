@@ -22,6 +22,7 @@ public class GetRegisteredVehicleResponse {
     LocalDate startDate;
     LocalDate endDate;
     CampaignVehicleStatus status;
+    String warningMessage;
 
     public enum CampaignVehicleStatus {
         ACTIVE, NOTIFIED, COMPLETED

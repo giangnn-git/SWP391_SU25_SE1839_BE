@@ -364,8 +364,6 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                                 if (ro.getEndDate() == null) {
                                         ro.setEndDate(LocalDateTime.now());
                                 }
-
-                                createExpensesIfOrderCompleted(ro);
                         }
 
                         repairOrderRepository.save(ro);
@@ -391,7 +389,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                                         .userName(vehicle.getCustomer().getName())
                                         .userPhoneNumber(vehicle.getCustomer().getPhoneNumber())
                                         .modelName(model.getName())
-                                        .orderDate(ro.getStartDate()) // sử dụng startDate để sắp xếp
+                                        .orderDate(ro.getStartDate())
                                         .build();
 
                         forList.add(response);
@@ -568,7 +566,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
 
                 // Trả về phản hồi
                 return ChooseTechnicalResponse.builder()
-                                .message("Phân công kỹ thuật viên thành công.")
+                                .message("Technician has been assigned successfully.")
                                 .status(true)
                                 .build();
         }
@@ -593,20 +591,19 @@ public class RepairOrderServiceImpl implements RepairOrderService {
         }
 
         GetTechnicalsResponse handleTechnicalStatus(Long serviceCenterId, long orderId) {
-                // Lấy RepairOrder (nếu cần, hiện tại chưa dùng order)
+
+                // Lấy RepairOrder (nếu cần)
                 RepairOrder order = repairOrderRepository.findById(orderId)
                                 .orElseThrow(() -> new IllegalArgumentException("Order không tồn tại"));
 
-                // Lấy danh sách kỹ thuật viên có trạng thái AVAILABLE
+                // Lấy danh sách technician AVAILABLE
                 List<User> technicians;
                 if (serviceCenterId != null && serviceCenterId > 0) {
-                        // Lấy theo trung tâm cụ thể
                         technicians = userRepository.findByWorkStatusAndServiceCenterIdAndRole(
                                         User.WorkStatus.AVAILABLE,
                                         serviceCenterId,
                                         User.Role.TECHNICIAN);
                 } else {
-                        // Lấy tất cả trung tâm
                         technicians = userRepository.findByWorkStatusAndRole(
                                         User.WorkStatus.AVAILABLE,
                                         User.Role.TECHNICIAN);
@@ -615,20 +612,30 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 List<TechnicalsResponse> result = new ArrayList<>();
 
                 for (User tech : technicians) {
-                        // Lấy số lượng công việc đang xử lý của từng kỹ thuật viên
-                        long countJobs = repairOrderRepository.countByTechnicalIdAndStatusIn(
+
+                        // Đếm RepairOrder đang xử lý
+                        long repairJobCount = repairOrderRepository.countByTechnicalIdAndStatusIn(
                                         tech.getId(),
                                         Arrays.asList(
                                                         RepairOrder.OrderStatus.WAITING,
                                                         RepairOrder.OrderStatus.PENDING,
                                                         RepairOrder.OrderStatus.IN_PROGRESS));
 
-                        result.add(TechnicalsResponse.builder()
-                                        .id(tech.getId())
-                                        .name(tech.getName())
-                                        .countJob(countJobs)
-                                        .message("Đang hoạt động")
-                                        .build());
+                        // Đếm Claim đang được assign cho technician
+                        long claimJobCount = warrantyClaimRepository.countByTechnicianIdAndStatus(
+                                        tech.getId(),
+                                        WarrantyClaim.ClaimStatus.ASSIGNED);
+
+                        // Tổng job
+                        long totalJobs = repairJobCount + claimJobCount;
+
+                        result.add(
+                                        TechnicalsResponse.builder()
+                                                        .id(tech.getId())
+                                                        .name(tech.getName())
+                                                        .countJob(totalJobs)
+                                                        .message("Currently active")
+                                                        .build());
                 }
 
                 return GetTechnicalsResponse.builder()
@@ -701,9 +708,8 @@ public class RepairOrderServiceImpl implements RepairOrderService {
 
                         SCExpense expense = SCExpense.builder()
                                         .repairOrder(order)
-                                        .serviceCenter(order.getWarrantyClaim().getServiceCenter()) // set service
-                                                                                                    // center
-                                        .description("Chi phí part: " + d.getPart().getName())
+                                        .serviceCenter(order.getWarrantyClaim().getServiceCenter())
+                                        .description("part cost: " + d.getPart().getName())
                                         .amount(price)
                                         .status(SCExpense.ExpenseStatus.UNPAID) // set status mặc định
                                         .paidDate(null) // chưa thanh toán
@@ -973,6 +979,8 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 if (!request.isAcceptedResponsibility()) {
                         throw new RuntimeException("You must accept responsibility to complete verification.");
                 }
+
+                createExpensesIfOrderCompleted(ro);
 
                 RepairOrderVerification verification = new RepairOrderVerification();
                 verification.setRepairOrder(ro);

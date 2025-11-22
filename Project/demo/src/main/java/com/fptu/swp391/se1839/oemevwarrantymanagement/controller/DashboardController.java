@@ -60,6 +60,8 @@ public class DashboardController {
                                 .getMonthlySummaries();
                 long totalWarrantyCost = costAnalysis.getTotalWarrantyCost();
 
+                Long yMax = costAnalysis.getYMax();
+
                 List<RecentActivityResponse> recentActivities = activityLogService.findRecentActivities()
                                 .stream()
                                 .map(a -> new RecentActivityResponse(
@@ -74,6 +76,7 @@ public class DashboardController {
                 data.put("claims", claimSummary);
                 data.put("claimsBreakdown", claimBreakdown);
                 data.put("monthlyTrend", monthlySummaries);
+                data.put("yMax", yMax);
                 data.put("totalWarrantyCost", totalWarrantyCost);
 
                 int resolutionRate = this.repairOrderService.handleCalculateResolutionRate(serviceCenterId);

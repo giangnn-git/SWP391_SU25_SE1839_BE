@@ -41,7 +41,6 @@ public class CustomerServiceImpl implements CustomerService {
         @Override
         @Transactional
         public CustomerRegisterResponse registerCustomer(CustomerRegisterRequest req, Long userId, Long scId) {
-                // Check VÍN
                 var vehicle = vehicleRepository.findByVin(req.getVin())
                                 .orElseThrow(() -> new NoSuchElementException(
                                                 "Vehicle with VIN " + req.getVin() + " not found"));
@@ -101,6 +100,10 @@ public class CustomerServiceImpl implements CustomerService {
                 Customer customer = customerRepository.findById(vehicle.getCustomer().getId())
                                 .orElseThrow(() -> new NoSuchElementException(
                                                 "Customer with VIN " + vin + " not found"));
+                if (vehicle.getCustomer() == null) {
+                        throw new IllegalArgumentException("Vehicle has no registered customer");
+                }
+
                 return new CustomerRegisterResponse(
                                 customer.getId(),
                                 customer.getName(),
@@ -112,7 +115,20 @@ public class CustomerServiceImpl implements CustomerService {
         @Override
         @Transactional
         public CustomerRegisterResponse updateCustomer(Long id, CustomerRegisterRequest req) {
-                // 1️⃣ Tìm customer
+
+                if (req == null) {
+                        throw new IllegalArgumentException("Request body cannot be null");
+                }
+                if (req.getName() == null || req.getName().isBlank()) {
+                        throw new IllegalArgumentException("Customer name is required");
+                }
+                if (req.getPhoneNumber() == null || req.getPhoneNumber().isBlank()) {
+                        throw new IllegalArgumentException("Phone number is required");
+                }
+                if (req.getEmail() == null || req.getEmail().isBlank()) {
+                        throw new IllegalArgumentException("Email is required");
+                }
+
                 var customer = customerRepository.findById(id)
                                 .orElseThrow(() -> new NoSuchElementException("Customer not found"));
 
@@ -130,11 +146,16 @@ public class CustomerServiceImpl implements CustomerService {
                                         }
                                 });
 
-                // 4️⃣ Nếu request có biển số → kiểm tra & cập nhật
                 if (req.getLicensePlate() != null && !req.getLicensePlate().isBlank()) {
+
+                        if (req.getVin() == null || req.getVin().isBlank()) {
+                                throw new IllegalArgumentException("VIN is required when updating license plate");
+                        }
+
                         Vehicle currentVehicle = vehicleRepository.findByVin(req.getVin())
                                         .orElseThrow(() -> new NoSuchElementException(
                                                         "Vehicle not found with VIN " + req.getVin()));
+
                         vehicleRepository.findByLicensePlate(req.getLicensePlate())
                                         .ifPresent(existingVehicle -> {
                                                 if (!Objects.equals(existingVehicle.getVin(),
@@ -144,14 +165,13 @@ public class CustomerServiceImpl implements CustomerService {
                                                 }
                                         });
 
-                        // Lấy xe hiện tại của customer để cập nhật
                         if (!Objects.equals(currentVehicle.getLicensePlate(), req.getLicensePlate())) {
                                 currentVehicle.setLicensePlate(req.getLicensePlate());
                                 vehicleRepository.save(currentVehicle);
                         }
                 }
 
-                // 5️⃣ Cập nhật thông tin customer
+                // 6️⃣ Update thông tin customer
                 customer.setName(req.getName());
                 customer.setPhoneNumber(req.getPhoneNumber());
                 customer.setEmail(req.getEmail());
@@ -159,7 +179,7 @@ public class CustomerServiceImpl implements CustomerService {
 
                 var saved = customerRepository.save(customer);
 
-                // 6️⃣ Trả về response
+                // 7️⃣ Response
                 return new CustomerRegisterResponse(
                                 saved.getId(),
                                 saved.getName(),
@@ -183,6 +203,9 @@ public class CustomerServiceImpl implements CustomerService {
 
                 if (vehicleRepository.existsByLicensePlate(req.getLicensePlate()))
                         throw new IllegalArgumentException("License plate already exists");
+                if (req.getLicensePlate() == null || req.getLicensePlate().isBlank()) {
+                        throw new IllegalArgumentException("License plate required");
+                }
 
                 vehicle.setCustomer(customer);
                 vehicle.setLicensePlate(req.getLicensePlate());

@@ -22,4 +22,5 @@ public class ClaimDetailResponse {
     List<PartQuantityResponse> partCLiam;
     List<DecodeImageReponse> images;
     List<GetPartClaimResponse> partClaimsAndCampaigns;
+    GetTechnicalsResponse getTechnicalsResponse;
 }

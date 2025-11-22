@@ -47,7 +47,6 @@ public class WarrantyClaim {
     @Column(columnDefinition = "BIGINT UNSIGNED")
     private Long id;
 
-
     @ManyToOne(optional = false)
     @JsonIgnore
     @JoinColumn(name = "vin", nullable = false)
@@ -79,7 +78,7 @@ public class WarrantyClaim {
     LocalDate decisionDate;
 
     public enum ClaimStatus {
-        DRAFT, PENDING, APPROVED, REJECTED, COMPLETED
+        DRAFT, ASSIGNED, PENDING, APPROVED, REJECTED, COMPLETED
     }
 
     @Column(nullable = false)
@@ -97,7 +96,7 @@ public class WarrantyClaim {
 
     @Column(length = 20)
     @Builder.Default
-    String rejectBy = null;
+    Long technicianId = 0L;
 
     @Column(columnDefinition = "TEXT")
     String rejectReason;

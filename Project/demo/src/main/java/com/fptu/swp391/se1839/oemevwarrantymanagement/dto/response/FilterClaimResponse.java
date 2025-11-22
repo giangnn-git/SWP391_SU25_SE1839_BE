@@ -38,4 +38,6 @@ public class FilterClaimResponse {
     String statusRecall;
     String warrantyPolicyStatus;
     LocalDate purchaseDate;
+    String techinicianName;
+    Long countJob;
 }

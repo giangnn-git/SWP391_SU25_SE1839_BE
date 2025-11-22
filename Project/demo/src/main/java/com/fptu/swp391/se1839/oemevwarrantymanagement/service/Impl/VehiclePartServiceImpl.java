@@ -27,54 +27,57 @@ import lombok.extern.slf4j.Slf4j;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class VehiclePartServiceImpl implements VehiclePartService {
 
-    final VehiclePartRepository vehiclePartRepository;
-    final PartInventoryRepository partInventoryRepository;
-    final RepairDetailRepository repairDetailRepository;
+        final VehiclePartRepository vehiclePartRepository;
+        final PartInventoryRepository partInventoryRepository;
+        final RepairDetailRepository repairDetailRepository;
 
-    @Override
-    @Transactional
-    public ScanSerialNumberResponse handleCreateNewSerialNumber(ScanSerialNumberRequest request, Long repairDetailId) {
-        // Tìm VehiclePart dựa vào oldSerialNumber
-        VehiclePart oldVP = vehiclePartRepository.findByOldSerialNumber(request.getOldSerialNumber());
-        RepairDetail rd = repairDetailRepository.findById(repairDetailId)
-                .orElseThrow(() -> new NoSuchElementException("RepairDetail not found with id: " + repairDetailId));
-        if (oldVP == null) {
-            throw new NoSuchElementException("VehiclePart with old serial number not found: "
-                    + request.getOldSerialNumber());
+        @Override
+        @Transactional
+        public ScanSerialNumberResponse handleCreateNewSerialNumber(ScanSerialNumberRequest request,
+                        Long repairDetailId) {
+                // Tìm VehiclePart dựa vào oldSerialNumber
+                VehiclePart oldVP = vehiclePartRepository.findByOldSerialNumber(request.getOldSerialNumber());
+                RepairDetail rd = repairDetailRepository.findById(repairDetailId)
+                                .orElseThrow(() -> new NoSuchElementException(
+                                                "RepairDetail not found with id: " + repairDetailId));
+                if (oldVP == null) {
+                        throw new NoSuchElementException("VehiclePart with old serial number not found: "
+                                        + request.getOldSerialNumber());
+                }
+
+                // Tạo serial number mới cho oldVP
+                oldVP.setNewSerialNumber(request.getNewSerialNumber());
+                vehiclePartRepository.save(oldVP);
+
+                // Tạo một VehiclePart mới dựa trên oldVP (nếu cần giống logic Assembly)
+                VehiclePart newVP = VehiclePart.builder()
+                                .vehicle(oldVP.getVehicle())
+                                .part(oldVP.getPart())
+                                .oldSerialNumber(request.getNewSerialNumber())
+                                .installationDate(LocalDate.now())
+                                .build();
+                vehiclePartRepository.save(newVP);
+
+                // Cập nhật PartInventory tương ứng
+                PartInventory inventory = partInventoryRepository
+                                .findByPartIdAndServiceCenterId(oldVP.getPart().getId(),
+                                                rd.getRepairOrder().getWarrantyClaim().getServiceCenter().getId())
+                                .orElseThrow(() -> new RuntimeException("Inventory not found"));
+
+                long totalQty = rd.getRepairOrder().getWarrantyClaim().getPartClaims().stream()
+                                .filter(pc -> pc.getPart().getId().equals(oldVP.getPart().getId()))
+                                .mapToLong(pc -> pc.getQuantity())
+                                .sum();
+
+                long newQuantity = inventory.getQuantity() - totalQty;
+                if (newQuantity < 0) {
+                        throw new IllegalStateException("Not enough inventory for part ID: " + oldVP.getPart().getId());
+                }
+                inventory.setQuantity(newQuantity);
+                partInventoryRepository.save(inventory);
+                return ScanSerialNumberResponse.builder()
+                                .now(LocalDate.now())
+                                .build();
         }
-
-        // Tạo serial number mới cho oldVP
-        oldVP.setNewSerialNumber(request.getNewSerialNumber());
-        vehiclePartRepository.save(oldVP);
-
-        // Tạo một VehiclePart mới dựa trên oldVP (nếu cần giống logic Assembly)
-        VehiclePart newVP = VehiclePart.builder()
-                .vehicle(oldVP.getVehicle())
-                .part(oldVP.getPart())
-                .oldSerialNumber(request.getNewSerialNumber())
-                .installationDate(LocalDate.now())
-                .build();
-        vehiclePartRepository.save(newVP);
-
-        Long partId = oldVP.getPart().getId();
-        Long scId = rd.getRepairOrder().getWarrantyClaim().getServiceCenter().getId();
-
-        PartInventory inventory = partInventoryRepository
-                .findByPartIdAndServiceCenterId(partId, scId)
-                .orElseThrow(() -> new RuntimeException("Inventory not found for this part at this SC"));
-
-        long newQty = inventory.getQuantity() - 1;
-
-        if (newQty < 0) {
-                throw new RuntimeException("Inventory not enough to assign this serial");
-        }
-
-        inventory.setQuantity(newQty);
-        partInventoryRepository.save(inventory);
-
-        return ScanSerialNumberResponse.builder()
-                .now(LocalDate.now())
-                .build();
-    }
 
 }

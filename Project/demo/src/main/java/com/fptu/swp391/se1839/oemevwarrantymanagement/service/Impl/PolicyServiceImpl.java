@@ -1,6 +1,5 @@
 package com.fptu.swp391.se1839.oemevwarrantymanagement.service.Impl;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -9,11 +8,9 @@ import org.springframework.stereotype.Service;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.CreatePolicyRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request.UpdatePolicyRequest;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.CreatePolicyResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.DeletePolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetAllPolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.PolicyResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.UpdatePolicyResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartPolicy;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyPolicy;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartPolicyRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PolicyRepository;
@@ -71,17 +68,31 @@ public class PolicyServiceImpl implements PolicyService {
                                         .policy(null)
                                         .build();
                 }
-                if(request.getDurationPeriod() <= 0){
+                if (request.getDurationPeriod() <= 0) {
                         return CreatePolicyResponse.builder()
                                         .success(false)
                                         .message("Duration period must be greater than 0")
                                         .policy(null)
                                         .build();
                 }
-                if(request.getMileageLimit() <= 0){
+                if (request.getMileageLimit() <= 0) {
                         return CreatePolicyResponse.builder()
                                         .success(false)
                                         .message("Mileage limit must be greater than 0")
+                                        .policy(null)
+                                        .build();
+                }
+                if (request.getDescription() == null || request.getDescription().isEmpty()) {
+                        return CreatePolicyResponse.builder()
+                                        .success(false)
+                                        .message("Description cannot be empty")
+                                        .policy(null)
+                                        .build();
+                }
+                if (request.getDescription().length() > 255) {
+                        return CreatePolicyResponse.builder()
+                                        .success(false)
+                                        .message("Description cannot exceed 255 characters")
                                         .policy(null)
                                         .build();
                 }
@@ -119,25 +130,32 @@ public class PolicyServiceImpl implements PolicyService {
                                 .build();
         }
 
-       @Override
+        @Override
         @Transactional
         public UpdatePolicyResponse handleUpdatePolicy(Long policyId, UpdatePolicyRequest request) {
 
                 WarrantyPolicy existing = policyRepository.findById(policyId)
-                        .orElseThrow(() -> new NoSuchElementException(
-                                "Policy with ID " + policyId + " not found"));                
+                                .orElseThrow(() -> new NoSuchElementException(
+                                                "Policy with ID " + policyId + " not found"));
 
-                boolean isAssigned = partPolicyRepository.existsByWarrantyPolicyId(policyId);                
+                boolean isAssigned = partPolicyRepository.existsByWarrantyPolicyId(policyId);
 
                 if (request.getPolicyType() != null &&
-                        !request.getPolicyType().name().equals(existing.getType().name())) {
+                                !request.getPolicyType().name().equals(existing.getType().name())) {
                         throw new IllegalArgumentException(
-                                "Policy type cannot be modified once created");
+                                        "Policy type cannot be modified once created");
+                }
+
+                if (request.getDescription() == null || request.getDescription().isEmpty()) {
+                        throw new IllegalArgumentException("Description cannot be empty");
+                }
+                if (request.getDescription().length() > 255) {
+                        throw new IllegalArgumentException("Description cannot exceed 255 characters");
                 }
 
                 if (isAssigned) {
                         throw new IllegalArgumentException(
-                                "This policy has already been assigned.");
+                                        "This policy has already been assigned.");
                 } else {
                         WarrantyPolicy policyWithSameName = policyRepository.findByName(request.getName());
                         if (policyWithSameName != null && !policyWithSameName.getId().equals(policyId)) {
@@ -146,99 +164,24 @@ public class PolicyServiceImpl implements PolicyService {
                         existing.setName(request.getName());
                         existing.setDescription(request.getDescription());
                         if (request.getDurationPeriod() != null) {
-                        if (request.getDurationPeriod() <= 0) {
-                                throw new IllegalArgumentException("Duration period must be greater than 0");
-                        }
-                        existing.setDurationPeriod(request.getDurationPeriod());
+                                if (request.getDurationPeriod() <= 0) {
+                                        throw new IllegalArgumentException("Duration period must be greater than 0");
+                                }
+                                existing.setDurationPeriod(request.getDurationPeriod());
                         }
 
                         if (request.getMileageLimit() != null) {
-                        if (request.getMileageLimit() <= 0) {
-                                throw new IllegalArgumentException("Mileage limit must be greater than 0");
-                        }
-                        existing.setMileageLimit(request.getMileageLimit());
+                                if (request.getMileageLimit() <= 0) {
+                                        throw new IllegalArgumentException("Mileage limit must be greater than 0");
+                                }
+                                existing.setMileageLimit(request.getMileageLimit());
                         }
                 }
 
                 WarrantyPolicy updated = policyRepository.save(existing);
 
                 return UpdatePolicyResponse.builder()
-                        .policy(updated)
-                        .build();
+                                .policy(updated)
+                                .build();
         }
-
-
-        // @Override
-        // public DeletePolicyResponse handleDeletePolicy(Long policyId) {
-        //         WarrantyPolicy policy = policyRepository.findById(policyId)
-        //                         .orElseThrow(() -> new NoSuchElementException("Policy not found with ID " + policyId));
-
-        //         LocalDate today = LocalDate.now();
-        //         List<PartPolicy> unexpiredParts = partPolicyRepository.findUnexpiredPartPolicies(policyId, today);
-        //         if (!unexpiredParts.isEmpty()) {
-        //                 throw new IllegalArgumentException(
-        //                                 "Cannot delete policy: there are still active part policies.");
-        //         }
-
-        //         policyRepository.delete(policy);
-        //         log.info("Deleted WarrantyPolicy with id: {}", policyId);
-        //         return DeletePolicyResponse.builder()
-        //                         .success(true)
-        //                         .message("Warranty policy deleted successfully.")
-        //                         .build();
-        // }
-
-        // @Override
-        // @Transactional
-        // public String updatePolicyStatus(Long policyId) {
-
-        //         // Lấy policy theo ID
-        //         WarrantyPolicy policy = policyRepository.findById(policyId)
-        //                         .orElseThrow(() -> new NoSuchElementException("Policy not found with id: " + policyId));
-
-        //         // Nếu policy đang ACTIVE → chuyển sang INACTIVE
-        //         if (policy.getStatus() == WarrantyPolicy.Status.ACTIVE) {
-        //                 LocalDate today = LocalDate.now();
-
-        //                 // Lấy tất cả PartPolicy còn hạn (tức là chưa hết hạn và đang ACTIVE)
-        //                 List<PartPolicy> validPartPolicies = partPolicyRepository
-        //                                 .findUnexpiredPartPolicies(policyId, today)
-        //                                 .stream()
-        //                                 .filter(p -> p.getStatus() == PartPolicy.Status.ACTIVE)
-        //                                 .toList();
-
-        //                 if (!validPartPolicies.isEmpty()) {
-        //                         // Cập nhật status và endDate cho từng partpolicy
-        //                         for (PartPolicy partPolicy : validPartPolicies) {
-        //                                 partPolicy.setStatus(PartPolicy.Status.INACTIVE);
-        //                                 partPolicy.setEndDate(today);
-        //                         }
-
-        //                         partPolicyRepository.saveAll(validPartPolicies);
-        //                         log.info("Inactivated {} active PartPolicies for policy {}.", validPartPolicies.size(),
-        //                                         policy.getCode());
-        //                 } else {
-        //                         log.info("No active PartPolicies found for policy {} to deactivate.", policy.getCode());
-        //                 }
-
-        //                 // Cập nhật trạng thái policy
-        //                 policy.setStatus(WarrantyPolicy.Status.INACTIVE);
-        //                 policyRepository.save(policy);
-
-        //                 return String.format(
-        //                                 "Policy %s set to INACTIVE. %d PartPolicies were deactivated.",
-        //                                 policy.getCode(), validPartPolicies.size());
-        //         }
-
-        //         // Nếu policy đang INACTIVE → chuyển sang ACTIVE
-        //         else if (policy.getStatus() == WarrantyPolicy.Status.INACTIVE) {
-        //                 policy.setStatus(WarrantyPolicy.Status.ACTIVE);
-        //                 policyRepository.save(policy);
-        //                 log.info("Activated WarrantyPolicy {}", policy.getCode());
-        //                 return String.format("Policy %s has been reactivated.", policy.getCode());
-        //         }
-
-        //         // Trường hợp không hợp lệ (phòng ngừa enum sai)
-        //         throw new IllegalStateException("Unsupported policy status: " + policy.getStatus());
-        // }
 }

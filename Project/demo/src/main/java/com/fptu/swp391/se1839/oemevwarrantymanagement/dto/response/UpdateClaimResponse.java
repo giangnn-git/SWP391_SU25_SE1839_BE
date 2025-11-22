@@ -1,4 +1,6 @@
-package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.request;
+package com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response;
+
+import java.util.List;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -12,7 +14,8 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class WarrantyClaimStatusRequest {
-    String changeStatus;
-    String reason;
+public class UpdateClaimResponse {
+    String success;
+    String message;
+    List<String> attachmentUrls;
 }

@@ -120,16 +120,16 @@ public class PartPolicyController {
         @GetMapping("/part-policy/check/{serialNumber}")
         @PreAuthorize("hasAnyAuthority('ADMIN','EVM_STAFF','SC_STAFF')")
         public ResponseEntity<ApiResponse<PartWarrantyInfoResponse>> checkPartWarranty(
-                @PathVariable String serialNumber) {
+                        @PathVariable String serialNumber) {
 
-        PartWarrantyInfoResponse response = partPolicyService.getWarrantyInfoBySerial(serialNumber);
+                PartWarrantyInfoResponse response = partPolicyService.getWarrantyInfoBySerial(serialNumber);
 
-        var result = ApiResponse.<PartWarrantyInfoResponse>builder()
-                .status(HttpStatus.OK.toString())
-                .message("Warranty info retrieved successfully")
-                .data(response)
-                .build();
+                var result = ApiResponse.<PartWarrantyInfoResponse>builder()
+                                .status(HttpStatus.OK.toString())
+                                .message("Warranty info retrieved successfully")
+                                .data(response)
+                                .build();
 
-        return ResponseEntity.ok(result);
+                return ResponseEntity.ok(result);
         }
 }

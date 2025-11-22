@@ -21,4 +21,5 @@ public class PartQuantityResponse {
     long recommendedQuantity;
     long remainingStock;
     String serialNumber;
+    String partClaimStatus;
 }

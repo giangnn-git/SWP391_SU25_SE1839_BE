@@ -15,12 +15,10 @@ import org.springframework.stereotype.Service;
 
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.ChangeStatusRepairStepResponse;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.dto.response.GetRepairStepResponse;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.PartInventory;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairDetail;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairOrder;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.RepairStep;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.VehiclePart;
-import com.fptu.swp391.se1839.oemevwarrantymanagement.entity.WarrantyClaim;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.PartInventoryRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairDetailRepository;
 import com.fptu.swp391.se1839.oemevwarrantymanagement.repository.RepairOrderRepository;
@@ -81,11 +79,6 @@ public class RepairStepServiceImpl implements RepairStepService {
                     .toList();
 
             int stepNumber = 1;
-
-            // Sequential visibility rule:
-            // - Always show steps that are COMPLETED
-            // - Also show the first non-COMPLETED step (the current step)
-            // - Hide any steps after the first non-completed step
             boolean shownFirstNonCompleted = false;
 
             for (RepairStep step : steps) {
@@ -102,11 +95,9 @@ public class RepairStepServiceImpl implements RepairStepService {
                     stepNumber++;
 
                     if (step.getStatus() != RepairStep.StepStatus.COMPLETED) {
-                        // this is the first non-completed step; stop after showing it
                         shownFirstNonCompleted = true;
                     }
                 } else {
-                    // already shown the first non-completed step -> do not reveal further steps
                     break;
                 }
             }
@@ -230,10 +221,12 @@ public class RepairStepServiceImpl implements RepairStepService {
             } else {
                 order.setStatus(RepairOrder.OrderStatus.COMPLETED);
 
-                // Tính end time
+                // --- Set end_date và tính end_time ---
                 if (order.getStartDate() != null) {
                     LocalDateTime now = LocalDateTime.now();
                     order.setEndDate(now);
+
+                    // Tính số giờ làm việc
                     long hours = Duration.between(order.getStartDate(), now).toHours();
                     order.setEndTime((int) hours);
                 }

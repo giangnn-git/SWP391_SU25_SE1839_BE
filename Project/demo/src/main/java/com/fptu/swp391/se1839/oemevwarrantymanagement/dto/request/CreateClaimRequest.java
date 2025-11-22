@@ -16,11 +16,9 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreateClaimRequest {
     String description;
-    String diagnosis;
     int mileage;
     String vin;
     String status;
     String priority;
     boolean agreeRecall;
-    List<Long> defectivePartIds;
 }
